@@ -39,3 +39,26 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+
+# archivos temporales de debug y prueba
+debug-*.js
+test-*.js
+*-debug.ts
+*-test.ts
+EJEMPLOS_*.md
+INSTRUCCIONES_*.md
+src/components/debug/
+
+# deployment y producción
+backups/
+uploads/
+ssl/
+*.log
+status_report.txt
+
+# archivos sensibles
+.env.local
+.env.production
+.env.production.local

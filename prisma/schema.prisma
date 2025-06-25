@@ -1,0 +1,158 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  time        String?
+  days        Json     // Array de 7 booleans [L, M, X, J, V, S, D]
+  color       String
+  category    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relaciones
+  completions DailyCompletion[]
+
+  @@map("activities")
+}
+
+model DailyCompletion {
+  id         String   @id @default(cuid())
+  activityId String
+  date       String   // YYYY-MM-DD format
+  completed  Boolean  @default(false)
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  // Relaciones
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@unique([activityId, date])
+  @@map("daily_completions")
+}
+
+model DailyNote {
+  id                 String   @id @default(cuid())
+  date               String   @unique // YYYY-MM-DD format
+  content            String   @db.Text
+  mood               Int?     // 1-5 rating
+  predefinedComments Json?    // Array de string IDs
+  customComment      String?  @db.Text
+  aiAnalysis         Json?    // AI analysis object
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("daily_notes")
+}
+
+model UserPreferences {
+  id                 String  @id @default(cuid())
+  userId             String  @unique @default("default") // Para futuro soporte multi-usuario
+  darkMode           Boolean @default(false)
+  weekStartsOnMonday Boolean @default(true)
+  notifications      Boolean @default(true)
+  language           String  @default("es")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("user_preferences")
+}
+
+model WeeklyStreak {
+  id         String   @id @default(cuid())
+  activityId String
+  weekStart  String   // YYYY-MM-DD format (Monday of the week)
+  streak     Int      @default(0)
+  completed  Int      @default(0)
+  total      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([activityId, weekStart])
+  @@map("weekly_streaks")
+}
+
+model NutritionAnalysis {
+  id                String   @id @default(cuid())
+  userId            String   @default("default")
+  date              String   // YYYY-MM-DD format
+  mealType          String   // breakfast, lunch, dinner, snack, other
+  foods             Json     // Array de DetectedFood
+  totalCalories     Int
+  macronutrients    Json     // Macronutrients object
+  imageUrl          String?
+  aiConfidence      Float    @default(0.0)
+  userAdjustments   Json?    // UserNutritionAdjustments object
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("nutrition_analyses")
+}
+
+model BodyAnalysis {
+  id            String   @id @default(cuid())
+  userId        String   @default("default")
+  bodyType      String   // ectomorph, mesomorph, endomorph
+  measurements  Json?    // BodyMeasurements object
+  bodyComposition Json?  // BodyComposition object
+  recommendations Json?  // NutritionRecommendations object
+  imageUrl      String?
+  aiConfidence  Float    @default(0.0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("body_analyses")
+}
+
+model AISuggestion {
+  id          String    @id @default(cuid())
+  type        String    // habit, routine, reminder, goal
+  title       String
+  description String    @db.Text
+  priority    String    // low, medium, high
+  basedOn     Json      // Array de string IDs
+  actions     Json?     // Array de action objects
+  dismissedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@map("ai_suggestions")
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  userId    String   @default("default")
+  role      String   // user, assistant
+  content   String   @db.Text
+  timestamp DateTime @default(now())
+
+  @@map("chat_messages")
+}
+
+model CommentAnalysis {
+  id                String   @id @default(cuid())
+  userId            String   @default("default")
+  date              String   // YYYY-MM-DD format
+  selectedComments  Json     // Array de PredefinedComment
+  customComment     String?  @db.Text
+  detectedPatterns  Json     // Array de strings
+  suggestions       Json     // Array de AISuggestion IDs
+  moodTrend         Json?    // MoodTrend object
+  createdAt         DateTime @default(now())
+
+  @@map("comment_analyses")
+}

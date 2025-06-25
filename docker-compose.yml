@@ -1,0 +1,68 @@
+version: "3.8"
+
+services:
+  # Base de datos MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: navitracker-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-navitracker_root_2024}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-navitracker}
+      MYSQL_USER: ${MYSQL_USER:-navitracker_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-navitracker_pass_2024}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    networks:
+      - navitracker-network
+    command: --default-authentication-plugin=mysql_native_password
+
+  # Aplicación NaviTracker
+  navitracker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: navitracker-app
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=mysql://${MYSQL_USER:-navitracker_user}:${MYSQL_PASSWORD:-navitracker_pass_2024}@mysql:3306/${MYSQL_DATABASE:-navitracker}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-tu_secreto_super_seguro_aqui_2024}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - JWT_SECRET=${JWT_SECRET:-otro_secreto_jwt_muy_seguro_2024}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    depends_on:
+      - mysql
+    networks:
+      - navitracker-network
+    volumes:
+      - ./uploads:/app/uploads
+
+  # Nginx como proxy reverso (opcional)
+  nginx:
+    image: nginx:alpine
+    container_name: navitracker-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - navitracker
+    networks:
+      - navitracker-network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  navitracker-network:
+    driver: bridge
