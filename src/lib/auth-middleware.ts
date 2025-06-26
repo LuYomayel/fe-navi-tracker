@@ -138,7 +138,7 @@ export async function authMiddleware(request: NextRequest) {
     const response = await fetch(
       `${
         process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000"
-      }/api/auth/verify`,
+      }/auth/verify`,
       {
         headers: {
           Authorization: `Bearer ${authCookie.value}`,

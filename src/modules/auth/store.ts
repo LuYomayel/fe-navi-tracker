@@ -49,7 +49,7 @@ const createSafeStorage = () => {
 // URL del backend
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
-const API_BASE = `${BACKEND_URL}/api`;
+const API_BASE = `${BACKEND_URL}`;
 
 export const useAuthStore = create<AuthState>()(
   persist(

@@ -2,7 +2,7 @@ import { MealType, FoodAnalysisResponse } from "@/types";
 
 // Configuración de la API
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000/api";
+  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
 console.log("API_BASE_URL", API_BASE_URL);
 // Función helper para obtener el token desde el store
 function getAuthToken(): string | null {
