@@ -2,7 +2,7 @@
 export const API_CONFIG = {
   BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000",
   get API_BASE() {
-    return `${this.BACKEND_URL}`;
+    return `${this.BACKEND_URL}/api`;
   },
 
   // Endpoints

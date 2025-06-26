@@ -25,7 +25,7 @@ async function fetchAPI<T = unknown>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = `${API_BASE_URL}/api${endpoint}`;
 
   // Obtener token automáticamente
   const token = getAuthToken();
