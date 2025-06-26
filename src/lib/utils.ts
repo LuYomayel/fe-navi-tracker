@@ -12,22 +12,121 @@ export function getDateKey(date: Date): string {
 
 // Función para calcular objetivos nutricionales basados en análisis corporal
 export function calculateNutritionGoalsFromBodyAnalysis(
-  bodyAnalysis: Record<string, unknown>
+  bodyAnalysis: Record<string, unknown>,
+  personalData?: {
+    height: number;
+    currentWeight: number;
+    targetWeight?: number;
+    age: number;
+    gender: "male" | "female" | "other";
+    activityLevel:
+      | "sedentary"
+      | "light"
+      | "moderate"
+      | "active"
+      | "very_active";
+    fitnessGoal?: string;
+  }
 ): {
   dailyCalories: number;
   protein: number;
   carbs: number;
   fat: number;
 } {
-  // Implementación temporal - esto debería ser reemplazado con lógica real
-  // Por ahora ignoramos el parámetro bodyAnalysis y devolvemos valores por defecto
   console.log("Body analysis received:", bodyAnalysis);
+  console.log("Personal data received:", personalData);
+
+  // Si no hay datos personales, usar valores por defecto
+  if (!personalData) {
+    return {
+      dailyCalories: 2000,
+      protein: 150, // gramos
+      carbs: 250, // gramos
+      fat: 67, // gramos
+    };
+  }
+
+  // Calcular BMR (Metabolismo Basal) usando la fórmula de Mifflin-St Jeor
+  let bmr: number;
+  if (personalData.gender === "male") {
+    bmr =
+      10 * personalData.currentWeight +
+      6.25 * personalData.height -
+      5 * personalData.age +
+      5;
+  } else {
+    bmr =
+      10 * personalData.currentWeight +
+      6.25 * personalData.height -
+      5 * personalData.age -
+      161;
+  }
+
+  // Factores de actividad
+  const activityFactors = {
+    sedentary: 1.2,
+    light: 1.375,
+    moderate: 1.55,
+    active: 1.725,
+    very_active: 1.9,
+  };
+
+  // Calcular TDEE (Total Daily Energy Expenditure)
+  const tdee = bmr * activityFactors[personalData.activityLevel];
+
+  // Ajustar calorías según el objetivo
+  let dailyCalories = tdee;
+  let proteinRatio = 0.3; // 30% proteína por defecto
+  let carbsRatio = 0.4; // 40% carbohidratos por defecto
+  let fatRatio = 0.3; // 30% grasas por defecto
+
+  switch (personalData.fitnessGoal) {
+    case "lose_weight":
+      dailyCalories = tdee * 0.8; // Déficit de 20%
+      proteinRatio = 0.35; // Más proteína para preservar músculo
+      carbsRatio = 0.35;
+      fatRatio = 0.3;
+      break;
+    case "gain_muscle":
+      dailyCalories = tdee * 1.1; // Superávit de 10%
+      proteinRatio = 0.3;
+      carbsRatio = 0.45; // Más carbohidratos para energía
+      fatRatio = 0.25;
+      break;
+    case "define":
+      dailyCalories = tdee * 0.9; // Déficit ligero
+      proteinRatio = 0.4; // Alta proteína
+      carbsRatio = 0.3;
+      fatRatio = 0.3;
+      break;
+    case "maintain":
+      dailyCalories = tdee;
+      // Mantener ratios por defecto
+      break;
+    case "bulk":
+      dailyCalories = tdee * 1.2; // Superávit de 20%
+      proteinRatio = 0.25;
+      carbsRatio = 0.5;
+      fatRatio = 0.25;
+      break;
+    case "recomp":
+      dailyCalories = tdee * 0.95; // Déficit muy ligero
+      proteinRatio = 0.35;
+      carbsRatio = 0.4;
+      fatRatio = 0.25;
+      break;
+  }
+
+  // Calcular macronutrientes en gramos
+  const protein = Math.round((dailyCalories * proteinRatio) / 4); // 4 cal/g
+  const carbs = Math.round((dailyCalories * carbsRatio) / 4); // 4 cal/g
+  const fat = Math.round((dailyCalories * fatRatio) / 9); // 9 cal/g
 
   return {
-    dailyCalories: 2000,
-    protein: 150, // gramos
-    carbs: 250, // gramos
-    fat: 67, // gramos
+    dailyCalories: Math.round(dailyCalories),
+    protein,
+    carbs,
+    fat,
   };
 }
 

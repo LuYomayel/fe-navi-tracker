@@ -9,6 +9,7 @@ import {
   Check,
   TrendingUp,
   X,
+  Target,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,16 +18,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { BodyType, ActivityLevel, BodyAnalysisApiResponse } from "@/types";
+import {
+  BodyType,
+  ActivityLevel,
+  BodyAnalysisApiResponse,
+  BodyAnalysis,
+} from "@/types";
 import { useNaviTrackerStore } from "@/store";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { toast } from "@/lib/toast-helper";
 import { api } from "@/lib/api-client";
+import { SetGoalsDialog } from "@/components/nutrition/SetGoalsDialog";
 
 interface BodyAnalyzerProps {
   isOpen: boolean;
   onClose: () => void;
+  onAnalysisSaved?: () => void;
 }
 
 // Opciones de objetivos fitness
@@ -63,10 +71,13 @@ const FITNESS_GOALS = [
   },
 ];
 
-export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
+export function BodyAnalyzer({
+  isOpen,
+  onClose,
+  onAnalysisSaved,
+}: BodyAnalyzerProps) {
   const [step, setStep] = useState<"form" | "processing" | "results">("form");
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
-  //const [analysisResult, setAnalysisResult] = useState<BodyAnalysisResult | null>(null);
   const [analysisResult, setAnalysisResult] =
     useState<BodyAnalysisApiResponse | null>(null);
   const [, setIsAnalyzing] = useState(false);
@@ -81,6 +92,10 @@ export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
     fitnessGoal: "gain_muscle",
     targetWeight: 75,
   });
+
+  const [showGoalsModal, setShowGoalsModal] = useState(false);
+  const [selectedBodyAnalysis, setSelectedBodyAnalysis] =
+    useState<BodyAnalysis | null>(null);
 
   // Limpiar localStorage viejo al abrir el componente
   useEffect(() => {
@@ -228,35 +243,53 @@ export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
     if (!analysisResult) return;
 
     try {
-      // Crear el análisis con el formato correcto para el store
-      const analysis = {
+      // Crear el análisis con TODA la información de la API
+      const analysis: BodyAnalysis = {
         bodyType: analysisResult.bodyType,
         measurements: {
-          bodyFat: analysisResult.measurements.bodyFatPercentage,
+          bodyFat:
+            analysisResult.measurements.bodyFatPercentage ||
+            analysisResult.measurements.estimatedBodyFat,
           muscleMass: analysisResult.measurements.weight,
           bmi:
-            analysisResult.measurements.weight &&
+            analysisResult.bodyComposition.estimatedBMI ||
+            (analysisResult.measurements.weight &&
             analysisResult.measurements.height
               ? analysisResult.measurements.weight /
                 Math.pow(analysisResult.measurements.height / 100, 2)
-              : undefined,
+              : undefined),
         },
         recommendations: analysisResult.insights,
         confidence: analysisResult.confidence,
+        // Agregar toda la información detallada de la API
+        fullAnalysisData: {
+          measurements: analysisResult.measurements,
+          bodyComposition: analysisResult.bodyComposition,
+          recommendations: analysisResult.recommendations,
+          progress: analysisResult.progress,
+          disclaimer: analysisResult.disclaimer,
+          insights: analysisResult.insights,
+        },
       };
+
+      console.log("💾 Guardando análisis completo:", analysis);
 
       // Usar el store de Zustand que tiene integración con base de datos
       const { addBodyAnalysis } = useNaviTrackerStore.getState();
       await addBodyAnalysis(analysis);
 
       console.log("✅ Análisis corporal guardado:", analysis);
-      alert("✅ Análisis corporal guardado correctamente");
+      toast.success(
+        "Análisis guardado",
+        "Análisis corporal guardado correctamente"
+      );
 
       onClose();
+      onAnalysisSaved?.();
     } catch (error) {
       console.error("❌ Error guardando análisis corporal:", error);
 
-      // Fallback: guardar solo los datos esenciales en localStorage (sin imágenes)
+      // Fallback: guardar en localStorage con toda la información
       try {
         const analysisLight = {
           id: `body_${Date.now()}`,
@@ -264,6 +297,15 @@ export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
           confidence: analysisResult.confidence,
           date: new Date().toISOString().split("T")[0],
           fitnessGoal: formData.fitnessGoal,
+          // Guardar toda la información de la API
+          fullAnalysisData: {
+            measurements: analysisResult.measurements,
+            bodyComposition: analysisResult.bodyComposition,
+            recommendations: analysisResult.recommendations,
+            progress: analysisResult.progress,
+            disclaimer: analysisResult.disclaimer,
+            insights: analysisResult.insights,
+          },
         };
 
         const existingAnalyses = JSON.parse(
@@ -280,14 +322,19 @@ export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
           JSON.stringify(existingAnalyses)
         );
 
-        console.log("✅ Análisis guardado en localStorage (versión ligera)");
-        alert("✅ Análisis corporal guardado correctamente");
+        console.log("✅ Análisis guardado en localStorage (versión completa)");
+        toast.success(
+          "Análisis guardado",
+          "Análisis corporal guardado correctamente"
+        );
 
         onClose();
+        onAnalysisSaved?.();
       } catch (localStorageError) {
         console.error("❌ Error guardando en localStorage:", localStorageError);
-        alert(
-          "❌ Error al guardar el análisis. Intenta limpiar el almacenamiento del navegador."
+        toast.error(
+          "Error",
+          "Error al guardar el análisis. Intenta limpiar el almacenamiento del navegador."
         );
       }
     }
@@ -329,6 +376,36 @@ export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
   const selectedGoal = FITNESS_GOALS.find(
     (goal) => goal.value === formData.fitnessGoal
   );
+
+  const handleSetAsGoals = (analysis: BodyAnalysis) => {
+    console.log("🔍 Analysis:", analysis);
+    setSelectedBodyAnalysis(analysis);
+    setShowGoalsModal(true);
+  };
+
+  // Función para establecer objetivos desde el análisis actual
+  const handleSetCurrentAsGoals = () => {
+    if (!analysisResult) return;
+
+    // Convertir el análisis actual al formato BodyAnalysis
+    const currentAnalysis: BodyAnalysis = {
+      bodyType: analysisResult.bodyType,
+      measurements: {
+        bodyFat: analysisResult.measurements.bodyFatPercentage,
+        muscleMass: analysisResult.measurements.weight,
+        bmi:
+          analysisResult.measurements.weight &&
+          analysisResult.measurements.height
+            ? analysisResult.measurements.weight /
+              Math.pow(analysisResult.measurements.height / 100, 2)
+            : undefined,
+      },
+      recommendations: analysisResult.insights,
+      confidence: analysisResult.confidence,
+    };
+
+    handleSetAsGoals(currentAnalysis);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -735,6 +812,45 @@ export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
                       </span>
                     </div>
                   </div>
+
+                  {/* Recomendaciones nutricionales detalladas */}
+                  <div className="space-y-2">
+                    <h5 className="font-medium text-sm">
+                      📋 Recomendaciones Nutricionales:
+                    </h5>
+                    {analysisResult.recommendations.nutrition?.map(
+                      (recommendation, index) => (
+                        <div
+                          key={index}
+                          className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs"
+                        >
+                          {recommendation}
+                        </div>
+                      )
+                    )}
+                  </div>
+
+                  {/* Restricciones alimentarias */}
+                  {analysisResult.recommendations.restrictions &&
+                    analysisResult.recommendations.restrictions.length > 0 && (
+                      <div className="space-y-2">
+                        <h5 className="font-medium text-sm text-red-600 dark:text-red-400">
+                          🚫 Evitar o Limitar:
+                        </h5>
+                        <div className="space-y-1">
+                          {analysisResult.recommendations.restrictions.map(
+                            (restriction, index) => (
+                              <div
+                                key={index}
+                                className="p-2 bg-red-50 dark:bg-red-900/20 rounded text-xs border-l-2 border-red-400"
+                              >
+                                {restriction}
+                              </div>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    )}
                 </div>
 
                 <div className="space-y-4">
@@ -745,7 +861,9 @@ export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
                     <div className="flex justify-between">
                       <span>Grasa corporal estimada:</span>
                       <span className="font-medium">
-                        {analysisResult.measurements.bodyFatPercentage}%
+                        {analysisResult.measurements.bodyFatPercentage ||
+                          analysisResult.measurements.estimatedBodyFat}
+                        %
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -757,20 +875,137 @@ export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
                     <div className="flex justify-between">
                       <span>IMC:</span>
                       <span className="font-medium">
-                        {(analysisResult.measurements.weight &&
-                        analysisResult.measurements.height
-                          ? analysisResult.measurements.weight /
-                            Math.pow(
-                              analysisResult.measurements.height / 100,
-                              2
-                            )
-                          : 0
-                        ).toFixed(1)}
+                        {analysisResult.bodyComposition.estimatedBMI ||
+                          (analysisResult.measurements.weight &&
+                          analysisResult.measurements.height
+                            ? (
+                                analysisResult.measurements.weight /
+                                Math.pow(
+                                  analysisResult.measurements.height / 100,
+                                  2
+                                )
+                              ).toFixed(1)
+                            : "N/A")}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Metabolismo:</span>
+                      <span className="font-medium capitalize">
+                        {analysisResult.bodyComposition.metabolism}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Definición muscular:</span>
+                      <span className="font-medium capitalize">
+                        {analysisResult.measurements.muscleDefinition}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Postura:</span>
+                      <span className="font-medium capitalize">
+                        {analysisResult.measurements.posture}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Simetría:</span>
+                      <span className="font-medium capitalize">
+                        {analysisResult.measurements.symmetry}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Nivel fitness:</span>
+                      <span className="font-medium capitalize">
+                        {analysisResult.measurements.overallFitness}
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
+
+              {/* Objetivos específicos */}
+              {analysisResult.recommendations.goals &&
+                analysisResult.recommendations.goals.length > 0 && (
+                  <div className="space-y-4">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      🎯 Objetivos Específicos
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {analysisResult.recommendations.goals.map(
+                        (goal, index) => (
+                          <div
+                            key={index}
+                            className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-l-4 border-purple-400 text-sm font-medium capitalize"
+                          >
+                            {goal}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+
+              {/* Análisis de progreso - Fortalezas y áreas de mejora */}
+              {analysisResult.progress && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Fortalezas */}
+                  {analysisResult.progress.strengths &&
+                    analysisResult.progress.strengths.length > 0 && (
+                      <div className="space-y-4">
+                        <h4 className="font-semibold flex items-center gap-2 text-green-600 dark:text-green-400">
+                          ✅ Fortalezas
+                        </h4>
+                        <div className="space-y-2">
+                          {analysisResult.progress.strengths.map(
+                            (strength, index) => (
+                              <div
+                                key={index}
+                                className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-sm capitalize"
+                              >
+                                {strength}
+                              </div>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                  {/* Áreas de mejora */}
+                  {analysisResult.progress.areasToImprove &&
+                    analysisResult.progress.areasToImprove.length > 0 && (
+                      <div className="space-y-4">
+                        <h4 className="font-semibold flex items-center gap-2 text-orange-600 dark:text-orange-400">
+                          🔧 Áreas de Mejora
+                        </h4>
+                        <div className="space-y-2">
+                          {analysisResult.progress.areasToImprove.map(
+                            (area, index) => (
+                              <div
+                                key={index}
+                                className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-sm capitalize"
+                              >
+                                {area}
+                              </div>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    )}
+                </div>
+              )}
+
+              {/* Consejo general */}
+              {analysisResult.progress?.generalAdvice && (
+                <div className="space-y-4">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    💡 Consejo General
+                  </h4>
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-l-4 border-blue-400">
+                    <p className="text-sm capitalize">
+                      {analysisResult.progress.generalAdvice}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Insights del análisis */}
               <div className="space-y-4">
@@ -781,7 +1016,7 @@ export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
                   {analysisResult.insights?.map((insight, index) => (
                     <div
                       key={index}
-                      className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm"
+                      className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm capitalize"
                     >
                       {insight}
                     </div>
@@ -790,22 +1025,33 @@ export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
               </div>
 
               {/* Suplementos recomendados */}
-              {analysisResult.recommendations.supplements && (
+              {analysisResult.recommendations.supplements &&
+                analysisResult.recommendations.supplements.length > 0 && (
+                  <div className="space-y-4">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      💊 Suplementos Sugeridos
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {analysisResult.recommendations.supplements.map(
+                        (supplement, index) => (
+                          <div
+                            key={index}
+                            className="p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded border-l-4 border-yellow-400 text-sm"
+                          >
+                            {supplement}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+
+              {/* Disclaimer */}
+              {analysisResult.disclaimer && (
                 <div className="space-y-4">
-                  <h4 className="font-semibold flex items-center gap-2">
-                    💊 Suplementos Sugeridos
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {analysisResult.recommendations.supplements.map(
-                      (supplement, index) => (
-                        <div
-                          key={index}
-                          className="p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded border-l-4 border-yellow-400 text-sm"
-                        >
-                          {supplement}
-                        </div>
-                      )
-                    )}
+                  <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg border text-xs text-gray-600 dark:text-gray-400">
+                    <strong>Nota importante:</strong>{" "}
+                    {analysisResult.disclaimer}
                   </div>
                 </div>
               )}
@@ -818,6 +1064,14 @@ export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
                 >
                   Nuevo Análisis
                 </Button>
+                <Button
+                  onClick={handleSetCurrentAsGoals}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  <Target className="w-4 h-4 mr-2" />
+                  Establecer Objetivos
+                </Button>
                 <Button onClick={handleSaveAnalysis} className="flex-1">
                   <Check className="w-4 h-4 mr-2" />
                   Guardar Análisis
@@ -826,6 +1080,23 @@ export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
             </div>
           )}
         </div>
+
+        <SetGoalsDialog
+          isOpen={showGoalsModal}
+          onClose={() => {
+            setShowGoalsModal(false);
+            setSelectedBodyAnalysis(null);
+          }}
+          bodyAnalysis={selectedBodyAnalysis}
+          onGoalsSaved={() => {
+            toast.success(
+              "Objetivos guardados",
+              "Objetivos nutricionales actualizados correctamente"
+            );
+            setShowGoalsModal(false);
+            setSelectedBodyAnalysis(null);
+          }}
+        />
       </DialogContent>
     </Dialog>
   );

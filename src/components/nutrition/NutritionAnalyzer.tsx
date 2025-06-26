@@ -34,6 +34,7 @@ interface FoodAnalyzerProps {
   isOpen: boolean;
   onClose: () => void;
   selectedDate: Date;
+  onAnalysisSaved?: () => void;
 }
 
 interface AnalysisResult {
@@ -51,6 +52,7 @@ export function FoodAnalyzer({
   isOpen,
   onClose,
   selectedDate,
+  onAnalysisSaved,
 }: FoodAnalyzerProps) {
   const [step, setStep] = useState<
     | "method_selection"
@@ -312,9 +314,9 @@ export function FoodAnalyzer({
         imageUrl: analysisMethod === "photo" ? "" : "", // No guardamos la imagen para evitar QuotaExceededError
         aiConfidence: resultToSave.confidence,
         userAdjustments: {
-          foods: resultToSave.foods,
-          totalCalories: resultToSave.totalCalories,
-          macronutrients: resultToSave.macronutrients,
+          adjustedCalories: resultToSave.totalCalories,
+          adjustedFoods: resultToSave.foods,
+          notes: `Ajuste aplicado: ${adjustmentPercentage}%`,
         },
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -335,9 +337,9 @@ export function FoodAnalyzer({
         imageUrl: analysisMethod === "photo" ? "" : "", // No guardamos la imagen para evitar QuotaExceededError
         aiConfidence: resultToSave.confidence,
         userAdjustments: {
-          foods: resultToSave.foods,
-          totalCalories: resultToSave.totalCalories,
-          macronutrients: resultToSave.macronutrients,
+          adjustedCalories: resultToSave.totalCalories,
+          adjustedFoods: resultToSave.foods,
+          notes: `Ajuste aplicado: ${adjustmentPercentage}%`,
         },
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -352,6 +354,10 @@ export function FoodAnalyzer({
       // Reset component
       handleReset();
       onClose();
+
+      if (onAnalysisSaved) {
+        onAnalysisSaved();
+      }
     } catch (error) {
       console.error("❌ Error guardando análisis nutricional:", error);
 
@@ -387,6 +393,10 @@ export function FoodAnalyzer({
         // Reset component
         handleReset();
         onClose();
+
+        if (onAnalysisSaved) {
+          onAnalysisSaved();
+        }
       } catch (localStorageError) {
         console.error("❌ Error guardando en localStorage:", localStorageError);
         toast.error(

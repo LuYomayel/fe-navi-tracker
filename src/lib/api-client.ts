@@ -1,4 +1,4 @@
-import { FoodAnalysisResponse, MealType, NutritionAnalysis } from "@/types";
+import { MealType, FoodAnalysisResponse } from "@/types";
 
 // Configuración de la API
 const API_BASE_URL =
@@ -251,10 +251,9 @@ export const api = {
   // Nutrición
   nutrition: {
     getAnalyses: () => apiClient.get("/nutrition"),
-    createAnalysis: (data: NutritionAnalysis) =>
-      apiClient.post("/nutrition", data),
+    createAnalysis: (data: any) => apiClient.post("/nutrition", data),
     getByDate: (date: string) => apiClient.get(`/nutrition?date=${date}`),
-    updateAnalysis: (id: string, data: NutritionAnalysis) =>
+    updateAnalysis: (id: string, data: any) =>
       apiClient.put(`/nutrition/${id}`, data),
     deleteAnalysis: (id: string) => apiClient.delete(`/nutrition/${id}`),
   },
@@ -368,6 +367,12 @@ export const api = {
       sodium: number;
       mealType: MealType;
     }) => apiClient.post<FoodAnalysisResponse>("/analyze-food/manual", data),
+  },
+
+  preferences: {
+    getPreferences: () => apiClient.get("/preferences"),
+    getCurrentGoals: () => apiClient.get("/preferences/goals"),
+    post: (data: any) => apiClient.post("/preferences", data),
   },
 };
 

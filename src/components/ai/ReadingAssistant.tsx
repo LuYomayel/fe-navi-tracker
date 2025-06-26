@@ -482,9 +482,9 @@ const ReadingAssistant: React.FC = () => {
               ¡Descubre contenido personalizado para ti!
             </p>
             <p className="text-sm">
-              Ajusta los filtros y haz clic en "Obtener Recomendaciones" para
-              encontrar libros, artículos, podcasts y más contenido adaptado a
-              tus intereses
+              Ajusta los filtros y haz clic en &quot;Obtener
+              Recomendaciones&quot; para encontrar libros, artículos, podcasts y
+              más contenido adaptado a tus intereses
             </p>
           </div>
         )}
@@ -501,7 +501,7 @@ const ReadingAssistant: React.FC = () => {
               </p>
               <ul className="text-yellow-700 text-sm mt-2 list-disc list-inside">
                 <li>Ampliar el tiempo disponible</li>
-                <li>Cambiar el tipo de contenido a "Cualquiera"</li>
+                <li>Cambiar el tipo de contenido a &quot;Cualquiera&quot;</li>
                 <li>Usar términos de búsqueda más generales</li>
                 <li>Seleccionar un género diferente</li>
               </ul>

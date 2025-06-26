@@ -14,6 +14,7 @@ import {
 import { MealType, NutritionAnalysis, Macronutrients } from "@/types";
 import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
+import { useNaviTrackerStore } from "@/store";
 
 interface EditNutritionAnalysisDialogProps {
   isOpen: boolean;
@@ -32,13 +33,10 @@ export function EditNutritionAnalysisDialog({
     useState<NutritionAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Inicializar datos cuando se abre el diálogo
-  useEffect(() => {
-    if (analysis && isOpen) {
-      setEditableAnalysis({ ...analysis });
-    }
-  }, [analysis, isOpen]);
+  // Obtener función de actualización del store
+  const { updateNutritionAnalysis } = useNaviTrackerStore();
 
+  // Opciones de tipo de comida
   const mealTypeOptions = [
     { value: MealType.BREAKFAST, label: "Desayuno", emoji: "🌅" },
     { value: MealType.LUNCH, label: "Almuerzo", emoji: "☀️" },
@@ -46,6 +44,15 @@ export function EditNutritionAnalysisDialog({
     { value: MealType.SNACK, label: "Snack", emoji: "🍎" },
     { value: MealType.OTHER, label: "Otro", emoji: "🍽️" },
   ];
+
+  // Cargar análisis cuando se abre el modal
+  useEffect(() => {
+    if (analysis && isOpen) {
+      setEditableAnalysis({ ...analysis });
+    } else {
+      setEditableAnalysis(null);
+    }
+  }, [analysis, isOpen]);
 
   const handleMacronutrientChange = (
     macro: keyof Macronutrients,
@@ -61,16 +68,6 @@ export function EditNutritionAnalysisDialog({
           ...prev.macronutrients,
           [macro]: value,
         },
-        // Actualizar también userAdjustments si existe
-        userAdjustments: prev.userAdjustments
-          ? {
-              ...prev.userAdjustments,
-              macronutrients: {
-                ...prev.userAdjustments.macronutrients,
-                [macro]: value,
-              },
-            }
-          : undefined,
       };
     });
   };
@@ -83,13 +80,6 @@ export function EditNutritionAnalysisDialog({
       return {
         ...prev,
         totalCalories: calories,
-        // Actualizar también userAdjustments si existe
-        userAdjustments: prev.userAdjustments
-          ? {
-              ...prev.userAdjustments,
-              totalCalories: calories,
-            }
-          : undefined,
       };
     });
   };
@@ -125,7 +115,17 @@ export function EditNutritionAnalysisDialog({
         analysisToUpdate
       );
 
-      console.log("✅ Análisis actualizado:", response);
+      console.log("✅ Análisis actualizado en API:", response);
+
+      // Actualizar también en el store local para refrescar la UI inmediatamente
+      await updateNutritionAnalysis(editableAnalysis.id, {
+        mealType: editableAnalysis.mealType,
+        totalCalories: editableAnalysis.totalCalories,
+        macronutrients: editableAnalysis.macronutrients,
+        updatedAt: new Date(),
+      });
+
+      console.log("✅ Store local actualizado");
 
       toast.success("✅ Análisis actualizado correctamente");
 

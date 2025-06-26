@@ -25,12 +25,14 @@ interface SkinFoldDialogProps {
   isOpen: boolean;
   onClose: () => void;
   editingRecord?: SkinFoldRecord;
+  onRecordSaved?: () => void;
 }
 
 export function SkinFoldDialog({
   isOpen,
   onClose,
   editingRecord,
+  onRecordSaved,
 }: SkinFoldDialogProps) {
   const { addSkinFoldRecord, updateSkinFoldRecord, preferences } =
     useNaviTrackerStore();
@@ -191,6 +193,10 @@ export function SkinFoldDialog({
         values: {},
       });
       setAiConfidence(null);
+
+      if (onRecordSaved) {
+        onRecordSaved();
+      }
     } catch (error) {
       console.error("Error guardando registro:", error);
       alert("Error guardando el registro");

@@ -1,4 +1,4 @@
-import { EachMonthOfIntervalOptions } from "date-fns";
+// import { EachMonthOfIntervalOptions } from "date-fns";
 
 export interface Activity {
   id: string;
@@ -168,27 +168,6 @@ export interface NutritionAnalysis {
   updatedAt: Date;
 }
 
-export interface DetectedFood {
-  name: string;
-  quantity: number;
-  unit: string;
-  calories: number;
-  confidence: number;
-}
-
-export interface Macronutrients {
-  protein: number;
-  carbs: number;
-  fat: number;
-  fiber: number;
-}
-
-export interface UserNutritionAdjustments {
-  foods: DetectedFood[];
-  totalCalories: number;
-  macronutrients: Macronutrients;
-}
-
 export enum MealType {
   BREAKFAST = "breakfast",
   LUNCH = "lunch",
@@ -256,6 +235,19 @@ export interface BodyAnalysis {
   confidence: number;
   createdAt?: Date;
   updatedAt?: Date;
+  // Agregar toda la información completa de la API
+  fullAnalysisData?: {
+    measurements: BodyMeasurements;
+    bodyComposition: BodyComposition;
+    recommendations: NutritionRecommendations;
+    progress: {
+      strengths: string[];
+      areasToImprove: string[];
+      generalAdvice: string;
+    };
+    disclaimer: string;
+    insights?: string[];
+  };
 }
 
 export interface BodyMeasurements {
@@ -327,7 +319,7 @@ export interface NutritionRecommendations {
   //mealTiming: MealTiming[];
   supplements?: string[];
   restrictions?: string[];
-  goals: NutritionGoal[];
+  goals: string[]; // Cambiar de NutritionGoal[] a string[] para coincidir con la API
 }
 
 export interface MealTiming {
@@ -486,3 +478,57 @@ export interface BodyAnalysisResponse {
 
 // Re-export skinfold types
 export * from "./skinFold";
+
+export interface NutritionGoals {
+  dailyCalories: number;
+  protein: number; // gramos
+  carbs: number; // gramos
+  fat: number; // gramos
+  fiber?: number; // gramos
+  sugar?: number; // gramos
+  sodium?: number; // miligramos
+}
+
+export interface PersonalBodyData {
+  height: number; // cm
+  currentWeight: number; // kg
+  targetWeight?: number; // kg
+  age: number;
+  gender: "male" | "female" | "other";
+  activityLevel: ActivityLevel;
+  fitnessGoals: string[];
+}
+
+export interface BodyAnalysisWithGoals extends BodyAnalysis {
+  personalData?: PersonalBodyData;
+  calculatedGoals?: NutritionGoals;
+}
+
+export interface SetGoalsRequest {
+  // Datos personales del form
+  height: number;
+  currentWeight: number;
+  targetWeight: number;
+  age: number;
+  gender: "male" | "female" | "other";
+  activityLevel: "sedentary" | "light" | "moderate" | "active" | "very_active";
+  fitnessGoal: string;
+
+  // Objetivos ajustados por el usuario (los que vienen de adjustableGoals)
+  finalGoals: {
+    dailyCalories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+
+  // Opcional: ID del body analysis usado como base
+  bodyAnalysisId?: string;
+}
+
+export interface CurrentGoals {
+  dailyCalories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}

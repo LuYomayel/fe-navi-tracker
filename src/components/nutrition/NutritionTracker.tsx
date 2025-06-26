@@ -88,7 +88,6 @@ export function NutritionTracker({
     nutritionAnalyses,
     bodyAnalyses,
     skinFoldRecords,
-    deleteNutritionAnalysis,
     updateNutritionAnalysis,
     deleteBodyAnalysis,
     deleteSkinFoldRecord,

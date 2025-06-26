@@ -19,12 +19,6 @@ import {
   Filter,
   Target,
   ChevronDown,
-  Zap,
-  Flame,
-  Activity,
-  Droplets,
-  Award,
-  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,8 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+
 import { FoodAnalyzer } from "@/components/nutrition/NutritionAnalyzer";
 import { BodyAnalyzer } from "@/components/nutrition/BodyAnalyzer";
 import { SkinFoldDialog } from "@/components/nutrition/SkinFoldDialog";
@@ -54,23 +47,11 @@ import {
   NutritionAnalysis,
   BodyAnalysis as _BodyAnalysis,
   SkinFoldRecord as _SkinFoldRecord,
+  NutritionGoals,
 } from "@/types";
-import { api, apiClient } from "@/lib/api-client";
+import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
-
-interface EditingAnalysis {
-  id: string;
-  date: string;
-  mealType: MealType;
-  time: string;
-}
-
-interface NutritionGoals {
-  dailyCalories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-}
+import { SetGoalsDialog } from "@/components/nutrition/SetGoalsDialog";
 
 interface DailyProgress {
   totalCalories: number;
@@ -87,268 +68,288 @@ const NutritionDashboard: React.FC<{
   nutritionGoals: NutritionGoals | null;
   lastBodyAnalysis: _BodyAnalysis | null;
   onOpenBodyAnalyzer: () => void;
+  onOpenManualGoals: () => void;
 }> = ({
   todayProgress,
   nutritionGoals,
   lastBodyAnalysis,
   onOpenBodyAnalyzer,
+  onOpenManualGoals,
 }) => {
   const _getProgressColor = (percentage: number) => {
     if (percentage >= 90) return "bg-green-500";
     if (percentage >= 70) return "bg-yellow-500";
-    if (percentage >= 50) return "bg-orange-500";
     return "bg-red-500";
   };
 
   const getProgressPercentage = (current: number, goal: number) => {
-    return goal > 0 ? Math.min((current / goal) * 100, 100) : 0;
+    return Math.min((current / goal) * 100, 100);
   };
 
+  // Obtener información adicional del análisis corporal
+  const bodyAnalysisInfo = lastBodyAnalysis?.fullAnalysisData;
+
   return (
-    <div className="space-y-6">
-      {/* Header del Dashboard */}
-      <div className=" rounded-lg p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold">Dashboard Nutricional 📊</h2>
-            <p className=" mt-1">
-              Progreso de hoy •{" "}
-              {new Date().toLocaleDateString("es-ES", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </p>
-          </div>
-          <div className="text-right">
-            <div className="text-3xl font-bold text-green-600">
-              {todayProgress.totalCalories}
-            </div>
-            <div className="text-sm">
-              de {nutritionGoals?.dailyCalories || "---"} kcal
-            </div>
-          </div>
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-semibold">Dashboard Nutricional</h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            Progreso del día de hoy
+            {nutritionGoals && (
+              <span className="ml-2 text-sm">
+                {todayProgress.totalCalories} de{" "}
+                {nutritionGoals?.dailyCalories || "---"} kcal
+              </span>
+            )}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={onOpenBodyAnalyzer} variant="outline" size="sm">
+            <User className="h-4 w-4 mr-2" />
+            Análisis Corporal
+          </Button>
+          <Button onClick={onOpenManualGoals} variant="secondary" size="sm">
+            <Target className="h-4 w-4 mr-2" />
+            {nutritionGoals ? "Ajustar Objetivos" : "Establecer Objetivos"}
+          </Button>
         </div>
       </div>
 
-      {/* Objetivos vs Progreso */}
-      {nutritionGoals ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Calorías */}
-          <Card className="bg-muted/50">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Flame className="h-4 w-4 text-orange-500" />
-                Calorías
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-2xl font-bold">
-                    {todayProgress.totalCalories}
-                  </span>
-                  <span className="text-sm">
-                    /{nutritionGoals.dailyCalories}
-                  </span>
-                </div>
-                <Progress
-                  value={getProgressPercentage(
-                    todayProgress.totalCalories,
-                    nutritionGoals.dailyCalories
-                  )}
-                  className="h-2"
-                />
-                <div className="text-xs">
-                  {Math.round(
-                    getProgressPercentage(
-                      todayProgress.totalCalories,
-                      nutritionGoals.dailyCalories
-                    )
-                  )}
-                  % del objetivo
-                </div>
+      {/* Información del análisis corporal */}
+      {bodyAnalysisInfo && (
+        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            Información del Análisis Corporal
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+            <div>
+              <span className="text-muted-foreground">Tipo corporal:</span>
+              <div className="font-medium capitalize">
+                {lastBodyAnalysis.bodyType}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Grasa corporal:</span>
+              <div className="font-medium">
+                {bodyAnalysisInfo.measurements.bodyFatPercentage ||
+                  bodyAnalysisInfo.measurements.estimatedBodyFat}
+                %
+              </div>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Metabolismo:</span>
+              <div className="font-medium capitalize">
+                {bodyAnalysisInfo.bodyComposition.metabolism}
+              </div>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Prioridad:</span>
+              <div className="font-medium capitalize">
+                {bodyAnalysisInfo.recommendations.priority}
+              </div>
+            </div>
+          </div>
 
-          {/* Proteínas */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Zap className="h-4 w-4 text-blue-500" />
-                Proteínas
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-2xl font-bold">
-                    {Math.round(todayProgress.protein)}g
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    /{nutritionGoals.protein}g
-                  </span>
-                </div>
-                <Progress
-                  value={getProgressPercentage(
-                    todayProgress.protein,
-                    nutritionGoals.protein
-                  )}
-                  className="h-2"
-                />
-                <div className="text-xs text-gray-600">
-                  {Math.round(
-                    getProgressPercentage(
-                      todayProgress.protein,
-                      nutritionGoals.protein
-                    )
-                  )}
-                  % del objetivo
+          {/* Objetivos específicos del análisis */}
+          {bodyAnalysisInfo.recommendations.goals &&
+            bodyAnalysisInfo.recommendations.goals.length > 0 && (
+              <div className="mt-3">
+                <span className="text-muted-foreground text-xs">
+                  Objetivos específicos:
+                </span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {bodyAnalysisInfo.recommendations.goals.map((goal, index) => (
+                    <span
+                      key={index}
+                      className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs"
+                    >
+                      {goal}
+                    </span>
+                  ))}
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Carbohidratos */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Activity className="h-4 w-4 text-green-500" />
-                Carbohidratos
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-2xl font-bold">
-                    {Math.round(todayProgress.carbs)}g
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    /{nutritionGoals.carbs}g
-                  </span>
-                </div>
-                <Progress
-                  value={getProgressPercentage(
-                    todayProgress.carbs,
-                    nutritionGoals.carbs
-                  )}
-                  className="h-2"
-                />
-                <div className="text-xs text-gray-600">
-                  {Math.round(
-                    getProgressPercentage(
-                      todayProgress.carbs,
-                      nutritionGoals.carbs
-                    )
-                  )}
-                  % del objetivo
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Grasas */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Droplets className="h-4 w-4 text-yellow-500" />
-                Grasas
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-2xl font-bold">
-                    {Math.round(todayProgress.fat)}g
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    /{nutritionGoals.fat}g
-                  </span>
-                </div>
-                <Progress
-                  value={getProgressPercentage(
-                    todayProgress.fat,
-                    nutritionGoals.fat
-                  )}
-                  className="h-2"
-                />
-                <div className="text-xs text-gray-600">
-                  {Math.round(
-                    getProgressPercentage(todayProgress.fat, nutritionGoals.fat)
-                  )}
-                  % del objetivo
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            )}
         </div>
-      ) : (
-        <Card className="border-dashed border-2 border-gray-300">
-          <CardContent className="p-6 text-center">
-            <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">
-              No hay objetivos nutricionales definidos
-            </h3>
-            <p className=" mb-4">
-              Realiza un análisis corporal para obtener tus objetivos
-              nutricionales personalizados
-            </p>
-            <Button variant="outline" size="sm" onClick={onOpenBodyAnalyzer}>
-              <User className="h-4 w-4 mr-2" />
-              Realizar análisis corporal
-            </Button>
-          </CardContent>
-        </Card>
       )}
 
-      {/* Resumen adicional */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4">
+      {nutritionGoals ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Calorías */}
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Comidas registradas</p>
-                <p className="text-2xl font-bold">{todayProgress.mealsCount}</p>
-              </div>
-              <Camera className="h-8 w-8 text-gray-400" />
+              <span className="text-sm font-medium">Calorías</span>
+              <span className="text-xs text-gray-600 dark:text-gray-400">
+                {todayProgress.totalCalories}/{nutritionGoals.dailyCalories}
+              </span>
             </div>
-          </CardContent>
-        </Card>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div
+                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                style={{
+                  width: `${getProgressPercentage(
+                    todayProgress.totalCalories,
+                    nutritionGoals.dailyCalories
+                  )}%`,
+                }}
+              ></div>
+            </div>
+            <div className="text-xs text-gray-600 dark:text-gray-400">
+              {Math.round(
+                getProgressPercentage(
+                  todayProgress.totalCalories,
+                  nutritionGoals.dailyCalories
+                )
+              )}
+              % completado
+            </div>
+          </div>
 
-        <Card>
-          <CardContent className="p-4">
+          {/* Proteína */}
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Fibra consumida</p>
-                <p className="text-2xl font-bold">
-                  {Math.round(todayProgress.fiber)}g
-                </p>
-              </div>
-              <Award className="h-8 w-8 text-gray-400" />
+              <span className="text-sm font-medium">Proteína</span>
+              <span className="text-xs text-gray-600 dark:text-gray-400">
+                {todayProgress.protein.toFixed(1)}/{nutritionGoals.protein}g
+              </span>
             </div>
-          </CardContent>
-        </Card>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div
+                className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                style={{
+                  width: `${getProgressPercentage(
+                    todayProgress.protein,
+                    nutritionGoals.protein
+                  )}%`,
+                }}
+              ></div>
+            </div>
+            <div className="text-xs text-gray-600 dark:text-gray-400">
+              {Math.round(
+                getProgressPercentage(
+                  todayProgress.protein,
+                  nutritionGoals.protein
+                )
+              )}
+              % completado
+            </div>
+          </div>
 
-        <Card>
-          <CardContent className="p-4">
+          {/* Carbohidratos */}
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Último análisis</p>
-                <p className="text-sm font-medium">
-                  {lastBodyAnalysis?.createdAt
-                    ? new Date(lastBodyAnalysis.createdAt).toLocaleDateString(
-                        "es-ES"
-                      )
-                    : "Sin análisis"}
-                </p>
-              </div>
-              <User className="h-8 w-8 text-gray-400" />
+              <span className="text-sm font-medium">Carbohidratos</span>
+              <span className="text-xs text-gray-600 dark:text-gray-400">
+                {todayProgress.carbs.toFixed(1)}/{nutritionGoals.carbs}g
+              </span>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div
+                className="bg-orange-500 h-2 rounded-full transition-all duration-300"
+                style={{
+                  width: `${getProgressPercentage(
+                    todayProgress.carbs,
+                    nutritionGoals.carbs
+                  )}%`,
+                }}
+              ></div>
+            </div>
+            <div className="text-xs text-gray-600 dark:text-gray-400">
+              {Math.round(
+                getProgressPercentage(todayProgress.carbs, nutritionGoals.carbs)
+              )}
+              % completado
+            </div>
+          </div>
+
+          {/* Grasas */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Grasas</span>
+              <span className="text-xs text-gray-600 dark:text-gray-400">
+                {todayProgress.fat.toFixed(1)}/{nutritionGoals.fat}g
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div
+                className="bg-purple-500 h-2 rounded-full transition-all duration-300"
+                style={{
+                  width: `${getProgressPercentage(
+                    todayProgress.fat,
+                    nutritionGoals.fat
+                  )}%`,
+                }}
+              ></div>
+            </div>
+            <div className="text-xs text-gray-600 dark:text-gray-400">
+              {Math.round(
+                getProgressPercentage(todayProgress.fat, nutritionGoals.fat)
+              )}
+              % completado
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="text-center py-8">
+          <Target className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+          <h3 className="text-lg font-medium mb-2">
+            No hay objetivos nutricionales establecidos
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            Realiza un análisis corporal para establecer objetivos
+            personalizados
+          </p>
+          <Button onClick={onOpenBodyAnalyzer}>
+            <User className="h-4 w-4 mr-2" />
+            Realizar Análisis Corporal
+          </Button>
+        </div>
+      )}
+
+      {/* Información adicional del análisis corporal */}
+      {bodyAnalysisInfo?.recommendations?.restrictions &&
+        bodyAnalysisInfo.recommendations.restrictions.length > 0 && (
+          <div className="mt-6 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+            <h4 className="font-semibold text-sm mb-2 text-red-800 dark:text-red-200">
+              🚫 Restricciones Alimentarias
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {bodyAnalysisInfo.recommendations.restrictions.map(
+                (restriction, index) => (
+                  <span
+                    key={index}
+                    className="px-2 py-1 bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 rounded text-xs"
+                  >
+                    {restriction}
+                  </span>
+                )
+              )}
+            </div>
+          </div>
+        )}
+
+      {/* Suplementos recomendados */}
+      {bodyAnalysisInfo?.recommendations?.supplements &&
+        bodyAnalysisInfo.recommendations.supplements.length > 0 && (
+          <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+            <h4 className="font-semibold text-sm mb-2 text-yellow-800 dark:text-yellow-200">
+              💊 Suplementos Recomendados
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {bodyAnalysisInfo.recommendations.supplements.map(
+                (supplement, index) => (
+                  <span
+                    key={index}
+                    className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 rounded text-xs"
+                  >
+                    {supplement}
+                  </span>
+                )
+              )}
+            </div>
+          </div>
+        )}
     </div>
   );
 };
@@ -364,9 +365,11 @@ export default function NutritionPage() {
     skinFoldRecords,
     deleteNutritionAnalysis,
     deleteBodyAnalysis,
-    updateNutritionAnalysis,
+    updateNutritionAnalysis: _updateNutritionAnalysis,
     deleteSkinFoldRecord,
     updateSkinFoldRecord: _updateSkinFoldRecord,
+    preferences,
+    updatePreferences: _updatePreferences,
   } = useNaviTrackerStore();
 
   const [selectedDate] = useState(new Date());
@@ -387,23 +390,60 @@ export default function NutritionPage() {
     sortBy: "date" as "date" | "calories" | "confidence",
   });
 
-  // Calcular objetivos nutricionales basados en el análisis corporal más reciente
-  const nutritionGoals = useMemo(async (): Promise<NutritionGoals | null> => {
-    if (bodyAnalyses.length === 0) return null;
+  // Calcular objetivos nutricionales basados en las preferencias del usuario
+  const nutritionGoals = useMemo((): NutritionGoals | null => {
+    // Primero intentar obtener de las preferencias del usuario (establecidas en SetGoalsDialog)
+    if (
+      preferences?.dailyCalorieGoal &&
+      preferences?.proteinGoal &&
+      preferences?.carbsGoal &&
+      preferences?.fatGoal
+    ) {
+      return {
+        dailyCalories: preferences.dailyCalorieGoal,
+        protein: preferences.proteinGoal,
+        carbs: preferences.carbsGoal,
+        fat: preferences.fatGoal,
+      };
+    }
 
-    // Calcular objetivos basados en el análisis corporal
-    // Por ahora usamos valores por defecto, pero esto debería usar datos reales del análisis
-    const latestBodyAnalysis = await apiClient
-      .get<_BodyAnalysis>("/body-analysis/latest")
-      .then((res) => res.data);
-    console.log("Latest body analysis:", latestBodyAnalysis);
+    // Si no hay objetivos establecidos pero hay análisis corporal, usar recomendaciones de la API
+    if (bodyAnalyses.length > 0) {
+      const latestBodyAnalysis = bodyAnalyses.sort(
+        (a: _BodyAnalysis, b: _BodyAnalysis) => {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return dateB - dateA;
+        }
+      )[0];
+
+      // Si el análisis tiene datos completos de la API, usarlos
+      if (latestBodyAnalysis?.fullAnalysisData?.recommendations) {
+        const apiRec = latestBodyAnalysis.fullAnalysisData.recommendations;
+        const baseCalories = apiRec.dailyCalories || 2000;
+        const macroSplit = apiRec.macroSplit || {
+          protein: 30,
+          carbs: 40,
+          fat: 30,
+        };
+
+        return {
+          dailyCalories: baseCalories,
+          protein: Math.round((baseCalories * (macroSplit.protein / 100)) / 4),
+          carbs: Math.round((baseCalories * (macroSplit.carbs / 100)) / 4),
+          fat: Math.round((baseCalories * (macroSplit.fat / 100)) / 9),
+        };
+      }
+    }
+
+    // Fallback: valores por defecto
     return {
       dailyCalories: 2000,
       protein: 150,
       carbs: 250,
       fat: 67,
     };
-  }, [bodyAnalyses]);
+  }, [preferences, bodyAnalyses]);
 
   // Calcular progreso del día actual
   const todayProgress = useMemo((): DailyProgress => {
@@ -443,6 +483,10 @@ export default function NutritionPage() {
       return dateB - dateA;
     })[0];
   }, [bodyAnalyses]);
+
+  // AGREGAR ESTADOS Y HANDLER
+  const [showGoalsModal, setShowGoalsModal] = useState(false);
+  const [selectedBodyAnalysis, setSelectedBodyAnalysis] = useState<any>(null);
 
   useEffect(() => {
     if (isAuthenticated && !user) {
@@ -512,8 +556,8 @@ export default function NutritionPage() {
       return 0;
     });
 
-  // Estadísticas semanales
-  const weekStart = new Date(selectedDate);
+  // Calcular estadísticas semanales
+  const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - weekStart.getDay());
 
   const weeklyAnalyses = nutritionAnalyses.filter(
@@ -545,14 +589,24 @@ export default function NutritionPage() {
         "¿Estás seguro de que quieres eliminar este análisis nutricional?"
       )
     ) {
-      const response = await api.nutrition.deleteAnalysis(analysisId);
-      console.log("🔍 Response:", response);
-      if (response.success) {
-        toast.success("Análisis eliminado correctamente");
-      } else {
-        toast.error("Error al eliminar el análisis");
+      try {
+        // Llamar a la API
+        const response = await api.nutrition.deleteAnalysis(analysisId);
+        console.log("🔍 Response:", response);
+
+        if (response.success) {
+          // Actualizar el store local
+          await deleteNutritionAnalysis(analysisId);
+          toast.success("Análisis eliminado correctamente");
+        } else {
+          toast.error("Error al eliminar el análisis");
+        }
+      } catch (error) {
+        console.error("❌ Error eliminando análisis:", error);
+        // Intentar eliminar del store local como fallback
+        await deleteNutritionAnalysis(analysisId);
+        toast.success("Análisis eliminado del almacenamiento local");
       }
-      //await deleteNutritionAnalysis(analysisId);
     }
   };
 
@@ -560,7 +614,13 @@ export default function NutritionPage() {
     if (
       confirm("¿Estás seguro de que quieres eliminar este análisis corporal?")
     ) {
-      await deleteBodyAnalysis(analysisId);
+      try {
+        await deleteBodyAnalysis(analysisId);
+        toast.success("Análisis corporal eliminado correctamente");
+      } catch (error) {
+        console.error("❌ Error eliminando análisis corporal:", error);
+        toast.error("Error al eliminar el análisis corporal");
+      }
     }
   };
 
@@ -569,27 +629,27 @@ export default function NutritionPage() {
     setShowEditDialog(true);
   };
 
-  const handleAnalysisUpdated = () => {
+  const handleAnalysisUpdated = async () => {
     // Refrescar los datos después de actualizar
-    // El store de Zustand ya manejará la actualización automática
-    console.log("✅ Análisis actualizado, datos refrescados");
+    console.log("✅ Análisis actualizado, refrescando datos...");
+
+    try {
+      // El store de Zustand ya maneja la actualización automática
+      // pero podemos forzar una actualización si es necesario
+      // await refetchNutritionData(); // Si tuviéramos esta función
+
+      // Cerrar el diálogo de edición
+      setShowEditDialog(false);
+      setEditingAnalysis(null);
+
+      toast.success("Datos actualizados correctamente");
+    } catch (error) {
+      console.error("❌ Error refrescando datos:", error);
+    }
   };
 
   const handleCloseEditDialog = () => {
     setShowEditDialog(false);
-    setEditingAnalysis(null);
-  };
-
-  const _handleSaveEdit = async () => {
-    if (!editingAnalysis) return;
-
-    await updateNutritionAnalysis(editingAnalysis.id, {
-      mealType: editingAnalysis.mealType,
-      // Actualizar timestamp si es necesario
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
     setEditingAnalysis(null);
   };
 
@@ -631,6 +691,18 @@ export default function NutritionPage() {
       }),
       time: "Sin hora",
     };
+  };
+
+  const handleSetAsGoals = (analysis: _BodyAnalysis) => {
+    console.log("🔍 Analysis:", analysis);
+    setSelectedBodyAnalysis(analysis);
+    setShowGoalsModal(true);
+  };
+
+  // Nuevo handler para modo manual
+  const handleOpenManualGoals = () => {
+    setSelectedBodyAnalysis(null); // Sin análisis corporal
+    setShowGoalsModal(true);
   };
 
   return (
@@ -681,6 +753,7 @@ export default function NutritionPage() {
             nutritionGoals={nutritionGoals}
             lastBodyAnalysis={lastBodyAnalysis}
             onOpenBodyAnalyzer={() => setShowBodyAnalyzer(true)}
+            onOpenManualGoals={handleOpenManualGoals}
           />
 
           {/* Quick Actions */}
@@ -993,7 +1066,12 @@ export default function NutritionPage() {
           {filteredNutritionAnalyses.length > 0 ? (
             <div className="space-y-4">
               {filteredNutritionAnalyses.map((analysis) => {
-                const dateInfo = formatDate(analysis.createdAt, analysis.date);
+                const dateInfo = formatDate(
+                  analysis.createdAt instanceof Date
+                    ? analysis.createdAt.toISOString()
+                    : analysis.createdAt,
+                  analysis.date
+                );
                 const _isEditing = editingAnalysis?.id === analysis.id;
 
                 return (
@@ -1139,6 +1217,14 @@ export default function NutritionPage() {
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleSetAsGoals(analysis)}
+                      className="ml-2"
+                    >
+                      <Target className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -1243,16 +1329,47 @@ export default function NutritionPage() {
         isOpen={showFoodAnalyzer}
         onClose={() => setShowFoodAnalyzer(false)}
         selectedDate={selectedDate}
+        onAnalysisSaved={() => {
+          console.log("🔄 Análisis nutricional guardado, refrescando datos...");
+          // Los datos se actualizan automáticamente por el store de Zustand
+          toast.success("Datos actualizados");
+        }}
       />
 
       <BodyAnalyzer
         isOpen={showBodyAnalyzer}
         onClose={() => setShowBodyAnalyzer(false)}
+        onAnalysisSaved={() => {
+          console.log("🔄 Análisis corporal guardado, refrescando datos...");
+          // Los datos se actualizan automáticamente por el store de Zustand
+          toast.success("Datos actualizados");
+        }}
       />
 
       <SkinFoldDialog
         isOpen={showSkinFoldDialog}
         onClose={() => setShowSkinFoldDialog(false)}
+        onRecordSaved={() => {
+          console.log("🔄 Registro de pliegues guardado, refrescando datos...");
+          // Los datos se actualizan automáticamente por el store de Zustand
+          toast.success("Datos actualizados");
+        }}
+      />
+
+      <SetGoalsDialog
+        isOpen={showGoalsModal}
+        onClose={() => {
+          setShowGoalsModal(false);
+          setSelectedBodyAnalysis(null);
+        }}
+        bodyAnalysis={selectedBodyAnalysis}
+        isManualMode={!selectedBodyAnalysis}
+        onGoalsSaved={() => {
+          console.log("🔄 Objetivos guardados, refrescando datos...");
+          setShowGoalsModal(false);
+          setSelectedBodyAnalysis(null);
+          toast.success("Objetivos actualizados correctamente");
+        }}
       />
 
       <EditNutritionAnalysisDialog
