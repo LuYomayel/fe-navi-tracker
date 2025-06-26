@@ -40,6 +40,8 @@ import {
   BodyAnalysis,
   SkinFoldRecord,
 } from "@/types";
+import { api } from "@/lib/api-client";
+import { toast } from "@/lib/toast-helper";
 
 interface NutritionTrackerProps {
   isOpen: boolean;
@@ -236,12 +238,20 @@ export function NutritionTracker({
   };
 
   const handleDeleteMeal = async (analysisId: string) => {
+    console.log("🔍 Analysis ID:", analysisId);
     if (
       confirm(
         "¿Estás seguro de que quieres eliminar este análisis nutricional?"
       )
     ) {
-      await deleteNutritionAnalysis(analysisId);
+      const response = await api.nutrition.deleteAnalysis(analysisId);
+      console.log("🔍 Response:", response);
+      if (response.success) {
+        toast.success("Análisis eliminado correctamente");
+        //await deleteNutritionAnalysis(analysisId);
+      } else {
+        toast.error("Error al eliminar el análisis");
+      }
     }
   };
 
@@ -260,7 +270,7 @@ export function NutritionTracker({
     setEditingAnalysis({
       id: analysis.id,
       date: analysis.date,
-      mealType: analysis.mealType,
+      mealType: analysis.mealType as MealType,
       time: timestamp.toTimeString().slice(0, 5),
     });
   };
@@ -1446,7 +1456,7 @@ export function NutritionTracker({
                   e.preventDefault();
                   const formData = new FormData(e.target as HTMLFormElement);
 
-                  const personalData = {
+                  const _personalData = {
                     height: Number(formData.get("height")),
                     currentWeight: Number(formData.get("weight")),
                     targetWeight: Number(formData.get("targetWeight")),

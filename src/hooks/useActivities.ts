@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api-client";
 import { useAuthStore } from "@/modules/auth/store";
 import type { Activity } from "@/types";
@@ -17,32 +17,38 @@ export function useActivities() {
   const CACHE_DURATION = 30000;
 
   // Cargar actividades con cache
-  const loadActivities = async (force = false) => {
-    if (!user) return;
+  const loadActivities = useCallback(
+    async (force = false) => {
+      if (!user) return;
 
-    // Verificar cache si no es forzado
-    const now = Date.now();
-    if (!force && lastFetch && now - lastFetch < CACHE_DURATION) {
-      console.log("📦 Usando actividades desde cache");
-      return;
-    }
+      // Verificar cache si no es forzado
+      const now = Date.now();
+      if (!force && lastFetch && now - lastFetch < CACHE_DURATION) {
+        console.log("📦 Usando actividades desde cache");
+        return;
+      }
 
-    setIsLoading(true);
-    setError(null);
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      console.log("🔄 Cargando actividades desde backend...");
-      const response = await api.activities.getAll();
-      setActivities(response.data);
-      setLastFetch(now);
-      console.log("✅ Actividades cargadas:", response.data.length);
-    } catch (error) {
-      console.error("❌ Error cargando actividades:", error);
-      setError(error instanceof Error ? error.message : "Error desconocido");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      try {
+        console.log("🔄 Cargando actividades desde backend...");
+        const response = await api.activities.getAll();
+        setActivities(response.data as Activity[]);
+        setLastFetch(now);
+        console.log(
+          "✅ Actividades cargadas:",
+          (response.data as Activity[]).length
+        );
+      } catch (error) {
+        console.error("❌ Error cargando actividades:", error);
+        setError(error instanceof Error ? error.message : "Error desconocido");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [user, lastFetch, CACHE_DURATION]
+  );
 
   // Crear actividad
   const createActivity = async (
@@ -55,7 +61,7 @@ export function useActivities() {
 
     try {
       const response = await api.activities.create(activityData);
-      const newActivity = response.data;
+      const newActivity = response.data as Activity;
 
       setActivities((prev) => [...prev, newActivity]);
       console.log("✅ Actividad creada:", newActivity.name);
@@ -79,7 +85,7 @@ export function useActivities() {
 
     try {
       const response = await api.activities.update(id, updates);
-      const updatedActivity = response.data;
+      const updatedActivity = response.data as Activity;
 
       setActivities((prev) =>
         prev.map((activity) =>
@@ -126,7 +132,7 @@ export function useActivities() {
     } else {
       setActivities([]);
     }
-  }, [user]);
+  }, [user, loadActivities]);
 
   return {
     activities,

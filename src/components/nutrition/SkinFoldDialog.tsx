@@ -123,20 +123,21 @@ export function SkinFoldDialog({
 
           if (result.success && result.data) {
             // Pre-llenar el formulario con los valores de la IA
+            const analysisData = result.data as any;
             setFormData((prev) => ({
               ...prev,
-              values: { ...prev.values, ...result.data.values },
+              values: { ...prev.values, ...analysisData.values },
               technician: "AI",
             }));
-            setAiConfidence(result.data.aiConfidence);
+            setAiConfidence(analysisData.aiConfidence);
 
             alert(
               `Análisis completado con ${Math.round(
-                result.data.aiConfidence * 100
+                analysisData.aiConfidence * 100
               )}% de confianza`
             );
           } else {
-            throw new Error(result.error || "Error en el análisis");
+            throw new Error("Error en el análisis");
           }
         } catch (error) {
           console.error("Error analizando imagen:", error);

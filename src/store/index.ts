@@ -10,6 +10,7 @@ import type {
   SkinFoldRecord,
 } from "@/types";
 import { toast } from "@/lib/toast-helper";
+import { api } from "@/lib/api-client";
 
 // Helper functions
 const generateId = () => Math.random().toString(36).substring(2, 15);
@@ -202,16 +203,19 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
       // Activity actions
       addActivity: async (activity) => {
         try {
-          const newActivity: Activity = {
+          set({ isLoading: true });
+
+          // 🚀 Usar API real en lugar de datos locales
+          const response = await api.activities.create({
             ...activity,
-            id: generateId(),
             color: activity.color || getRandomColor(),
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
+          });
+
+          const newActivity = response.data as Activity;
 
           set((state) => ({
             activities: [...state.activities, newActivity],
+            isLoading: false,
           }));
 
           toast.success(
@@ -220,6 +224,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           );
         } catch (error) {
           console.error("❌ Error creando actividad:", error);
+          set({ isLoading: false });
           toast.error(
             "Error",
             "No se pudo crear el hábito. Inténtalo de nuevo."
@@ -229,12 +234,17 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
 
       updateActivity: async (id, updates) => {
         try {
+          set({ isLoading: true });
+
+          // 🚀 Usar API real
+          const response = await api.activities.update(id, updates);
+          const updatedActivity = response.data as Activity;
+
           set((state) => ({
             activities: state.activities.map((activity) =>
-              activity.id === id
-                ? { ...activity, ...updates, updatedAt: new Date() }
-                : activity
+              activity.id === id ? updatedActivity : activity
             ),
+            isLoading: false,
           }));
 
           toast.success(
@@ -243,6 +253,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           );
         } catch (error) {
           console.error("❌ Error actualizando actividad:", error);
+          set({ isLoading: false });
           toast.error(
             "Error",
             "No se pudo actualizar el hábito. Inténtalo de nuevo."
@@ -252,6 +263,11 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
 
       deleteActivity: async (id) => {
         try {
+          set({ isLoading: true });
+
+          // 🚀 Usar API real
+          await api.activities.delete(id);
+
           set((state) => ({
             activities: state.activities.filter(
               (activity) => activity.id !== id
@@ -259,6 +275,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             completions: state.completions.filter(
               (completion) => completion.activityId !== id
             ),
+            isLoading: false,
           }));
 
           toast.success(
@@ -267,6 +284,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           );
         } catch (error) {
           console.error("❌ Error eliminando actividad:", error);
+          set({ isLoading: false });
           toast.error(
             "Error",
             "No se pudo eliminar el hábito. Inténtalo de nuevo."
@@ -372,32 +390,38 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
         const dateKey = date.toISOString().split("T")[0];
 
         try {
+          // 🚀 Usar API real
+          const response = await api.completions.toggle({
+            activityId,
+            date: dateKey,
+          });
+
+          const completion = response.data as DailyCompletion;
+
           set((state) => {
             const existingIndex = state.completions.findIndex(
               (c) => c.activityId === activityId && c.date === dateKey
             );
 
-            if (existingIndex >= 0) {
+            if (completion.completed) {
+              // Agregar o actualizar completación
+              if (existingIndex >= 0) {
+                const newCompletions = [...state.completions];
+                newCompletions[existingIndex] = completion;
+                return { completions: newCompletions };
+              } else {
+                return { completions: [...state.completions, completion] };
+              }
+            } else {
+              // Remover completación
               return {
                 completions: state.completions.filter(
-                  (_, i) => i !== existingIndex
+                  (c) => !(c.activityId === activityId && c.date === dateKey)
                 ),
-              };
-            } else {
-              const newCompletion: DailyCompletion = {
-                id: generateId(),
-                activityId,
-                date: dateKey,
-                completed: true,
-                createdAt: new Date(),
-              };
-              return {
-                completions: [...state.completions, newCompletion],
               };
             }
           });
 
-          // No mostrar toast para completaciones individuales para evitar spam
           console.log("✅ Completación guardada");
         } catch (error) {
           console.error("❌ Error guardando completación:", error);
@@ -548,15 +572,15 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
       // Nutrition actions
       addNutritionAnalysis: async (analysis) => {
         try {
-          const newAnalysis: NutritionAnalysis = {
-            ...analysis,
-            id: generateId(),
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
+          set({ isLoading: true });
+
+          // 🚀 Usar API real
+          const response = await api.nutrition.createAnalysis(analysis);
+          const newAnalysis = response.data as NutritionAnalysis;
 
           set((state) => ({
             nutritionAnalyses: [...state.nutritionAnalyses, newAnalysis],
+            isLoading: false,
           }));
 
           toast.success(
@@ -565,6 +589,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           );
         } catch (error) {
           console.error("❌ Error guardando análisis nutricional:", error);
+          set({ isLoading: false });
           toast.error(
             "Error",
             "No se pudo guardar el análisis nutricional. Inténtalo de nuevo."
@@ -616,15 +641,20 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
       // Body analysis actions
       addBodyAnalysis: async (analysis) => {
         try {
+          set({ isLoading: true });
+
+          // 🚀 Crear el análisis directamente en el store (modo offline)
+          // El API requiere imagen, pero nosotros guardamos el análisis procesado
           const newAnalysis: BodyAnalysis = {
-            ...analysis,
             id: generateId(),
+            ...analysis,
             createdAt: new Date(),
             updatedAt: new Date(),
           };
 
           set((state) => ({
             bodyAnalyses: [...state.bodyAnalyses, newAnalysis],
+            isLoading: false,
           }));
 
           toast.success(
@@ -633,6 +663,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           );
         } catch (error) {
           console.error("❌ Error guardando análisis corporal:", error);
+          set({ isLoading: false });
           toast.error(
             "Error",
             "No se pudo guardar el análisis corporal. Inténtalo de nuevo."
@@ -667,8 +698,8 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           const newRecord: SkinFoldRecord = {
             ...record,
             id: generateId(),
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
           };
 
           set((state) => ({
@@ -693,7 +724,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           set((state) => ({
             skinFoldRecords: state.skinFoldRecords.map((record) =>
               record.id === id
-                ? { ...record, ...updates, updatedAt: new Date() }
+                ? { ...record, ...updates, updatedAt: new Date().toISOString() }
                 : record
             ),
           }));
@@ -813,13 +844,26 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
       initializeFromDatabase: async () => {
         try {
           set({ isLoading: true });
-          // Aquí se cargarían los datos desde la base de datos
-          // Por ahora solo marcamos como inicializado
-          set({ isInitialized: true, isLoading: false });
+
+          // 🚀 Cargar datos reales desde la API
+          const [activitiesResponse, nutritionResponse] = await Promise.all([
+            api.activities.getAll().catch(() => ({ data: [] })),
+            api.nutrition.getAnalyses().catch(() => ({ data: [] })),
+          ]);
+
+          set({
+            activities: (activitiesResponse.data as Activity[]) || [],
+            nutritionAnalyses:
+              (nutritionResponse.data as NutritionAnalysis[]) || [],
+            // bodyAnalyses se mantienen desde localStorage por ahora
+            isInitialized: true,
+            isLoading: false,
+          });
+
           toast.success("Datos cargados", "Tu información se ha sincronizado");
         } catch (error) {
-          console.error("❌ Error inicializando desde BD:", error);
-          set({ isLoading: false });
+          console.error("❌ Error inicializando desde API:", error);
+          set({ isLoading: false, isInitialized: true });
           toast.error(
             "Error de sincronización",
             "No se pudieron cargar todos los datos. Trabajando en modo local."

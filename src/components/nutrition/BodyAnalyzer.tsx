@@ -17,32 +17,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  BodyType,
-  BodyComposition,
-  NutritionRecommendations,
-  BodyMeasurements,
-  ActivityLevel,
-  NutritionGoal,
-  MealType,
-} from "@/types";
+import { BodyType, ActivityLevel, BodyAnalysisApiResponse } from "@/types";
 import { useNaviTrackerStore } from "@/store";
-import { apiClient } from "@/lib/api-client";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { toast } from "@/lib/toast-helper";
+import { api } from "@/lib/api-client";
 
 interface BodyAnalyzerProps {
   isOpen: boolean;
   onClose: () => void;
-}
-
-interface BodyAnalysisResult {
-  bodyType: BodyType;
-  composition: BodyComposition;
-  measurements: BodyMeasurements;
-  recommendations: NutritionRecommendations;
-  confidence: number;
-  insights: string[];
 }
 
 // Opciones de objetivos fitness
@@ -82,8 +66,9 @@ const FITNESS_GOALS = [
 export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
   const [step, setStep] = useState<"form" | "processing" | "results">("form");
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  //const [analysisResult, setAnalysisResult] = useState<BodyAnalysisResult | null>(null);
   const [analysisResult, setAnalysisResult] =
-    useState<BodyAnalysisResult | null>(null);
+    useState<BodyAnalysisApiResponse | null>(null);
   const [, setIsAnalyzing] = useState(false);
 
   // Datos del formulario
@@ -144,7 +129,10 @@ export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
 
   const handleAnalyze = async () => {
     if (selectedImages.length === 0) {
-      alert("Por favor, sube al menos una foto para el análisis");
+      toast.error(
+        "Error",
+        "Por favor, sube al menos una foto para el análisis"
+      );
       return;
     }
 
@@ -152,12 +140,9 @@ export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
     setStep("processing");
 
     try {
-      // Usar la primera imagen para el análisis
-      const imageToAnalyze = selectedImages[0];
-
-      // Llamar a la API real de análisis corporal con GPT-4o
-      const analysisData = await apiClient.post("/body-analysis", {
-        image: imageToAnalyze,
+      // 🚀 Usar la API centralizada para análisis corporal
+      const analysisData = await api.bodyAnalysis.create({
+        image: selectedImages[0],
         currentWeight: formData.weight,
         targetWeight: formData.targetWeight,
         height: formData.height,
@@ -167,63 +152,20 @@ export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
         goals: [formData.fitnessGoal],
       });
 
-      console.log("Análisis corporal recibido:", analysisData);
+      console.log("✅ Análisis corporal recibido:", analysisData);
 
-      // Obtener recomendaciones nutricionales personalizadas
-      let nutritionData = null;
-      try {
-        nutritionData = await apiClient.post("/nutrition-recommendations", {
-          currentWeight: formData.weight,
-          targetWeight: formData.targetWeight,
-          height: formData.height,
-          age: formData.age,
-          gender: formData.gender,
-          activityLevel: formData.activityLevel,
-          goals: [formData.fitnessGoal],
-          bodyAnalysis: {
-            bodyType: analysisData.bodyComposition?.bodyType,
-            bodyFat: analysisData.measurements?.estimatedBodyFat,
-            muscleDefinition: analysisData.measurements?.muscleDefinition,
-            strengths: analysisData.progress?.strengths,
-            visibleWeakPoints: analysisData.progress?.visibleWeakPoints,
-          },
-        });
-      } catch (error) {
-        console.error("Error obteniendo recomendaciones nutricionales:", error);
-      }
-      console.log("Recomendaciones nutricionales:", nutritionData);
-
-      // Convertir la respuesta de la API al formato esperado por el componente
-      const result: BodyAnalysisResult = {
-        bodyType:
-          analysisData.bodyComposition?.bodyType === "ectomorph"
-            ? BodyType.ECTOMORPH
-            : analysisData.bodyComposition?.bodyType === "endomorph"
-            ? BodyType.ENDOMORPH
-            : BodyType.MESOMORPH,
-        composition: {
-          bodyType:
-            analysisData.bodyComposition?.bodyType === "ectomorph"
-              ? BodyType.ECTOMORPH
-              : analysisData.bodyComposition?.bodyType === "endomorph"
-              ? BodyType.ENDOMORPH
-              : BodyType.MESOMORPH,
-          muscleMass:
-            analysisData.measurements?.muscleDefinition === "high" ||
-            analysisData.measurements?.muscleDefinition === "very_high"
-              ? "high"
-              : analysisData.measurements?.muscleDefinition === "moderate"
-              ? "medium"
-              : "low",
-          bodyFat: analysisData.measurements?.estimatedBodyFat
-            ? analysisData.measurements.estimatedBodyFat > 20
-              ? "high"
-              : analysisData.measurements.estimatedBodyFat > 15
-              ? "medium"
-              : "low"
-            : "medium",
-          metabolism: "medium",
-          boneDensity: "medium",
+      // Convertir la respuesta de la API al formato esperado
+      const apiResponse = analysisData.data as BodyAnalysisApiResponse;
+      const result: BodyAnalysisApiResponse = {
+        bodyType: apiResponse.bodyType || BodyType.MESOMORPH,
+        bodyComposition: {
+          estimatedBMI: apiResponse.bodyComposition?.estimatedBMI,
+          bodyType: apiResponse.bodyType || BodyType.MESOMORPH,
+          muscleMass: apiResponse.bodyComposition?.muscleMass || "medium",
+          bodyFat: apiResponse.bodyComposition?.bodyFat || "medium",
+          metabolism: apiResponse.bodyComposition?.metabolism || "medium",
+          boneDensity: apiResponse.bodyComposition?.boneDensity || "medium",
+          muscleGroups: apiResponse.bodyComposition?.muscleGroups || [],
         },
         measurements: {
           height: formData.height,
@@ -231,93 +173,51 @@ export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
           age: formData.age,
           gender: formData.gender,
           activityLevel: formData.activityLevel,
-          waist: 85,
-          chest: 95,
-          hips: 90,
-          bodyFatPercentage: analysisData.measurements?.estimatedBodyFat || 15,
+          waist: apiResponse.measurements?.waist,
+          chest: apiResponse.measurements?.chest,
+          hips: apiResponse.measurements?.hips,
+          bodyFatPercentage: apiResponse.measurements?.bodyFatPercentage,
+          muscleDefinition: apiResponse.measurements?.muscleDefinition || "low",
+          posture: apiResponse.measurements?.posture || "needs_attention",
+          symmetry: apiResponse.measurements?.symmetry || "needs_attention",
+          overallFitness:
+            apiResponse.measurements?.overallFitness || "beginner",
         },
         recommendations: {
-          dailyCalories: nutritionData?.dailyCalories || 2200,
-          macroSplit: {
-            protein: nutritionData?.macroSplit?.proteinPercent || 30,
-            carbs: nutritionData?.macroSplit?.carbsPercent || 40,
-            fat: nutritionData?.macroSplit?.fatPercent || 30,
+          nutrition: apiResponse.recommendations?.nutrition || [],
+          priority: apiResponse.recommendations?.priority || "general_fitness",
+          dailyCalories: apiResponse.recommendations?.dailyCalories || 2200,
+          macroSplit: apiResponse.recommendations?.macroSplit || {
+            protein: 30,
+            carbs: 40,
+            fat: 30,
           },
-          mealTiming: nutritionData?.mealTiming?.map(
-            (meal: {
-              meal: string;
-              timeWindow: string;
-              caloriePercentage: number;
-              macroFocus: string;
-            }) => ({
-              mealType:
-                meal.meal === "Desayuno"
-                  ? MealType.BREAKFAST
-                  : meal.meal === "Almuerzo"
-                  ? MealType.LUNCH
-                  : meal.meal === "Cena"
-                  ? MealType.DINNER
-                  : MealType.SNACK,
-              timeWindow: meal.timeWindow,
-              caloriePercentage: meal.caloriePercentage,
-              macroFocus: meal.macroFocus,
-            })
-          ) || [
-            {
-              mealType: MealType.BREAKFAST,
-              timeWindow: "7:00-9:00",
-              caloriePercentage: 25,
-              macroFocus: "balanced",
-            },
-            {
-              mealType: MealType.LUNCH,
-              timeWindow: "12:00-14:00",
-              caloriePercentage: 35,
-              macroFocus: "protein",
-            },
-            {
-              mealType: MealType.DINNER,
-              timeWindow: "19:00-21:00",
-              caloriePercentage: 30,
-              macroFocus: "protein",
-            },
-            {
-              mealType: MealType.SNACK,
-              timeWindow: "16:00-17:00",
-              caloriePercentage: 10,
-              macroFocus: "carbs",
-            },
-          ],
-          supplements:
-            nutritionData?.supplements ||
-            analysisData.recommendations.nutrition.slice(0, 3),
-          restrictions: ["Limitar azúcar refinado", "Moderar alcohol"],
-          goals: [NutritionGoal.GAIN_MUSCLE, NutritionGoal.IMPROVE_HEALTH],
+          supplements: apiResponse.recommendations?.supplements || [],
+          goals: apiResponse.recommendations?.goals || [],
         },
-        confidence: analysisData.confidence,
-        insights: [
-          // Fortalezas observadas
-          ...analysisData.progress.strengths.map(
-            (s: string) => `💪 FORTALEZA: ${s}`
-          ),
-          // Puntos débiles observados
-          ...analysisData.progress.visibleWeakPoints.map(
-            (w: string) => `⚠️ PUNTO DÉBIL: ${w}`
-          ),
-          // Análisis postural
-          `📋 POSTURA: ${analysisData.progress.postureAnalysis}`,
-          // Recomendaciones nutricionales específicas
-          ...(nutritionData?.specificRecommendations || []).map(
-            (rec: string) => `🍽️ NUTRICIÓN: ${rec}`
-          ),
-        ],
+        progress: {
+          strengths: apiResponse.progress?.strengths || [],
+          areasToImprove: apiResponse.progress?.areasToImprove || [],
+          generalAdvice: apiResponse.progress?.generalAdvice || "",
+        },
+        confidence: apiResponse.confidence || 0.8,
+        disclaimer: apiResponse.disclaimer || "",
+        insights: apiResponse.insights || ["Análisis completado exitosamente"],
       };
+
+      // Validar que el bodyType sea válido
+      if (!Object.values(BodyType).includes(result.bodyType)) {
+        result.bodyType = BodyType.MESOMORPH;
+      }
 
       setAnalysisResult(result);
       setStep("results");
     } catch (error) {
-      console.error("Error analyzing body images:", error);
-      alert("Error en el análisis. Por favor, intenta de nuevo.");
+      console.error("❌ Error analyzing body images:", error);
+      toast.error(
+        "Error en análisis",
+        "Error en el análisis. Por favor, intenta de nuevo."
+      );
       setStep("form");
     } finally {
       setIsAnalyzing(false);
@@ -786,14 +686,17 @@ export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
               {/* Tipo corporal */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg">
                 <div className="flex items-center gap-3 mb-3">
-                  {getBodyTypeDescription(analysisResult.bodyType).emoji}
+                  {analysisResult.bodyType &&
+                    getBodyTypeDescription(analysisResult.bodyType).emoji}
                   <h4 className="text-lg font-semibold">
                     Tipo Corporal:{" "}
-                    {getBodyTypeDescription(analysisResult.bodyType).name}
+                    {analysisResult.bodyType &&
+                      getBodyTypeDescription(analysisResult.bodyType).name}
                   </h4>
                 </div>
                 <p className="text-gray-700 dark:text-gray-300">
-                  {getBodyTypeDescription(analysisResult.bodyType).description}
+                  {analysisResult.bodyType &&
+                    getBodyTypeDescription(analysisResult.bodyType).description}
                 </p>
               </div>
 
@@ -816,19 +719,19 @@ export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
                     <div className="flex justify-between">
                       <span>Proteína:</span>
                       <span className="font-medium">
-                        {analysisResult.recommendations.macroSplit.protein}%
+                        {analysisResult.recommendations.macroSplit?.protein}%
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Carbohidratos:</span>
                       <span className="font-medium">
-                        {analysisResult.recommendations.macroSplit.carbs}%
+                        {analysisResult.recommendations.macroSplit?.carbs}%
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Grasas:</span>
                       <span className="font-medium">
-                        {analysisResult.recommendations.macroSplit.fat}%
+                        {analysisResult.recommendations.macroSplit?.fat}%
                       </span>
                     </div>
                   </div>
@@ -848,15 +751,20 @@ export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
                     <div className="flex justify-between">
                       <span>Masa muscular:</span>
                       <span className="font-medium capitalize">
-                        {analysisResult.composition.muscleMass}
+                        {analysisResult.bodyComposition.muscleMass}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>IMC:</span>
                       <span className="font-medium">
-                        {(
-                          analysisResult.measurements.weight /
-                          Math.pow(analysisResult.measurements.height / 100, 2)
+                        {(analysisResult.measurements.weight &&
+                        analysisResult.measurements.height
+                          ? analysisResult.measurements.weight /
+                            Math.pow(
+                              analysisResult.measurements.height / 100,
+                              2
+                            )
+                          : 0
                         ).toFixed(1)}
                       </span>
                     </div>
@@ -870,7 +778,7 @@ export function BodyAnalyzer({ isOpen, onClose }: BodyAnalyzerProps) {
                   🔍 Análisis Detallado
                 </h4>
                 <div className="space-y-2">
-                  {analysisResult.insights.map((insight, index) => (
+                  {analysisResult.insights?.map((insight, index) => (
                     <div
                       key={index}
                       className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm"

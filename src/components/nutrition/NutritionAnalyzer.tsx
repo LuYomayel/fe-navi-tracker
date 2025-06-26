@@ -1,19 +1,34 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Camera, Upload, BarChart3, Loader2, Check } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Camera,
+  Upload,
+  BarChart3,
+  Loader2,
+  Check,
+  Calculator,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { MealType, DetectedFood, Macronutrients, FoodCategory } from "@/types";
+import {
+  MealType,
+  DetectedFood,
+  Macronutrients,
+  FoodCategory as _FoodCategory,
+} from "@/types";
 import { useNaviTrackerStore } from "@/store";
-import { apiClient } from "@/lib/api-client";
+import { api } from "@/lib/api-client";
 import { getDateKey } from "@/lib/utils";
+import { toast } from "@/lib/toast-helper";
 
 interface FoodAnalyzerProps {
   isOpen: boolean;
@@ -27,56 +42,10 @@ interface AnalysisResult {
   macronutrients: Macronutrients;
   confidence: number;
   mealType: MealType;
+  recommendations: string[];
 }
 
-// Datos de ejemplo para la demostración
-const SAMPLE_FOODS: DetectedFood[] = [
-  {
-    name: "Pollo a la plancha",
-    quantity: "150g",
-    calories: 231,
-    confidence: 0.92,
-    macronutrients: {
-      protein: 43.5,
-      carbs: 0,
-      fat: 5.0,
-      fiber: 0,
-      sugar: 0,
-      sodium: 74,
-    },
-    category: FoodCategory.PROTEIN,
-  },
-  {
-    name: "Arroz integral",
-    quantity: "1 taza",
-    calories: 216,
-    confidence: 0.88,
-    macronutrients: {
-      protein: 5.0,
-      carbs: 45.0,
-      fat: 1.8,
-      fiber: 3.5,
-      sugar: 0.7,
-      sodium: 10,
-    },
-    category: FoodCategory.CARBS,
-  },
-  {
-    name: "Brócoli al vapor",
-    quantity: "1 taza",
-    calories: 25,
-    confidence: 0.85,
-    macronutrients: {
-      protein: 3.0,
-      carbs: 5.0,
-      fat: 0.3,
-      fiber: 2.3,
-      sugar: 1.5,
-      sodium: 33,
-    },
-    category: FoodCategory.VEGETABLES,
-  },
-];
+type AnalysisMethod = "photo" | "manual";
 
 export function FoodAnalyzer({
   isOpen,
@@ -84,9 +53,30 @@ export function FoodAnalyzer({
   selectedDate,
 }: FoodAnalyzerProps) {
   const [step, setStep] = useState<
-    "capture" | "selecting" | "analyzing" | "results"
-  >("capture");
+    | "method_selection"
+    | "capture"
+    | "manual_input"
+    | "selecting"
+    | "analyzing"
+    | "results"
+    | "adjustment"
+  >("method_selection");
+
+  const [analysisMethod, setAnalysisMethod] = useState<AnalysisMethod>("photo");
   const [selectedImage, setSelectedImage] = useState<string>("");
+  const [manualData, setManualData] = useState({
+    name: "",
+    servings: 1,
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0,
+    fiber: 0,
+    sugar: 0,
+    sodium: 0,
+    description: "",
+  });
+
   const [selectedMealType, setSelectedMealType] = useState<MealType>(
     MealType.LUNCH
   );
@@ -94,6 +84,12 @@ export function FoodAnalyzer({
     null
   );
   const [, setIsAnalyzing] = useState(false);
+
+  // Estados para ajustes finales
+  const [adjustmentPercentage, setAdjustmentPercentage] = useState<number>(0);
+  const [editableResult, setEditableResult] = useState<AnalysisResult | null>(
+    null
+  );
 
   // Limpiar localStorage viejo al abrir el componente
   useEffect(() => {
@@ -109,6 +105,18 @@ export function FoodAnalyzer({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const handleMethodSelection = (method: AnalysisMethod) => {
+    setAnalysisMethod(method);
+    switch (method) {
+      case "photo":
+        setStep("capture");
+        break;
+      case "manual":
+        setStep("manual_input");
+        break;
+    }
+  };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -131,108 +139,218 @@ export function FoodAnalyzer({
     fileInputRef.current?.click();
   };
 
+  const handleManualInput = async () => {
+    if (!manualData.name.trim() || manualData.calories <= 0) {
+      toast.error(
+        "Error",
+        "Por favor completa al menos el nombre y las calorías"
+      );
+      return;
+    }
+    const analysisData = await api.analyzeFood.analyzeManual({
+      mealType: selectedMealType,
+      name: manualData.name,
+      servings: manualData.servings,
+      calories: manualData.calories,
+      protein: manualData.protein,
+      carbs: manualData.carbs,
+      fat: manualData.fat,
+      fiber: manualData.fiber,
+      sugar: manualData.sugar,
+      sodium: manualData.sodium,
+    });
+
+    console.log("🔍 Resultado de análisis manual:", analysisData);
+    const result: AnalysisResult = {
+      foods: [
+        {
+          name: manualData.name,
+          quantity: `${manualData.servings} porción${
+            manualData.servings > 1 ? "es" : ""
+          }`,
+          calories: manualData.calories,
+          confidence: 1.0,
+          category: _FoodCategory.OTHER,
+          macronutrients: {
+            protein: manualData.protein,
+            carbs: manualData.carbs,
+            fat: manualData.fat,
+            fiber: manualData.fiber,
+            sugar: manualData.sugar,
+            sodium: manualData.sodium,
+          },
+        },
+      ],
+      totalCalories: manualData.calories,
+      macronutrients: {
+        protein: manualData.protein,
+        carbs: manualData.carbs,
+        fat: manualData.fat,
+        fiber: manualData.fiber,
+        sugar: manualData.sugar,
+        sodium: manualData.sodium,
+      },
+      confidence: 1.0,
+      mealType: selectedMealType,
+      recommendations: [
+        "Datos ingresados manualmente",
+        "Verifica que los valores sean correctos",
+      ],
+    };
+
+    setAnalysisResult(result);
+    setEditableResult({ ...result });
+    setStep("results");
+  };
+
   const handleAnalyze = async () => {
     if (!selectedImage) return;
 
     setIsAnalyzing(true);
     setStep("analyzing");
 
-    // Usar la API real de análisis de comida
+    // 🚀 Llamar a la API real de análisis de comida
     try {
-      // Llamar a la API real de análisis de comida
-      const analysisData = await apiClient.post("/analyze-food", {
+      const analysisData = await api.analyzeFood.analyzeImage({
         image: selectedImage,
         mealType: selectedMealType,
       });
 
       const result: AnalysisResult = {
-        foods: analysisData.foods,
-        totalCalories: analysisData.totalCalories,
-        macronutrients: analysisData.totalMacronutrients,
-        confidence: analysisData.confidence,
-        mealType: analysisData.mealType,
+        foods: (analysisData.data as AnalysisResult).foods || [],
+        totalCalories: (analysisData.data as AnalysisResult).totalCalories || 0,
+        macronutrients: (analysisData.data as AnalysisResult)
+          .macronutrients || {
+          protein: 0,
+          carbs: 0,
+          fat: 0,
+          fiber: 0,
+          sugar: 0,
+          sodium: 0,
+        },
+        confidence: (analysisData.data as AnalysisResult).confidence || 0.5,
+        mealType: selectedMealType,
+        recommendations:
+          (analysisData.data as AnalysisResult).recommendations || [],
       };
 
       setAnalysisResult(result);
+      setEditableResult({ ...result });
       setStep("results");
     } catch (error) {
-      console.error("Error analyzing image:", error);
+      console.error("❌ Error analyzing image:", error);
 
-      // Fallback: usar datos de ejemplo si falla la API
-      const result: AnalysisResult = {
-        foods: SAMPLE_FOODS,
-        totalCalories: SAMPLE_FOODS.reduce(
-          (sum, food) => sum + food.calories,
-          0
-        ),
-        macronutrients: SAMPLE_FOODS.reduce(
-          (total, food) => ({
-            protein: total.protein + food.macronutrients.protein,
-            carbs: total.carbs + food.macronutrients.carbs,
-            fat: total.fat + food.macronutrients.fat,
-            fiber: total.fiber + food.macronutrients.fiber,
-            sugar: total.sugar + food.macronutrients.sugar,
-            sodium: total.sodium + food.macronutrients.sodium,
-          }),
-          {
-            protein: 0,
-            carbs: 0,
-            fat: 0,
-            fiber: 0,
-            sugar: 0,
-            sodium: 0,
-          }
-        ),
-        confidence: 0.88,
-        mealType: selectedMealType,
-      };
-
-      setAnalysisResult(result);
-      setStep("results");
-
-      // Mostrar mensaje de que se usó fallback
-      alert("Conexión con IA no disponible. Mostrando análisis de ejemplo.");
+      // Mostrar mensaje de error
+      toast.error(
+        "Error",
+        "No se pudo analizar la imagen. Inténtalo de nuevo."
+      );
     } finally {
       setIsAnalyzing(false);
     }
   };
 
+  const handleProceedToAdjustment = () => {
+    setStep("adjustment");
+  };
+
+  const applyPercentageAdjustment = () => {
+    if (!editableResult || adjustmentPercentage === 0) return;
+
+    const factor = 1 + adjustmentPercentage / 100;
+
+    const adjustedResult = {
+      ...editableResult,
+      totalCalories: Math.round(editableResult.totalCalories * factor),
+      macronutrients: {
+        protein:
+          Math.round(editableResult.macronutrients.protein * factor * 10) / 10,
+        carbs:
+          Math.round(editableResult.macronutrients.carbs * factor * 10) / 10,
+        fat: Math.round(editableResult.macronutrients.fat * factor * 10) / 10,
+        fiber:
+          Math.round(editableResult.macronutrients.fiber * factor * 10) / 10,
+        sugar:
+          Math.round(editableResult.macronutrients.sugar * factor * 10) / 10,
+        sodium: Math.round(editableResult.macronutrients.sodium * factor),
+      },
+      foods: editableResult.foods.map((food) => ({
+        ...food,
+        calories: Math.round(food.calories * factor),
+        macronutrients: {
+          protein: Math.round(food.macronutrients.protein * factor * 10) / 10,
+          carbs: Math.round(food.macronutrients.carbs * factor * 10) / 10,
+          fat: Math.round(food.macronutrients.fat * factor * 10) / 10,
+          fiber: Math.round(food.macronutrients.fiber * factor * 10) / 10,
+          sugar: Math.round(food.macronutrients.sugar * factor * 10) / 10,
+          sodium: Math.round(food.macronutrients.sodium * factor),
+        },
+      })),
+    };
+
+    setEditableResult(adjustedResult);
+    setAdjustmentPercentage(0);
+    toast.success("✅ Ajuste aplicado correctamente");
+  };
+
   const handleSave = async () => {
-    if (!analysisResult) return;
+    const resultToSave = editableResult || analysisResult;
+    if (!resultToSave) return;
 
     try {
+      // Esto es lo que tengo que enviar a la API
+
+      // Guardar en base de datos
+      const apiResponse = await api.nutrition.createAnalysis({
+        id: "default",
+        userId: "default",
+        date: getDateKey(selectedDate),
+        mealType: resultToSave.mealType,
+        foods: resultToSave.foods,
+        totalCalories: resultToSave.totalCalories,
+        macronutrients: resultToSave.macronutrients,
+        imageUrl: analysisMethod === "photo" ? "" : "", // No guardamos la imagen para evitar QuotaExceededError
+        aiConfidence: resultToSave.confidence,
+        userAdjustments: {
+          foods: resultToSave.foods,
+          totalCalories: resultToSave.totalCalories,
+          macronutrients: resultToSave.macronutrients,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      console.log("🔍 API Response:", apiResponse);
+
       // Usar el store de Zustand que tiene integración con base de datos
       const store = useNaviTrackerStore.getState();
 
       const analysis = {
         userId: "default",
         date: getDateKey(selectedDate),
-        mealType: analysisResult.mealType,
-        foods: analysisResult.foods,
-        totalCalories: analysisResult.totalCalories,
-        macronutrients: analysisResult.macronutrients,
-        totalMacronutrients: analysisResult.macronutrients,
-        imageUrl: "", // No guardamos la imagen para evitar QuotaExceededError
-        confidence: analysisResult.confidence,
-        aiConfidence: analysisResult.confidence,
-        timestamp: new Date().toISOString(),
-        recommendations: [
-          "Excelente elección de alimentos balanceados",
-          "Mantén esta variedad en tus comidas",
-          "Considera agregar más vegetales si es posible",
-        ],
+        mealType: resultToSave.mealType,
+        foods: resultToSave.foods,
+        totalCalories: resultToSave.totalCalories,
+        macronutrients: resultToSave.macronutrients,
+        imageUrl: analysisMethod === "photo" ? "" : "", // No guardamos la imagen para evitar QuotaExceededError
+        aiConfidence: resultToSave.confidence,
+        userAdjustments: {
+          foods: resultToSave.foods,
+          totalCalories: resultToSave.totalCalories,
+          macronutrients: resultToSave.macronutrients,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       // Usar el store que ya tiene integración con base de datos
       await store.addNutritionAnalysis(analysis);
 
       console.log("✅ Análisis nutricional guardado:", analysis);
-      alert("✅ Análisis nutricional guardado correctamente");
+      toast.success("✅ Análisis nutricional guardado correctamente");
 
       // Reset component
-      setStep("capture");
-      setSelectedImage("");
-      setAnalysisResult(null);
+      handleReset();
       onClose();
     } catch (error) {
       console.error("❌ Error guardando análisis nutricional:", error);
@@ -242,9 +360,9 @@ export function FoodAnalyzer({
         const analysisLight = {
           id: `nutrition_${Date.now()}`,
           date: getDateKey(selectedDate),
-          mealType: analysisResult.mealType,
-          totalCalories: analysisResult.totalCalories,
-          confidence: analysisResult.confidence,
+          mealType: resultToSave.mealType,
+          totalCalories: resultToSave.totalCalories,
+          confidence: resultToSave.confidence,
           timestamp: new Date().toISOString(),
         };
 
@@ -264,16 +382,14 @@ export function FoodAnalyzer({
         );
 
         console.log("✅ Análisis guardado en localStorage (versión ligera)");
-        alert("✅ Análisis nutricional guardado correctamente");
+        toast.success("✅ Análisis nutricional guardado correctamente");
 
         // Reset component
-        setStep("capture");
-        setSelectedImage("");
-        setAnalysisResult(null);
+        handleReset();
         onClose();
       } catch (localStorageError) {
         console.error("❌ Error guardando en localStorage:", localStorageError);
-        alert(
+        toast.error(
           "❌ Error al guardar el análisis. Intenta limpiar el almacenamiento del navegador."
         );
       }
@@ -281,9 +397,24 @@ export function FoodAnalyzer({
   };
 
   const handleReset = () => {
-    setStep("capture");
+    setStep("method_selection");
+    setAnalysisMethod("photo");
     setSelectedImage("");
+    setManualData({
+      name: "",
+      servings: 1,
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+      fiber: 0,
+      sugar: 0,
+      sodium: 0,
+      description: "",
+    });
     setAnalysisResult(null);
+    setEditableResult(null);
+    setAdjustmentPercentage(0);
     setIsAnalyzing(false);
   };
 
@@ -314,60 +445,254 @@ export function FoodAnalyzer({
         </DialogHeader>
 
         <div className="space-y-6">
-          {step === "capture" && (
+          {step === "method_selection" && (
             <div className="text-center space-y-6">
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">
-                  Sube una foto de tu comida
+                  ¿Cómo quieres analizar tu comida?
                 </h3>
                 <p className="text-muted-foreground">
-                  Nuestro asistente IA analizará los alimentos y calculará las
-                  calorías y macronutrientes automáticamente.
+                  Elige el método que mejor se adapte a tu situación
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <Button
-                  onClick={handleCameraCapture}
-                  className="flex flex-col items-center gap-3 p-8 h-auto"
+                  onClick={() => handleMethodSelection("photo")}
+                  className="flex items-center gap-3 p-6 h-auto justify-start"
                   variant="outline"
                 >
-                  <Camera className="h-8 w-8" />
-                  <span>Tomar foto</span>
+                  <Camera className="h-6 w-6" />
+                  <div className="text-left">
+                    <div className="font-medium">Tomar/Subir foto</div>
+                    <div className="text-sm text-muted-foreground">
+                      Analiza platos de comida o recetas escritas con IA
+                    </div>
+                  </div>
                 </Button>
 
                 <Button
-                  onClick={handleFileSelect}
-                  className="flex flex-col items-center gap-3 p-8 h-auto"
+                  onClick={() => handleMethodSelection("manual")}
+                  className="flex items-center gap-3 p-6 h-auto justify-start"
                   variant="outline"
                 >
-                  <Upload className="h-8 w-8" />
-                  <span>Subir imagen</span>
+                  <Calculator className="h-6 w-6" />
+                  <div className="text-left">
+                    <div className="font-medium">Ingreso manual</div>
+                    <div className="text-sm text-muted-foreground">
+                      Escribe los valores nutricionales directamente
+                    </div>
+                  </div>
                 </Button>
               </div>
+            </div>
+          )}
 
-              <div className="text-xs text-muted-foreground space-y-1">
-                <p>• Asegúrate de que la comida esté bien iluminada</p>
-                <p>• Incluye todos los alimentos del plato</p>
-                <p>• La foto debe ser clara y de cerca</p>
+          {step === "manual_input" && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-medium mb-4">
+                  Ingresa los datos manualmente
+                </h3>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="foodName">Nombre del plato/comida</Label>
+                      <Input
+                        id="foodName"
+                        placeholder="Ej: Pollo con arroz"
+                        value={manualData.name}
+                        onChange={(e) =>
+                          setManualData((prev) => ({
+                            ...prev,
+                            name: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="servings">Porciones</Label>
+                      <Input
+                        id="servings"
+                        type="number"
+                        min="1"
+                        value={manualData.servings}
+                        onChange={(e) =>
+                          setManualData((prev) => ({
+                            ...prev,
+                            servings: parseInt(e.target.value) || 1,
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="calories">Calorías totales</Label>
+                      <Input
+                        id="calories"
+                        type="number"
+                        min="0"
+                        placeholder="Ej: 450"
+                        value={manualData.calories || ""}
+                        onChange={(e) =>
+                          setManualData((prev) => ({
+                            ...prev,
+                            calories: parseFloat(e.target.value) || 0,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="mealType">Tipo de comida</Label>
+                      <select
+                        id="mealType"
+                        value={selectedMealType}
+                        onChange={(e) =>
+                          setSelectedMealType(e.target.value as MealType)
+                        }
+                        className="w-full p-2 border rounded-lg bg-background"
+                      >
+                        {mealTypeOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.emoji} {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="font-medium">Macronutrientes (gramos)</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="protein">Proteína</Label>
+                        <Input
+                          id="protein"
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          value={manualData.protein || ""}
+                          onChange={(e) =>
+                            setManualData((prev) => ({
+                              ...prev,
+                              protein: parseFloat(e.target.value) || 0,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="carbs">Carbohidratos</Label>
+                        <Input
+                          id="carbs"
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          value={manualData.carbs || ""}
+                          onChange={(e) =>
+                            setManualData((prev) => ({
+                              ...prev,
+                              carbs: parseFloat(e.target.value) || 0,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="fat">Grasas</Label>
+                        <Input
+                          id="fat"
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          value={manualData.fat || ""}
+                          onChange={(e) =>
+                            setManualData((prev) => ({
+                              ...prev,
+                              fat: parseFloat(e.target.value) || 0,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="fiber">Fibra</Label>
+                        <Input
+                          id="fiber"
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          value={manualData.fiber || ""}
+                          onChange={(e) =>
+                            setManualData((prev) => ({
+                              ...prev,
+                              fiber: parseFloat(e.target.value) || 0,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="sugar">Azúcares</Label>
+                        <Input
+                          id="sugar"
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          value={manualData.sugar || ""}
+                          onChange={(e) =>
+                            setManualData((prev) => ({
+                              ...prev,
+                              sugar: parseFloat(e.target.value) || 0,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="sodium">Sodio (mg)</Label>
+                        <Input
+                          id="sodium"
+                          type="number"
+                          min="0"
+                          value={manualData.sodium || ""}
+                          onChange={(e) =>
+                            setManualData((prev) => ({
+                              ...prev,
+                              sodium: parseFloat(e.target.value) || 0,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="description">Descripción (opcional)</Label>
+                    <Textarea
+                      id="description"
+                      placeholder="Ingredientes principales, método de cocción, etc."
+                      value={manualData.description}
+                      onChange={(e) =>
+                        setManualData((prev) => ({
+                          ...prev,
+                          description: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
               </div>
 
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-
-              <input
-                ref={cameraInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleReset}
+                  className="flex-1"
+                >
+                  Volver
+                </Button>
+                <Button onClick={handleManualInput} className="flex-1">
+                  Continuar con análisis
+                </Button>
+              </div>
             </div>
           )}
 
@@ -569,8 +894,335 @@ export function FoodAnalyzer({
                 >
                   Analizar otra comida
                 </Button>
+                <Button onClick={handleProceedToAdjustment} className="flex-1">
+                  Ajustar análisis
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {step === "adjustment" && editableResult && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-medium mb-4">Ajustar análisis</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Puedes ajustar los valores si consideras que la IA se ha
+                  equivocado
+                </p>
+
+                <div className="space-y-6">
+                  {/* Ajuste por porcentaje */}
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-medium mb-3">
+                      Ajuste rápido por porcentaje
+                    </h4>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Si el plato era más grande o más pequeño de lo estimado
+                    </p>
+                    <div className="flex gap-3 items-end">
+                      <div className="flex-1">
+                        <Label htmlFor="adjustmentPercentage">
+                          Porcentaje de ajuste (ej: -20 para reducir un 20%)
+                        </Label>
+                        <Input
+                          id="adjustmentPercentage"
+                          type="number"
+                          min="-50"
+                          max="100"
+                          placeholder="0"
+                          value={adjustmentPercentage || ""}
+                          onChange={(e) =>
+                            setAdjustmentPercentage(
+                              parseInt(e.target.value) || 0
+                            )
+                          }
+                        />
+                      </div>
+                      <Button
+                        onClick={applyPercentageAdjustment}
+                        disabled={adjustmentPercentage === 0}
+                        variant="outline"
+                      >
+                        Aplicar
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Ajuste manual */}
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-medium mb-3">
+                      Ajuste manual de valores
+                    </h4>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="editCalories">Calorías totales</Label>
+                        <Input
+                          id="editCalories"
+                          type="number"
+                          min="0"
+                          value={editableResult.totalCalories}
+                          onChange={(e) =>
+                            setEditableResult((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    totalCalories:
+                                      parseInt(e.target.value) || 0,
+                                  }
+                                : null
+                            )
+                          }
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="editProtein">Proteína (g)</Label>
+                          <Input
+                            id="editProtein"
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value={editableResult.macronutrients.protein}
+                            onChange={(e) =>
+                              setEditableResult((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      macronutrients: {
+                                        ...prev.macronutrients,
+                                        protein:
+                                          parseFloat(e.target.value) || 0,
+                                      },
+                                    }
+                                  : null
+                              )
+                            }
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="editCarbs">Carbohidratos (g)</Label>
+                          <Input
+                            id="editCarbs"
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value={editableResult.macronutrients.carbs}
+                            onChange={(e) =>
+                              setEditableResult((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      macronutrients: {
+                                        ...prev.macronutrients,
+                                        carbs: parseFloat(e.target.value) || 0,
+                                      },
+                                    }
+                                  : null
+                              )
+                            }
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="editFat">Grasas (g)</Label>
+                          <Input
+                            id="editFat"
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value={editableResult.macronutrients.fat}
+                            onChange={(e) =>
+                              setEditableResult((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      macronutrients: {
+                                        ...prev.macronutrients,
+                                        fat: parseFloat(e.target.value) || 0,
+                                      },
+                                    }
+                                  : null
+                              )
+                            }
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="editFiber">Fibra (g)</Label>
+                          <Input
+                            id="editFiber"
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value={editableResult.macronutrients.fiber}
+                            onChange={(e) =>
+                              setEditableResult((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      macronutrients: {
+                                        ...prev.macronutrients,
+                                        fiber: parseFloat(e.target.value) || 0,
+                                      },
+                                    }
+                                  : null
+                              )
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Vista previa de los valores actuales */}
+                  <div className="p-4 bg-muted rounded-lg">
+                    <h4 className="font-medium mb-2">Vista previa actual</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        Calorías:{" "}
+                        <span className="font-medium">
+                          {editableResult.totalCalories} kcal
+                        </span>
+                      </div>
+                      <div>
+                        Proteína:{" "}
+                        <span className="font-medium">
+                          {editableResult.macronutrients.protein.toFixed(1)}g
+                        </span>
+                      </div>
+                      <div>
+                        Carbohidratos:{" "}
+                        <span className="font-medium">
+                          {editableResult.macronutrients.carbs.toFixed(1)}g
+                        </span>
+                      </div>
+                      <div>
+                        Grasas:{" "}
+                        <span className="font-medium">
+                          {editableResult.macronutrients.fat.toFixed(1)}g
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setStep("results")}
+                  className="flex-1"
+                >
+                  Volver a resultados
+                </Button>
                 <Button onClick={handleSave} className="flex-1">
-                  Guardar análisis
+                  Guardar análisis final
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {step === "capture" && (
+            <div className="text-center space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">
+                  Sube una foto de tu comida o receta
+                </h3>
+                <p className="text-muted-foreground">
+                  Nuestro asistente IA puede analizar tanto platos de comida
+                  como recetas escritas, calculando las calorías y
+                  macronutrientes automáticamente.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Button
+                  onClick={handleCameraCapture}
+                  className="flex flex-col items-center gap-3 p-8 h-auto"
+                  variant="outline"
+                >
+                  <Camera className="h-8 w-8" />
+                  <span>Tomar foto</span>
+                </Button>
+
+                <Button
+                  onClick={handleFileSelect}
+                  className="flex flex-col items-center gap-3 p-8 h-auto"
+                  variant="outline"
+                >
+                  <Upload className="h-8 w-8" />
+                  <span>Subir imagen</span>
+                </Button>
+              </div>
+
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>• Asegúrate de que la imagen esté bien iluminada</p>
+                <p>• Para platos: incluye todos los alimentos visibles</p>
+                <p>• Para recetas: que el texto sea legible y completo</p>
+                <p>• La foto debe ser clara y enfocada</p>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+            </div>
+          )}
+
+          {step === "selecting" && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-medium mb-4">
+                  Confirma los detalles
+                </h3>
+                <div className="space-y-4">
+                  <img
+                    src={selectedImage}
+                    alt="Comida seleccionada"
+                    className="w-full max-w-md mx-auto rounded-lg border"
+                  />
+
+                  <div>
+                    <Label htmlFor="mealType">Tipo de comida</Label>
+                    <select
+                      id="mealType"
+                      value={selectedMealType}
+                      onChange={(e) =>
+                        setSelectedMealType(e.target.value as MealType)
+                      }
+                      className="w-full p-2 border rounded-lg bg-background"
+                    >
+                      {mealTypeOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.emoji} {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleReset}
+                  className="flex-1"
+                >
+                  Cambiar foto
+                </Button>
+                <Button onClick={handleAnalyze} className="flex-1">
+                  Analizar alimentos
                 </Button>
               </div>
             </div>

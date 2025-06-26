@@ -10,8 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useNaviTrackerStore } from "@/store";
-import { apiClient } from "@/lib/api-client";
-import type { AIResponse } from "@/types";
+import { api } from "@/lib/api-client";
 import { renderMarkdown } from "@/lib/markdown";
 
 interface AIMessage {
@@ -22,6 +21,7 @@ interface AIMessage {
   activities?: ParsedActivity[];
   needsValidation?: boolean;
   validationQuestions?: string[];
+  suggestions?: string[];
 }
 
 interface ParsedActivity {
@@ -62,7 +62,7 @@ export function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
   const [showActivitiesPreview, setShowActivitiesPreview] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { activities, completions, addActivity } = useNaviTrackerStore();
+  const { addActivity } = useNaviTrackerStore();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -71,15 +71,6 @@ export function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  const getRecentCompletions = () => {
-    const now = new Date();
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-    return completions.filter(
-      (completion) => new Date(completion.createdAt) >= weekAgo
-    );
-  };
 
   const sendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
@@ -103,54 +94,44 @@ export function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
         content: msg.content,
       }));
 
-      const aiResponse: AIResponse = await apiClient.post("/ai-suggestions", {
+      // 🚀 Usar el servicio de IA del backend
+      const response = await api.aiSuggestions.generate({
         message: inputMessage,
         chatHistory: chatHistory,
-        context: {
-          activities: activities.map((activity) => ({
-            name: activity.name,
-            description: activity.description,
-            days: activity.days,
-            category: activity.category,
-          })),
-          totalActivities: activities.length,
-          recentCompletions: getRecentCompletions(),
-        },
       });
+
+      // El backend ya retorna el formato correcto
+      const aiSuggestion = response.data as any;
 
       const aiMessage: AIMessage = {
         id: (Date.now() + 1).toString(),
         type: "ai",
-        content: aiResponse.message,
+        content: aiSuggestion.message,
         timestamp: new Date(),
-        activities: aiResponse.activities || aiResponse.extractedActivities,
-        needsValidation: aiResponse.needsValidation,
-        validationQuestions: aiResponse.validationQuestions,
+        activities: aiSuggestion.extractedActivities,
+        needsValidation: aiSuggestion.tableDetected,
+        suggestions: aiSuggestion.suggestions,
       };
 
       setMessages((prev) => [...prev, aiMessage]);
 
-      // Si hay actividades detectadas (tabla o conversación natural), mostrar preview
+      // Si hay actividades detectadas en tabla o conversación, mostrar preview
       if (
-        (aiResponse.activities && aiResponse.activities.length > 0) ||
-        (aiResponse.extractedActivities &&
-          aiResponse.extractedActivities.length > 0)
+        aiSuggestion.extractedActivities &&
+        aiSuggestion.extractedActivities.length > 0
       ) {
-        const detectedActivities =
-          aiResponse.activities || aiResponse.extractedActivities || [];
-
-        // Convertir actividades extraídas al formato esperado
-        const formattedActivities = detectedActivities.map((activity) => ({
-          name: activity.name,
-          days: activity.days,
-          category: activity.category || "otros",
-          time: activity.time || "",
-          description:
-            "frequency" in activity && activity.frequency
+        // Convertir al formato esperado por el componente
+        const formattedActivities = aiSuggestion.extractedActivities.map(
+          (activity: any) => ({
+            name: activity.name,
+            days: activity.days || [true, true, true, true, true, false, false], // L-V por defecto
+            category: activity.category || "general",
+            time: activity.time || "",
+            description: activity.frequency
               ? `Frecuencia: ${activity.frequency}`
-              : ("description" in activity ? activity.description : "") ||
-                "Detectado en conversación",
-        }));
+              : "Detectado por IA",
+          })
+        );
 
         setPendingActivities(formattedActivities);
         setShowActivitiesPreview(true);
@@ -352,6 +333,26 @@ Ya puedes empezar a trackear estos hábitos en tu calendario semanal. ¿Te gusta
                       </div>
                     )}
 
+                  {/* Mostrar sugerencias clickeables */}
+                  {message.suggestions && message.suggestions.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <p className="text-xs text-gray-500 mb-2">
+                        💡 Sugerencias rápidas:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {message.suggestions.map((suggestion, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setInputMessage(suggestion)}
+                            className="text-xs px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-full border border-blue-200 transition-colors"
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="text-xs text-gray-500 mt-2">
                     {message.timestamp.toLocaleTimeString("es-ES", {
                       hour: "2-digit",
@@ -382,13 +383,13 @@ Ya puedes empezar a trackear estos hábitos en tu calendario semanal. ¿Te gusta
         {/* Preguntas sugeridas */}
         {messages.length === 1 && (
           <div className="space-y-2">
-            <p className="text-sm text-gray-600">Preguntas frecuentes:</p>
+            <p className="text-sm text-gray-600">💡 Preguntas frecuentes:</p>
             <div className="flex flex-wrap gap-2">
               {suggestedQuestions.map((question, index) => (
                 <button
                   key={index}
                   onClick={() => setInputMessage(question)}
-                  className="text-xs px-3 py-1 rounded-full transition-colors"
+                  className="text-xs px-3 py-1 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-full border border-gray-200 transition-colors"
                 >
                   {question}
                 </button>

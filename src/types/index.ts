@@ -1,3 +1,5 @@
+import { EachMonthOfIntervalOptions } from "date-fns";
+
 export interface Activity {
   id: string;
   name: string;
@@ -154,16 +156,37 @@ export interface CalendarData {
 export interface NutritionAnalysis {
   id: string;
   userId: string;
-  date: string; // YYYY-MM-DD
-  mealType: MealType;
+  date: string;
+  mealType: string;
   foods: DetectedFood[];
   totalCalories: number;
   macronutrients: Macronutrients;
-  imageUrl: string;
-  aiConfidence: number; // 0-1
+  imageUrl?: string;
+  aiConfidence: number;
   userAdjustments?: UserNutritionAdjustments;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface DetectedFood {
+  name: string;
+  quantity: number;
+  unit: string;
+  calories: number;
+  confidence: number;
+}
+
+export interface Macronutrients {
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+}
+
+export interface UserNutritionAdjustments {
+  foods: DetectedFood[];
+  totalCalories: number;
+  macronutrients: Macronutrients;
 }
 
 export enum MealType {
@@ -204,6 +227,15 @@ export enum FoodCategory {
   OTHER = "other",
 }
 
+export interface FoodAnalysisResponse {
+  foods: DetectedFood[];
+  totalCalories: number;
+  macronutrients: Macronutrients;
+  confidence: number;
+  mealType: MealType;
+  recommendations?: string[];
+}
+
 export interface UserNutritionAdjustments {
   adjustedCalories?: number;
   adjustedFoods?: DetectedFood[];
@@ -227,16 +259,21 @@ export interface BodyAnalysis {
 }
 
 export interface BodyMeasurements {
-  height: number; // cm
-  weight: number; // kg
-  age: number;
+  estimatedBodyFat?: number;
+  bodyFatPercentage?: number;
+  muscleDefinition: "low" | "moderate" | "high" | "very_high";
+  posture: "needs_attention" | "fair" | "good" | "excellent";
+  symmetry: "needs_attention" | "fair" | "good" | "excellent";
+  overallFitness: "beginner" | "intermediate" | "advanced" | "athlete";
+  age?: number;
   gender?: "male" | "female" | "other";
-  activityLevel: ActivityLevel;
-  // Medidas detectadas por IA (opcionales)
-  waist?: number; // cm
-  chest?: number; // cm
-  hips?: number; // cm
-  bodyFatPercentage?: number; // %
+  activityLevel?: ActivityLevel;
+  goals?: string[];
+  height?: number;
+  weight?: number;
+  waist?: number;
+  chest?: number;
+  hips?: number;
 }
 
 export enum ActivityLevel {
@@ -254,21 +291,40 @@ export enum BodyType {
 }
 
 export interface BodyComposition {
+  estimatedBMI?: number;
   bodyType: BodyType;
   muscleMass: "low" | "medium" | "high";
   bodyFat: "low" | "medium" | "high";
   metabolism: "slow" | "medium" | "fast";
   boneDensity: "light" | "medium" | "heavy";
+  muscleGroups: Array<{
+    name: string;
+    development:
+      | "underdeveloped"
+      | "developing"
+      | "well_developed"
+      | "good"
+      | "excellent"
+      | "highly_developed";
+    recommendations: string[];
+  }>;
 }
 
 export interface NutritionRecommendations {
-  dailyCalories: number;
-  macroSplit: {
+  nutrition: string[];
+  priority:
+    | "cardio"
+    | "strength"
+    | "flexibility"
+    | "balance"
+    | "general_fitness";
+  dailyCalories?: number;
+  macroSplit?: {
     protein: number; // %
     carbs: number; // %
     fat: number; // %
   };
-  mealTiming: MealTiming[];
+  //mealTiming: MealTiming[];
   supplements?: string[];
   restrictions?: string[];
   goals: NutritionGoal[];
@@ -288,6 +344,21 @@ export enum NutritionGoal {
   IMPROVE_HEALTH = "improve_health",
   INCREASE_ENERGY = "increase_energy",
   BETTER_SLEEP = "better_sleep",
+}
+
+export interface BodyAnalysisApiResponse {
+  bodyType: BodyType;
+  bodyComposition: BodyComposition;
+  measurements: BodyMeasurements;
+  recommendations: NutritionRecommendations;
+  progress: {
+    strengths: string[];
+    areasToImprove: string[];
+    generalAdvice: string;
+  };
+  confidence: number;
+  disclaimer: string;
+  insights?: string[];
 }
 
 // Tipos para seguimiento nutricional diario
@@ -334,6 +405,83 @@ export interface Analysis {
   mood: number; // 1-5 scale
   notes?: string;
   createdAt: Date;
+}
+
+// Api Response Types
+
+// Body Analysis Request
+export interface BodyAnalysisRequest {
+  image: string; // Base64 encoded image
+  currentWeight?: number;
+  targetWeight?: number;
+  height?: number;
+  age?: number;
+  gender?: "male" | "female" | "other";
+  activityLevel?: "sedentary" | "light" | "moderate" | "active" | "very_active";
+  goals?: string[];
+  allowGeneric?: boolean;
+}
+
+// Body Analysis Response
+export interface BodyAnalysisResponse {
+  bodyType: BodyType;
+  bodyComposition: {
+    estimatedBMI?: number;
+    bodyType: BodyType;
+    muscleMass: "low" | "medium" | "high";
+    bodyFat: "low" | "medium" | "high";
+    metabolism: "slow" | "medium" | "fast";
+    boneDensity: "light" | "medium" | "heavy";
+    muscleGroups: Array<{
+      name: string;
+      development:
+        | "underdeveloped"
+        | "developing"
+        | "well_developed"
+        | "good"
+        | "excellent"
+        | "highly_developed";
+      recommendations: string[];
+    }>;
+  };
+  measurements: {
+    estimatedBodyFat?: number;
+    bodyFatPercentage?: number;
+    muscleDefinition: "low" | "moderate" | "high" | "very_high";
+    posture: "needs_attention" | "fair" | "good" | "excellent";
+    symmetry: "needs_attention" | "fair" | "good" | "excellent";
+    overallFitness: "beginner" | "intermediate" | "advanced" | "athlete";
+    height?: number;
+    weight?: number;
+    waist?: number;
+    chest?: number;
+    hips?: number;
+  };
+
+  recommendations: {
+    nutrition: string[];
+    priority:
+      | "cardio"
+      | "strength"
+      | "flexibility"
+      | "balance"
+      | "general_fitness";
+    dailyCalories?: number;
+    macroSplit?: {
+      protein: number;
+      carbs: number;
+      fat: number;
+    };
+    supplements?: string[];
+  };
+  progress: {
+    strengths: string[];
+    areasToImprove: string[];
+    generalAdvice: string;
+  };
+  confidence: number;
+  disclaimer: string;
+  insights?: string[];
 }
 
 // Re-export skinfold types

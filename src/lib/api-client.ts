@@ -1,7 +1,8 @@
-// Configuración del backend
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
-const API_BASE = `${BACKEND_URL}/api`;
+import { FoodAnalysisResponse, MealType, NutritionAnalysis } from "@/types";
+
+// Configuración de la API
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
 // Función helper para obtener el token desde el store
 function getAuthToken(): string | null {
@@ -20,11 +21,11 @@ function getAuthToken(): string | null {
 }
 
 // Función helper para hacer peticiones HTTP
-async function fetchAPI(
+async function fetchAPI<T = unknown>(
   endpoint: string,
   options: RequestInit = {}
-): Promise<any> {
-  const url = `${API_BASE}${endpoint}`;
+): Promise<T> {
+  const url = `${API_BASE_URL}${endpoint}`;
 
   // Obtener token automáticamente
   const token = getAuthToken();
@@ -46,18 +47,11 @@ async function fetchAPI(
     headers: finalHeaders,
   };
 
-  console.log(`🌐 Petición a: ${url}`, {
-    method: config.method || "GET",
-    hasToken: !!token,
-    headerKeys: Object.keys(finalHeaders),
-  });
-
   try {
     const response = await fetch(url, config);
 
     // Si el token ha expirado, intentar refrescar
     if (response.status === 401 && token) {
-      console.log("🔄 Token expirado, intentando renovar...");
       const refreshSuccess = await refreshAuthToken();
 
       if (refreshSuccess) {
@@ -75,11 +69,6 @@ async function fetchAPI(
             ...options,
             headers: retryHeaders,
           };
-
-          console.log("🔄 Reintentando petición con nuevo token...", {
-            hasNewToken: !!newToken,
-            retryHeaderKeys: Object.keys(retryHeaders),
-          });
 
           const retryResponse = await fetch(url, newConfig);
 
@@ -136,7 +125,7 @@ async function refreshAuthToken(): Promise<boolean> {
 
     if (!refreshToken) return false;
 
-    const response = await fetch(`${API_BASE}/auth/refresh`, {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -165,7 +154,6 @@ async function refreshAuthToken(): Promise<boolean> {
         })
       );
 
-      console.log("✅ Token renovado exitosamente");
       return true;
     }
 
@@ -184,38 +172,59 @@ function clearAuthAndRedirect(): void {
   window.location.href = "/auth/login";
 }
 
+// Tipos para las respuestas de API
+type ApiResponse<T = unknown> = {
+  success: boolean;
+  data: T;
+  message?: string;
+};
+
 // Exportar las funciones de API
 export const apiClient = {
-  get: (endpoint: string, headers?: Record<string, string>) =>
-    fetchAPI(endpoint, { method: "GET", headers }),
+  get: <T = unknown>(endpoint: string, headers?: Record<string, string>) =>
+    fetchAPI<ApiResponse<T>>(endpoint, { method: "GET", headers }),
 
-  post: (endpoint: string, data?: any, headers?: Record<string, string>) =>
-    fetchAPI(endpoint, {
+  post: <T = unknown>(
+    endpoint: string,
+    data?: Record<string, unknown>,
+    headers?: Record<string, string>
+  ) =>
+    fetchAPI<ApiResponse<T>>(endpoint, {
       method: "POST",
       body: data ? JSON.stringify(data) : undefined,
       headers,
     }),
 
-  put: (endpoint: string, data?: any, headers?: Record<string, string>) =>
-    fetchAPI(endpoint, {
+  put: <T = unknown>(
+    endpoint: string,
+    data?: Record<string, unknown>,
+    headers?: Record<string, string>
+  ) =>
+    fetchAPI<ApiResponse<T>>(endpoint, {
       method: "PUT",
       body: data ? JSON.stringify(data) : undefined,
       headers,
     }),
 
-  delete: (endpoint: string, headers?: Record<string, string>) =>
-    fetchAPI(endpoint, { method: "DELETE", headers }),
+  delete: <T = unknown>(endpoint: string, headers?: Record<string, string>) =>
+    fetchAPI<ApiResponse<T>>(endpoint, { method: "DELETE", headers }),
 
   // Función helper para peticiones autenticadas explícitas
   authenticated: {
-    get: (endpoint: string, headers?: Record<string, string>) =>
-      apiClient.get(endpoint, headers),
-    post: (endpoint: string, data?: any, headers?: Record<string, string>) =>
-      apiClient.post(endpoint, data, headers),
-    put: (endpoint: string, data?: any, headers?: Record<string, string>) =>
-      apiClient.put(endpoint, data, headers),
-    delete: (endpoint: string, headers?: Record<string, string>) =>
-      apiClient.delete(endpoint, headers),
+    get: <T = unknown>(endpoint: string, headers?: Record<string, string>) =>
+      apiClient.get<T>(endpoint, headers),
+    post: <T = unknown>(
+      endpoint: string,
+      data?: Record<string, unknown>,
+      headers?: Record<string, string>
+    ) => apiClient.post<T>(endpoint, data, headers),
+    put: <T = unknown>(
+      endpoint: string,
+      data?: Record<string, unknown>,
+      headers?: Record<string, string>
+    ) => apiClient.put<T>(endpoint, data, headers),
+    delete: <T = unknown>(endpoint: string, headers?: Record<string, string>) =>
+      apiClient.delete<T>(endpoint, headers),
   },
 };
 
@@ -225,8 +234,9 @@ export const api = {
   activities: {
     getAll: () => apiClient.get("/activities"),
     getById: (id: string) => apiClient.get(`/activities/${id}`),
-    create: (data: any) => apiClient.post("/activities", data),
-    update: (id: string, data: any) =>
+    create: (data: Record<string, unknown>) =>
+      apiClient.post("/activities", data),
+    update: (id: string, data: Record<string, unknown>) =>
       apiClient.put("/activities", { id, ...data }),
     delete: (id: string) => apiClient.delete(`/activities?id=${id}`),
   },
@@ -234,40 +244,130 @@ export const api = {
   // Chat
   chat: {
     getMessages: () => apiClient.get("/chat"),
-    sendMessage: (data: any) => apiClient.post("/chat", data),
+    sendMessage: (data: Record<string, unknown>) =>
+      apiClient.post("/chat", data),
   },
 
   // Nutrición
   nutrition: {
     getAnalyses: () => apiClient.get("/nutrition"),
-    createAnalysis: (data: any) => apiClient.post("/nutrition", data),
+    createAnalysis: (data: NutritionAnalysis) =>
+      apiClient.post("/nutrition", data),
     getByDate: (date: string) => apiClient.get(`/nutrition?date=${date}`),
+    updateAnalysis: (id: string, data: NutritionAnalysis) =>
+      apiClient.put(`/nutrition/${id}`, data),
+    deleteAnalysis: (id: string) => apiClient.delete(`/nutrition/${id}`),
   },
 
   // Completions
   completions: {
-    toggle: (data: any) => apiClient.post("/completions", data),
-    update: (id: string, data: any) =>
+    toggle: (data: Record<string, unknown>) =>
+      apiClient.post("/completions", data),
+    update: (id: string, data: Record<string, unknown>) =>
       apiClient.put(`/completions/${id}`, data),
   },
 
   // Body Analysis
   bodyAnalysis: {
-    create: (data: any) => apiClient.post("/body-analysis", data),
-    getHistory: () => apiClient.get("/body-analysis"),
+    create: (data: {
+      image: string;
+      currentWeight?: number;
+      targetWeight?: number;
+      height?: number;
+      age?: number;
+      gender?: "male" | "female" | "other";
+      activityLevel?:
+        | "sedentary"
+        | "light"
+        | "moderate"
+        | "active"
+        | "very_active";
+      goals?: string[];
+      allowGeneric?: boolean;
+    }) => apiClient.post("/body-analysis", data),
+    getAll: (days?: number) =>
+      apiClient.get(`/body-analysis${days ? `?days=${days}` : ""}`),
+    getById: (id: string) => apiClient.get(`/body-analysis/${id}`),
+    getLatest: () => apiClient.get("/body-analysis/latest"),
+    update: (
+      id: string,
+      data: {
+        bodyType?: string;
+        measurements?: any;
+        bodyComposition?: any;
+        recommendations?: any;
+        aiConfidence?: number;
+        notes?: string;
+      }
+    ) => apiClient.put(`/body-analysis/${id}`, data),
+    delete: (id: string) => apiClient.delete(`/body-analysis/${id}`),
+    analyzeOnly: (data: {
+      image: string;
+      currentWeight?: number;
+      targetWeight?: number;
+      height?: number;
+      age?: number;
+      gender?: "male" | "female" | "other";
+      activityLevel?:
+        | "sedentary"
+        | "light"
+        | "moderate"
+        | "active"
+        | "very_active";
+      goals?: string[];
+      allowGeneric?: boolean;
+    }) => apiClient.post("/body-analysis/analyze-only", data),
+    getStatsSummary: () => apiClient.get("/body-analysis/stats/summary"),
+    getStatus: () => apiClient.get("/body-analysis/status/health"),
   },
 
   // AI Suggestions
   aiSuggestions: {
+    generate: (data: Record<string, unknown>) =>
+      apiClient.post("/ai-suggestions", data),
     getAll: () => apiClient.get("/ai-suggestions"),
     dismiss: (id: string) => apiClient.delete(`/ai-suggestions/${id}`),
   },
 
-  // Analysis (nuevo endpoint)
+  // Analysis
   analysis: {
-    getRecent: (days: number = 7) =>
-      apiClient.get(`/analysis/recent?days=${days}`),
-    create: (data: any) => apiClient.post("/analysis", data),
+    getRecent: (days: number) =>
+      apiClient.get(`/ai-suggestions/analysis/recent?days=${days}`),
+    getPatterns: () => apiClient.get("/analysis/patterns"),
+    getBookRecommendations: (data: {
+      availableTime: string;
+      preferredMood: string;
+      includeUserPatterns?: boolean;
+    }) => apiClient.post("/analysis/book-recommendations", data),
+    getContentRecommendations: (data: {
+      availableTime: string;
+      preferredMood: string;
+      contentType: string;
+      topic?: string;
+      genre: string;
+      includeUserPatterns?: boolean;
+    }) => apiClient.post("/analysis/content-recommendations", data),
+    getStatus: () => apiClient.get("/analysis/status"),
+  },
+
+  // Analyze Food
+  analyzeFood: {
+    analyzeRecipe: (data: { recipeLink: string; mealType: MealType }) =>
+      apiClient.post<FoodAnalysisResponse>("/analyze-food/recipe", data),
+    analyzeImage: (data: { image: string; mealType: MealType }) =>
+      apiClient.post<FoodAnalysisResponse>("/analyze-food/image", data),
+    analyzeManual: (data: {
+      name: string;
+      servings: number;
+      calories: number;
+      protein: number;
+      carbs: number;
+      fat: number;
+      fiber: number;
+      sugar: number;
+      sodium: number;
+      mealType: MealType;
+    }) => apiClient.post<FoodAnalysisResponse>("/analyze-food/manual", data),
   },
 };
 

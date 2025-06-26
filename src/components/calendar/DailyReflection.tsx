@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Star, MessageSquare, Brain, CheckCircle2 } from "lucide-react";
+import { Star, MessageSquare, Brain, CheckCircle2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -36,7 +36,7 @@ export function DailyReflection({
   const [mood, setMood] = useState<number>(3);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const { addOrUpdateNote, dailyNotes } = useNaviTrackerStore();
+  const { addOrUpdateReflection, dailyNotes } = useNaviTrackerStore();
 
   const commentsByCategory = getCommentsGroupedByCategory();
   const dateKey = selectedDate.toISOString().split("T")[0];
@@ -87,10 +87,11 @@ export function DailyReflection({
     setIsAnalyzing(true);
 
     try {
-      await addOrUpdateNote(
+      await addOrUpdateReflection(
         selectedDate,
+        selectedComments,
         customComment.trim(),
-        mood.toString()
+        mood
       );
       onClose();
     } catch (error) {
@@ -102,6 +103,38 @@ export function DailyReflection({
 
   const moodEmojis = ["😣", "😟", "😐", "😊", "😄"];
   const moodLabels = ["Muy mal", "Mal", "Regular", "Bien", "Excelente"];
+
+  // Frases predefinidas para reflexión diaria
+  const reflectionPhrases = {
+    positive: [
+      "Hoy me sentí con mucha energía 💪",
+      "Pude cumplir todo lo que me propuse ✅",
+      "Me sentí motivado durante el día 🌞",
+      "Tuve un día tranquilo y productivo 📈",
+      "Estoy contento con mis hábitos de hoy 😌",
+    ],
+    neutral: [
+      "Cumplí con algunas cosas, pero no con todo 🤔",
+      "Me costó arrancar, pero mejoré durante el día",
+      "No fue mi mejor día, pero mañana será distinto",
+      "Estoy notando patrones en mis días 💭",
+    ],
+    challenging: [
+      "Me sentí cansado todo el día 😴",
+      "No pude hacer casi nada hoy 😕",
+      "Estuve bajón y sin ganas",
+      "Me costó mucho concentrarme 🌀",
+      "Siento que me falta una rutina clara",
+    ],
+  };
+
+  const handlePhraseSelect = (phrase: string) => {
+    if (customComment.trim()) {
+      setCustomComment((prev) => prev + "\n" + phrase);
+    } else {
+      setCustomComment(phrase);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -143,6 +176,71 @@ export function DailyReflection({
                   </div>
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Frases de reflexión predefinidas */}
+          <div className="space-y-4">
+            <h3 className="font-medium flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Frases de reflexión rápida
+            </h3>
+
+            {/* Frases Positivas */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-green-600 flex items-center gap-2">
+                <span className="text-lg">🟢</span>
+                Días positivos
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {reflectionPhrases.positive.map((phrase, index) => (
+                  <button
+                    key={`positive-${index}`}
+                    onClick={() => handlePhraseSelect(phrase)}
+                    className="p-3 text-left rounded-lg border border-green-200 hover:border-green-400 hover:bg-green-50 transition-all text-sm"
+                  >
+                    {phrase}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Frases Neutras */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-yellow-600 flex items-center gap-2">
+                <span className="text-lg">🟡</span>
+                Días intermedios
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {reflectionPhrases.neutral.map((phrase, index) => (
+                  <button
+                    key={`neutral-${index}`}
+                    onClick={() => handlePhraseSelect(phrase)}
+                    className="p-3 text-left rounded-lg border border-yellow-200 hover:border-yellow-400 hover:bg-yellow-50 transition-all text-sm"
+                  >
+                    {phrase}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Frases Complicadas */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-red-600 flex items-center gap-2">
+                <span className="text-lg">🔴</span>
+                Días complicados
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {reflectionPhrases.challenging.map((phrase, index) => (
+                  <button
+                    key={`challenging-${index}`}
+                    onClick={() => handlePhraseSelect(phrase)}
+                    className="p-3 text-left rounded-lg border border-red-200 hover:border-red-400 hover:bg-red-50 transition-all text-sm"
+                  >
+                    {phrase}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -192,11 +290,28 @@ export function DailyReflection({
 
           {/* Custom Comment */}
           <div className="space-y-3">
-            <h3 className="font-medium">¿Algo más que quieras agregar?</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium">Reflexión personal del día</h3>
+              {customComment.trim() && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCustomComment("")}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Limpiar
+                </Button>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Puedes usar las frases de arriba o escribir tu propia reflexión.
+              Las frases se agregan automáticamente al campo de texto.
+            </p>
             <textarea
               value={customComment}
               onChange={(e) => setCustomComment(e.target.value)}
-              placeholder="Escribe tu propia reflexión sobre el día..."
+              placeholder="Escribe tu reflexión sobre el día... o usa las frases predefinidas de arriba"
               className="w-full h-32 p-3 border rounded-lg resize-none focus:ring-2 focus:ring-ring focus:border-transparent bg-background"
             />
           </div>

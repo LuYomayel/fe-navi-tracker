@@ -27,9 +27,9 @@ import {
   ChevronRight,
   BarChart3,
   Clock,
-  Zap,
 } from "lucide-react";
 import { getDateKey } from "@/lib/utils";
+import { DailyReflectionWidget } from "@/components/calendar/DailyReflectionWidget";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -256,30 +256,8 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Sección para futuros componentes */}
-      <Card className="border-dashed">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5" />
-            Próximamente
-          </CardTitle>
-          <CardDescription>
-            Aquí se añadirán nuevas funcionalidades y métricas
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center p-8 text-center">
-            <div className="space-y-2">
-              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto">
-                <Plus className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Espacio reservado para nuevos componentes
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Widget de Reflexión Diaria */}
+      <DailyReflectionWidget />
 
       {/* Acceso rápido */}
       <div className="flex flex-wrap gap-2">

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/modules/auth/store";
-import { useNaviTrackerStore } from "@/store";
+import { useNaviTrackerStore } from "@/store/index";
 import { useInitializeStore } from "@/hooks/useInitializeStore";
 
 // Importar el contenido del NutritionTracker directamente
@@ -19,6 +19,12 @@ import {
   Filter,
   Target,
   ChevronDown,
+  Zap,
+  Flame,
+  Activity,
+  Droplets,
+  Award,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,25 +33,30 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { FoodAnalyzer } from "@/components/nutrition/NutritionAnalyzer";
 import { BodyAnalyzer } from "@/components/nutrition/BodyAnalyzer";
 import { SkinFoldDialog } from "@/components/nutrition/SkinFoldDialog";
+import { EditNutritionAnalysisDialog } from "@/components/nutrition/EditNutritionAnalysisDialog";
 import {
   getDateKey,
-  calculateNutritionGoalsFromBodyAnalysis,
+  calculateNutritionGoalsFromBodyAnalysis as _calculateNutritionGoalsFromBodyAnalysis,
 } from "@/lib/utils";
 import {
-  sumOfSkinfolds,
-  estimateBodyFatJacksonPollock,
-  compareSkinFoldRecords,
+  sumOfSkinfolds as _sumOfSkinfolds,
+  estimateBodyFatJacksonPollock as _estimateBodyFatJacksonPollock,
+  compareSkinFoldRecords as _compareSkinFoldRecords,
 } from "@/lib/anthropometry";
-import { SkinFoldSiteNames } from "@/types/skinFold";
+import { SkinFoldSiteNames as _SkinFoldSiteNames } from "@/types/skinFold";
 import {
   MealType,
   NutritionAnalysis,
-  BodyAnalysis,
-  SkinFoldRecord,
+  BodyAnalysis as _BodyAnalysis,
+  SkinFoldRecord as _SkinFoldRecord,
 } from "@/types";
+import { api, apiClient } from "@/lib/api-client";
+import { toast } from "@/lib/toast-helper";
 
 interface EditingAnalysis {
   id: string;
@@ -53,6 +64,294 @@ interface EditingAnalysis {
   mealType: MealType;
   time: string;
 }
+
+interface NutritionGoals {
+  dailyCalories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+interface DailyProgress {
+  totalCalories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+  mealsCount: number;
+}
+
+// Componente del Dashboard Nutricional
+const NutritionDashboard: React.FC<{
+  todayProgress: DailyProgress;
+  nutritionGoals: NutritionGoals | null;
+  lastBodyAnalysis: _BodyAnalysis | null;
+  onOpenBodyAnalyzer: () => void;
+}> = ({
+  todayProgress,
+  nutritionGoals,
+  lastBodyAnalysis,
+  onOpenBodyAnalyzer,
+}) => {
+  const _getProgressColor = (percentage: number) => {
+    if (percentage >= 90) return "bg-green-500";
+    if (percentage >= 70) return "bg-yellow-500";
+    if (percentage >= 50) return "bg-orange-500";
+    return "bg-red-500";
+  };
+
+  const getProgressPercentage = (current: number, goal: number) => {
+    return goal > 0 ? Math.min((current / goal) * 100, 100) : 0;
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header del Dashboard */}
+      <div className=" rounded-lg p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">Dashboard Nutricional 📊</h2>
+            <p className=" mt-1">
+              Progreso de hoy •{" "}
+              {new Date().toLocaleDateString("es-ES", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold text-green-600">
+              {todayProgress.totalCalories}
+            </div>
+            <div className="text-sm">
+              de {nutritionGoals?.dailyCalories || "---"} kcal
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Objetivos vs Progreso */}
+      {nutritionGoals ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Calorías */}
+          <Card className="bg-muted/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Flame className="h-4 w-4 text-orange-500" />
+                Calorías
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-2xl font-bold">
+                    {todayProgress.totalCalories}
+                  </span>
+                  <span className="text-sm">
+                    /{nutritionGoals.dailyCalories}
+                  </span>
+                </div>
+                <Progress
+                  value={getProgressPercentage(
+                    todayProgress.totalCalories,
+                    nutritionGoals.dailyCalories
+                  )}
+                  className="h-2"
+                />
+                <div className="text-xs">
+                  {Math.round(
+                    getProgressPercentage(
+                      todayProgress.totalCalories,
+                      nutritionGoals.dailyCalories
+                    )
+                  )}
+                  % del objetivo
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Proteínas */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Zap className="h-4 w-4 text-blue-500" />
+                Proteínas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-2xl font-bold">
+                    {Math.round(todayProgress.protein)}g
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    /{nutritionGoals.protein}g
+                  </span>
+                </div>
+                <Progress
+                  value={getProgressPercentage(
+                    todayProgress.protein,
+                    nutritionGoals.protein
+                  )}
+                  className="h-2"
+                />
+                <div className="text-xs text-gray-600">
+                  {Math.round(
+                    getProgressPercentage(
+                      todayProgress.protein,
+                      nutritionGoals.protein
+                    )
+                  )}
+                  % del objetivo
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Carbohidratos */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Activity className="h-4 w-4 text-green-500" />
+                Carbohidratos
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-2xl font-bold">
+                    {Math.round(todayProgress.carbs)}g
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    /{nutritionGoals.carbs}g
+                  </span>
+                </div>
+                <Progress
+                  value={getProgressPercentage(
+                    todayProgress.carbs,
+                    nutritionGoals.carbs
+                  )}
+                  className="h-2"
+                />
+                <div className="text-xs text-gray-600">
+                  {Math.round(
+                    getProgressPercentage(
+                      todayProgress.carbs,
+                      nutritionGoals.carbs
+                    )
+                  )}
+                  % del objetivo
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Grasas */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Droplets className="h-4 w-4 text-yellow-500" />
+                Grasas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-2xl font-bold">
+                    {Math.round(todayProgress.fat)}g
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    /{nutritionGoals.fat}g
+                  </span>
+                </div>
+                <Progress
+                  value={getProgressPercentage(
+                    todayProgress.fat,
+                    nutritionGoals.fat
+                  )}
+                  className="h-2"
+                />
+                <div className="text-xs text-gray-600">
+                  {Math.round(
+                    getProgressPercentage(todayProgress.fat, nutritionGoals.fat)
+                  )}
+                  % del objetivo
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <Card className="border-dashed border-2 border-gray-300">
+          <CardContent className="p-6 text-center">
+            <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">
+              No hay objetivos nutricionales definidos
+            </h3>
+            <p className=" mb-4">
+              Realiza un análisis corporal para obtener tus objetivos
+              nutricionales personalizados
+            </p>
+            <Button variant="outline" size="sm" onClick={onOpenBodyAnalyzer}>
+              <User className="h-4 w-4 mr-2" />
+              Realizar análisis corporal
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Resumen adicional */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Comidas registradas</p>
+                <p className="text-2xl font-bold">{todayProgress.mealsCount}</p>
+              </div>
+              <Camera className="h-8 w-8 text-gray-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Fibra consumida</p>
+                <p className="text-2xl font-bold">
+                  {Math.round(todayProgress.fiber)}g
+                </p>
+              </div>
+              <Award className="h-8 w-8 text-gray-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Último análisis</p>
+                <p className="text-sm font-medium">
+                  {lastBodyAnalysis?.createdAt
+                    ? new Date(lastBodyAnalysis.createdAt).toLocaleDateString(
+                        "es-ES"
+                      )
+                    : "Sin análisis"}
+                </p>
+              </div>
+              <User className="h-8 w-8 text-gray-400" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
 
 export default function NutritionPage() {
   const router = useRouter();
@@ -67,7 +366,7 @@ export default function NutritionPage() {
     deleteBodyAnalysis,
     updateNutritionAnalysis,
     deleteSkinFoldRecord,
-    updateSkinFoldRecord,
+    updateSkinFoldRecord: _updateSkinFoldRecord,
   } = useNaviTrackerStore();
 
   const [selectedDate] = useState(new Date());
@@ -77,8 +376,9 @@ export default function NutritionPage() {
   const [showFoodAnalyzer, setShowFoodAnalyzer] = useState(false);
   const [showBodyAnalyzer, setShowBodyAnalyzer] = useState(false);
   const [showSkinFoldDialog, setShowSkinFoldDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingAnalysis, setEditingAnalysis] =
-    useState<EditingAnalysis | null>(null);
+    useState<NutritionAnalysis | null>(null);
 
   // Filtros para análisis nutricionales
   const [foodFilters, setFoodFilters] = useState({
@@ -86,6 +386,63 @@ export default function NutritionPage() {
     mealTypeFilter: "all" as "all" | MealType,
     sortBy: "date" as "date" | "calories" | "confidence",
   });
+
+  // Calcular objetivos nutricionales basados en el análisis corporal más reciente
+  const nutritionGoals = useMemo(async (): Promise<NutritionGoals | null> => {
+    if (bodyAnalyses.length === 0) return null;
+
+    // Calcular objetivos basados en el análisis corporal
+    // Por ahora usamos valores por defecto, pero esto debería usar datos reales del análisis
+    const latestBodyAnalysis = await apiClient
+      .get<_BodyAnalysis>("/body-analysis/latest")
+      .then((res) => res.data);
+    console.log("Latest body analysis:", latestBodyAnalysis);
+    return {
+      dailyCalories: 2000,
+      protein: 150,
+      carbs: 250,
+      fat: 67,
+    };
+  }, [bodyAnalyses]);
+
+  // Calcular progreso del día actual
+  const todayProgress = useMemo((): DailyProgress => {
+    const today = getDateKey(new Date());
+    const todayAnalyses = nutritionAnalyses.filter(
+      (analysis: NutritionAnalysis) => analysis.date === today
+    );
+
+    const totals = todayAnalyses.reduce(
+      (acc: DailyProgress, analysis: NutritionAnalysis) => {
+        acc.totalCalories += analysis.totalCalories;
+        acc.protein += analysis.macronutrients.protein;
+        acc.carbs += analysis.macronutrients.carbs;
+        acc.fat += analysis.macronutrients.fat;
+        acc.fiber += analysis.macronutrients.fiber;
+        return acc;
+      },
+      {
+        totalCalories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+        fiber: 0,
+        mealsCount: todayAnalyses.length,
+      }
+    );
+
+    return totals;
+  }, [nutritionAnalyses]);
+
+  // Obtener el último análisis corporal
+  const lastBodyAnalysis = useMemo(() => {
+    if (bodyAnalyses.length === 0) return null;
+    return bodyAnalyses.sort((a: _BodyAnalysis, b: _BodyAnalysis) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    })[0];
+  }, [bodyAnalyses]);
 
   useEffect(() => {
     if (isAuthenticated && !user) {
@@ -106,18 +463,20 @@ export default function NutritionPage() {
     );
   }
 
-  // Lógica del NutritionTracker
+  // Lógica del NutritionTracker existente
   const today = new Date();
   const todayKey = getDateKey(today);
-  const todayNutrition = nutritionAnalyses.filter((n) => n.date === todayKey);
-  const totalCaloriesToday = todayNutrition.reduce(
-    (sum, n) => sum + n.totalCalories,
+  const todayNutrition = nutritionAnalyses.filter(
+    (n: NutritionAnalysis) => n.date === todayKey
+  );
+  const _totalCaloriesToday = todayNutrition.reduce(
+    (sum: number, n: NutritionAnalysis) => sum + n.totalCalories,
     0
   );
 
   // Filtrar análisis nutricionales
   const filteredNutritionAnalyses = nutritionAnalyses
-    .filter((analysis) => {
+    .filter((analysis: NutritionAnalysis) => {
       const analysisDate = new Date(analysis.createdAt || analysis.date);
       const now = new Date();
 
@@ -139,7 +498,7 @@ export default function NutritionPage() {
 
       return true;
     })
-    .sort((a, b) => {
+    .sort((a: NutritionAnalysis, b: NutritionAnalysis) => {
       if (foodFilters.sortBy === "date") {
         return (
           new Date(b.createdAt || b.date).getTime() -
@@ -157,17 +516,20 @@ export default function NutritionPage() {
   const weekStart = new Date(selectedDate);
   weekStart.setDate(weekStart.getDate() - weekStart.getDay());
 
-  const weeklyAnalyses = nutritionAnalyses.filter((analysis) => {
-    const analysisDate = new Date(analysis.createdAt || analysis.date);
-    return analysisDate >= weekStart && analysisDate <= selectedDate;
-  });
+  const weeklyAnalyses = nutritionAnalyses.filter(
+    (analysis: NutritionAnalysis) => {
+      const analysisDate = new Date(analysis.createdAt || analysis.date);
+      return analysisDate >= weekStart && analysisDate <= selectedDate;
+    }
+  );
 
   const weeklyStats = {
     averageCalories:
       weeklyAnalyses.length > 0
         ? Math.round(
             weeklyAnalyses.reduce(
-              (sum, analysis) => sum + analysis.totalCalories,
+              (sum: number, analysis: NutritionAnalysis) =>
+                sum + analysis.totalCalories,
               0
             ) / weeklyAnalyses.length
           )
@@ -177,12 +539,20 @@ export default function NutritionPage() {
   };
 
   const handleDeleteMeal = async (analysisId: string) => {
+    console.log("🔍 Analysis ID:", analysisId);
     if (
       confirm(
         "¿Estás seguro de que quieres eliminar este análisis nutricional?"
       )
     ) {
-      await deleteNutritionAnalysis(analysisId);
+      const response = await api.nutrition.deleteAnalysis(analysisId);
+      console.log("🔍 Response:", response);
+      if (response.success) {
+        toast.success("Análisis eliminado correctamente");
+      } else {
+        toast.error("Error al eliminar el análisis");
+      }
+      //await deleteNutritionAnalysis(analysisId);
     }
   };
 
@@ -195,23 +565,29 @@ export default function NutritionPage() {
   };
 
   const handleEditAnalysis = (analysis: NutritionAnalysis) => {
-    const timestamp = analysis.createdAt
-      ? new Date(analysis.createdAt)
-      : new Date();
-    setEditingAnalysis({
-      id: analysis.id,
-      date: analysis.date,
-      mealType: analysis.mealType,
-      time: timestamp.toTimeString().slice(0, 5),
-    });
+    setEditingAnalysis(analysis);
+    setShowEditDialog(true);
   };
 
-  const handleSaveEdit = async () => {
+  const handleAnalysisUpdated = () => {
+    // Refrescar los datos después de actualizar
+    // El store de Zustand ya manejará la actualización automática
+    console.log("✅ Análisis actualizado, datos refrescados");
+  };
+
+  const handleCloseEditDialog = () => {
+    setShowEditDialog(false);
+    setEditingAnalysis(null);
+  };
+
+  const _handleSaveEdit = async () => {
     if (!editingAnalysis) return;
 
     await updateNutritionAnalysis(editingAnalysis.id, {
       mealType: editingAnalysis.mealType,
       // Actualizar timestamp si es necesario
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
     setEditingAnalysis(null);
@@ -232,14 +608,15 @@ export default function NutritionPage() {
     }
   };
 
-  const formatDate = (timestamp: Date | undefined, fallbackDate: string) => {
+  const formatDate = (timestamp: string | undefined, fallbackDate: string) => {
     if (timestamp) {
+      console.log("🔍 Timestamp:", typeof timestamp);
       return {
-        date: timestamp.toLocaleDateString("es-ES", {
+        date: new Date(timestamp).toLocaleDateString("es-ES", {
           day: "numeric",
           month: "short",
         }),
-        time: timestamp.toLocaleTimeString("es-ES", {
+        time: new Date(timestamp).toLocaleTimeString("es-ES", {
           hour: "2-digit",
           minute: "2-digit",
         }),
@@ -295,9 +672,17 @@ export default function NutritionPage() {
         </nav>
       </div>
 
-      {/* Overview Tab */}
+      {/* Overview Tab con Dashboard */}
       {activeTab === "overview" && (
         <div className="space-y-6">
+          {/* Dashboard Nutricional */}
+          <NutritionDashboard
+            todayProgress={todayProgress}
+            nutritionGoals={nutritionGoals}
+            lastBodyAnalysis={lastBodyAnalysis}
+            onOpenBodyAnalyzer={() => setShowBodyAnalyzer(true)}
+          />
+
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Button
@@ -609,7 +994,7 @@ export default function NutritionPage() {
             <div className="space-y-4">
               {filteredNutritionAnalyses.map((analysis) => {
                 const dateInfo = formatDate(analysis.createdAt, analysis.date);
-                const isEditing = editingAnalysis?.id === analysis.id;
+                const _isEditing = editingAnalysis?.id === analysis.id;
 
                 return (
                   <div
@@ -645,7 +1030,9 @@ export default function NutritionPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleEditAnalysis(analysis)}
+                            onClick={() =>
+                              handleEditAnalysis(analysis as NutritionAnalysis)
+                            }
                             className="hover:bg-accent"
                           >
                             <Edit3 className="h-4 w-4" />
@@ -866,6 +1253,13 @@ export default function NutritionPage() {
       <SkinFoldDialog
         isOpen={showSkinFoldDialog}
         onClose={() => setShowSkinFoldDialog(false)}
+      />
+
+      <EditNutritionAnalysisDialog
+        isOpen={showEditDialog}
+        onClose={handleCloseEditDialog}
+        analysis={editingAnalysis}
+        onAnalysisUpdated={handleAnalysisUpdated}
       />
     </div>
   );

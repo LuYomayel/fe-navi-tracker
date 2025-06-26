@@ -11,7 +11,7 @@ import { WeeklyCalendar } from "@/components/calendar/WeeklyCalendar";
 import { AddActivityModal } from "@/components/calendar/AddActivityModal";
 import { DailyReflection } from "@/components/calendar/DailyReflection";
 import { AIAssistant } from "@/components/ai/AIAssistant";
-import { ReadingAssistant } from "@/components/ai/ReadingAssistant";
+import ReadingAssistant from "@/components/ai/ReadingAssistant";
 import { NutritionTracker } from "@/components/nutrition/NutritionTracker";
 
 export default function HabitsPage() {
@@ -84,10 +84,21 @@ export default function HabitsPage() {
         onClose={() => setShowAIAssistant(false)}
       />
 
-      <ReadingAssistant
-        isOpen={showReadingAssistant}
-        onClose={() => setShowReadingAssistant(false)}
-      />
+      {showReadingAssistant && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background rounded-lg p-6 max-w-4xl max-h-[90vh] overflow-auto">
+            <div className="flex justify-end mb-4">
+              <button
+                onClick={() => setShowReadingAssistant(false)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                ✕
+              </button>
+            </div>
+            <ReadingAssistant />
+          </div>
+        </div>
+      )}
 
       <NutritionTracker
         isOpen={showNutritionAnalyzer}
