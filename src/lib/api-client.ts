@@ -356,27 +356,11 @@ export const api = {
       apiClient.post<FoodAnalysisResponse>("/analyze-food/recipe", data),
     analyzeImage: (data: { image: string; mealType: MealType }) =>
       apiClient.post<FoodAnalysisResponse>("/analyze-food/image", data),
-    analyzeManual: (data: {
-      name: string;
-      servings: number;
-      calories: number;
-      protein: number;
-      carbs: number;
-      fat: number;
-      fiber: number;
-      sugar: number;
-      sodium: number;
-      mealType: MealType;
-    }) => apiClient.post<FoodAnalysisResponse>("/analyze-food/manual", data),
     analyzeManualFood: (data: {
       ingredients: string;
       servings: number;
       mealType: MealType;
-    }) =>
-      apiClient.post<FoodAnalysisResponse>(
-        "/analyze-food/manual-ingredients",
-        data
-      ),
+    }) => apiClient.post<FoodAnalysisResponse>("/analyze-food/manual", data),
   },
 
   preferences: {
