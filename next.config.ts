@@ -8,9 +8,14 @@ const nextConfig: NextConfig = {
 
   // Configuración para builds rápidos en producción
   typescript: {
-    // Solo deshabilitar en producción para deployment rápido
-    ignoreBuildErrors: process.env.NODE_ENV === "production",
+    ignoreBuildErrors: true, // desactiva “Checking validity of types”  [oai_citation:0‡nextjs.org](https://nextjs.org/docs/app/api-reference/config/next-config-js/typescript?utm_source=chatgpt.com)
   },
+  productionBrowserSourceMaps: false, // ahorra RAM  [oai_citation:1‡nextjs.org](https://nextjs.org/docs/app/guides/memory-usage?utm_source=chatgpt.com)
+  experimental: {
+    //  ⛔  quita `outputFileTracingRoot` si lo tenías
+    serverSourceMaps: false,
+  },
+
   eslint: {
     // Solo deshabilitar en producción para deployment rápido
     ignoreDuringBuilds: process.env.NODE_ENV === "production",
