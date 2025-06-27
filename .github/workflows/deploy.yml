@@ -18,10 +18,14 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: 22
           script: |
-            echo "🚀 Iniciando deployment de NaviTracker..."
-
-            # Navegar al directorio del proyecto
+            echo "🚀 Iniciando deployment remoto usando scripts/deploy.sh"
             cd /home/fe-navi-tracker
+            # Asegurarse de que el código esté actualizado antes de correr el script
+            git fetch origin && git reset --hard origin/main && git pull origin main
+
+            # Dar permisos y ejecutar el script de despliegue
+            chmod +x scripts/deploy.sh
+            bash scripts/deploy.sh
 
             # Verificar que estamos en el directorio correcto
             if [ ! -f "package.json" ]; then
@@ -92,12 +96,6 @@ jobs:
             if [ -d "node_modules" ]; then
               mv node_modules node_modules.backup.$(date +%Y%m%d-%H%M%S) || true
             fi
-
-            # Git pull desde main
-            echo "📥 Actualizando código desde Git..."
-            git fetch origin
-            git reset --hard origin/main
-            git pull origin main
 
             # Limpiar cache completamente
             echo "🧹 Limpiando cache completo..."
