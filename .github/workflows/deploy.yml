@@ -10,335 +10,150 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
       - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          port: 22
           script: |
-            echo "🚀 Iniciando deployment remoto usando scripts/deploy.sh"
-            cd /home/fe-navi-tracker
-            # Asegurarse de que el código esté actualizado antes de correr el script
-            git fetch origin && git reset --hard origin/main && git pull origin main
+            set -e
 
-            # Dar permisos y ejecutar el script de despliegue
-            chmod +x scripts/deploy.sh
-            bash scripts/deploy.sh
+            echo "🚀 Starting deployment..."
+
+            # Navegar al directorio del proyecto
+            cd ${{ secrets.PROJECT_PATH }}
 
             # Verificar que estamos en el directorio correcto
             if [ ! -f "package.json" ]; then
-              echo "❌ Error: No se encontró package.json en el directorio actual"
-              echo "📁 Directorio actual: $(pwd)"
-              echo "📂 Contenido del directorio:"
-              ls -la
+              echo "❌ Error: package.json not found in $(pwd)"
               exit 1
             fi
 
-            echo "📁 Directorio actual: $(pwd)"
+            echo "📁 Current directory: $(pwd)"
 
-            # CRÍTICO: Actualizar Node.js PRIMERO
-            echo "🔧 ACTUALIZANDO NODE.JS (CRÍTICO)..."
-
-            # Opción 1: Usar nvm si está disponible
-            if command -v nvm &> /dev/null; then
-              echo "📦 Usando nvm para actualizar Node.js..."
-              export NVM_DIR="$HOME/.nvm"
-              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-              [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-              
-              nvm install 20
-              nvm use 20
-              nvm alias default 20
-              echo "✅ Node.js actualizado via nvm: $(node --version)"
-              
-            # Opción 2: Instalar nvm si no existe
-            elif [ ! -d "$HOME/.nvm" ]; then
-              echo "📦 Instalando nvm y Node.js 20..."
-              curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-              export NVM_DIR="$HOME/.nvm"
-              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-              
-              nvm install 20
-              nvm use 20
-              nvm alias default 20
-              echo "✅ Node.js instalado via nvm: $(node --version)"
-              
-            # Opción 3: Actualizar Node.js del sistema
-            else
-              echo "⚠️  Intentando actualizar Node.js del sistema..."
-              # Para Ubuntu/Debian
-              if command -v apt &> /dev/null; then
-                curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-                sudo apt-get install -y nodejs
-                echo "✅ Node.js actualizado via apt: $(node --version)"
-              # Para CentOS/RHEL
-              elif command -v yum &> /dev/null; then
-                curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
-                sudo yum install -y nodejs
-                echo "✅ Node.js actualizado via yum: $(node --version)"
-              else
-                echo "❌ No se pudo actualizar Node.js automáticamente"
-                echo "⚠️  Continuando con Node.js actual: $(node --version)"
-              fi
-            fi
-
-            # Verificar versión final de Node.js
-            NODE_VERSION=$(node --version | sed 's/v//')
-            echo "🔍 Node.js final: v$NODE_VERSION"
-
-            # Hacer backup de la versión actual
-            echo "💾 Creando backup..."
-            if [ -d ".next" ]; then
-              mv .next .next.backup.$(date +%Y%m%d-%H%M%S) || true
-            fi
-            if [ -d "node_modules" ]; then
-              mv node_modules node_modules.backup.$(date +%Y%m%d-%H%M%S) || true
-            fi
-
-            # Limpiar cache completamente
-            echo "🧹 Limpiando cache completo..."
-            npm cache clean --force || true
-            rm -rf ~/.npm/_cacache || true
-            rm -rf node_modules package-lock.json || true
-
-            # CONFIGURAR TIMEOUTS LARGOS PARA NPM
-            echo "⚙️  Configurando npm para conexiones lentas..."
-            npm config set timeout 300000
-            npm config set fetch-timeout 300000
-            npm config set fetch-retry-mintimeout 20000
-            npm config set fetch-retry-maxtimeout 120000
-            npm config set fetch-retries 5
-
-            # Instalar dependencias con múltiples intentos
-            echo "📦 Instalando dependencias (con reintentos)..."
-            INSTALL_SUCCESS=false
-            for attempt in 1 2 3 4 5; do
-              echo "🔄 Intento $attempt de instalación..."
-              
-              if npm install --production=false --legacy-peer-deps --engine-strict=false --timeout=300000; then
-                INSTALL_SUCCESS=true
-                echo "✅ Instalación exitosa en intento $attempt"
+            # Git pull con retry
+            echo "📥 Pulling latest changes..."
+            for i in {1..3}; do
+              if git pull origin main; then
                 break
               else
-                echo "❌ Falló intento $attempt, esperando 30 segundos..."
-                sleep 30
-                
-                # Limpiar y reintentar
-                rm -rf node_modules package-lock.json || true
-                npm cache clean --force || true
+                echo "⚠️ Git pull failed, attempt $i/3"
+                if [ $i -eq 3 ]; then
+                  echo "❌ Git pull failed after 3 attempts"
+                  exit 1
+                fi
+                sleep 5
               fi
             done
 
-            if [ "$INSTALL_SUCCESS" = false ]; then
-              echo "❌ ERROR CRÍTICO: Falló la instalación después de 5 intentos"
-              echo "🔍 Intentando instalación de emergencia sin package-lock..."
-              rm -f package-lock.json
-              npm install --no-package-lock --legacy-peer-deps --engine-strict=false --timeout=300000
+            # Verificar y actualizar Node.js si es necesario
+            echo "🔍 Checking Node.js version..."
+            NODE_VERSION=$(node --version | cut -d'v' -f2)
+            REQUIRED_VERSION="18.18.0"
+
+            if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$NODE_VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
+              echo "⚠️ Node.js version $NODE_VERSION is too old, updating..."
               
-              if [ ! -d "node_modules" ]; then
-                echo "❌ FALLO TOTAL: No se pudo instalar dependencias"
-                exit 1
+              # Instalar/actualizar nvm si no existe
+              if [ ! -s "$HOME/.nvm/nvm.sh" ]; then
+                echo "📦 Installing nvm..."
+                curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
               fi
-            fi
-
-            # Verificar instalación crítica
-            echo "🔍 Verificando instalaciones críticas..."
-            if [ ! -d "node_modules" ]; then
-              echo "❌ Error: node_modules no existe"
-              exit 1
-            fi
-
-            if [ ! -f "node_modules/.bin/next" ]; then
-              echo "❌ Error: next CLI no está instalado"
-              echo "🔄 Instalando Next.js globalmente como respaldo..."
-              npm install -g next@latest || true
-            fi
-
-            # CONFIGURAR NEXT.JS PARA STANDALONE Y DESHABILITAR TYPE CHECKING
-            echo "⚙️  Configurando Next.js para modo standalone..."
-
-            # Verificar/crear next.config.ts con output standalone y sin type checking
-            echo "📝 Configurando next.config.ts para build rápido..."
-            cat > next.config.ts << 'EOF'
-            import type { NextConfig } from "next";
-
-            const nextConfig: NextConfig = {
-              output: 'standalone',
-              typescript: {
-                // ⚠️ PELIGROSO: Deshabilita type checking durante build
-                // Solo para deployment rápido - los tipos se verifican en desarrollo
-                ignoreBuildErrors: true,
-              },
-              eslint: {
-                // Deshabilita ESLint durante build para mayor velocidad
-                ignoreDuringBuilds: true,
-              },
-              experimental: {
-                outputFileTracingRoot: undefined,
-              },
-              serverExternalPackages: ["@prisma/client", "prisma"],
-              poweredByHeader: false,
-              compress: true,
-              images: {
-                domains: ["localhost"],
-                remotePatterns: [
-                  {
-                    protocol: "https",
-                    hostname: "**",
-                  },
-                ],
-              },
-            };
-
-            export default nextConfig;
-            EOF
-
-            # Build del proyecto con configuración específica
-            echo "🔨 Construyendo proyecto (SIN type checking para velocidad)..."
-            export NODE_ENV=production
-            export NEXT_TELEMETRY_DISABLED=1
-            export SKIP_VALIDATE=1
-
-            # CRÍTICO: Deshabilitar completamente TypeScript checking
-            export TSC_COMPILE_ON_ERROR=true
-            export NEXT_LINT=false
-
-            # Intentar build con diferentes métodos
-            BUILD_SUCCESS=false
-
-            # Método 1: npx next build (más rápido sin type checking)
-            echo "🚀 Método 1: Build rápido sin type checking..."
-            if timeout 600 npx next build --no-lint; then
-              BUILD_SUCCESS=true
-              echo "✅ Build exitoso con npx (método 1)"
-            # Método 2: npm run build
-            elif timeout 600 npm run build; then
-              BUILD_SUCCESS=true
-              echo "✅ Build exitoso con npm (método 2)"
-            # Método 3: Build forzado sin validaciones
-            elif timeout 600 npx next build --experimental-build-mode=compile; then
-              BUILD_SUCCESS=true
-              echo "✅ Build exitoso forzado (método 3)"
+              
+              # Cargar nvm
+              export NVM_DIR="$HOME/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+              
+              # Instalar y usar Node.js 20
+              nvm install 20
+              nvm use 20
+              nvm alias default 20
+              
+              echo "✅ Node.js updated to $(node --version)"
             else
-              echo "❌ ERROR: Falló el build con todos los métodos"
-              echo "🔍 Logs del último intento:"
-              tail -50 ~/.npm/_logs/*debug*.log 2>/dev/null || echo "No hay logs disponibles"
-              exit 1
+              echo "✅ Node.js version $NODE_VERSION is compatible"
             fi
 
-            # Verificar que el build fue exitoso
-            if [ ! -d ".next" ]; then
-              echo "❌ Error: Build falló - no se encontró directorio .next"
-              exit 1
+            # Instalar dependencias con optimizaciones
+            echo "📦 Installing dependencies..."
+            npm ci --production=false --legacy-peer-deps --engine-strict=false --timeout=300000 --maxsockets=5
+
+            # Build con configuración optimizada
+            echo "🔨 Building application..."
+            export NODE_OPTIONS="--max-old-space-size=2048"
+            export NODE_ENV="production"
+
+            # Usar build rápido que ignora type checking
+            timeout 600 npm run build:fast || {
+              echo "⚠️ Fast build failed, trying regular build..."
+              timeout 600 npm run build || {
+                echo "❌ Build failed"
+                exit 1
+              }
+            }
+
+            echo "✅ Build completed successfully"
+
+            # Restart PM2
+            echo "🔄 Restarting PM2..."
+            if pm2 list | grep -q "navi-tracker-frontend"; then
+              pm2 restart navi-tracker-frontend
+            else
+              echo "⚠️ PM2 process 'navi-tracker-frontend' not found, starting new process..."
+              pm2 start ecosystem.config.js
             fi
 
-            # VERIFICAR ARCHIVO STANDALONE
-            STANDALONE_SERVER=".next/standalone/server.js"
-            if [ ! -f "$STANDALONE_SERVER" ]; then
-              echo "⚠️  Archivo standalone no encontrado, usando configuración alternativa..."
-              
-              # Crear script de inicio alternativo
-              cat > start-server.js << 'EOF'
-            const { createServer } = require('http')
-            const { parse } = require('url')
-            const next = require('next')
-
-            const dev = process.env.NODE_ENV !== 'production'
-            const hostname = 'localhost'
-            const port = process.env.PORT || 3150
-
-            const app = next({ dev, hostname, port })
-            const handle = app.getRequestHandler()
-
-            app.prepare().then(() => {
-              createServer(async (req, res) => {
-                try {
-                  const parsedUrl = parse(req.url, true)
-                  await handle(req, res, parsedUrl)
-                } catch (err) {
-                  console.error('Error occurred handling', req.url, err)
-                  res.statusCode = 500
-                  res.end('internal server error')
-                }
-              }).listen(port, (err) => {
-                if (err) throw err
-                console.log(`> Ready on http://${hostname}:${port}`)
-              })
-            })
-            EOF
-              
-              STANDALONE_SERVER="start-server.js"
-            fi
-
-            echo "✅ Build completado exitosamente"
-            echo "📄 Usando servidor: $STANDALONE_SERVER"
-
-            # Actualizar configuración de PM2
-            echo "⚙️  Actualizando configuración de PM2..."
-            cat > ecosystem.config.js << EOF
-            module.exports = {
-              apps: [{
-                name: 'navi-tracker-frontend',
-                script: '$STANDALONE_SERVER',
-                cwd: '/home/fe-navi-tracker',
-                instances: 1,
-                exec_mode: 'cluster',
-                env: {
-                  NODE_ENV: 'production',
-                  PORT: 3150,
-                  NEXT_PUBLIC_BACKEND_URL: 'https://api-navi-tracker.luciano-yomayel.com',
-                  NEXT_PUBLIC_API_URL: 'https://api-navi-tracker.luciano-yomayel.com',
-                },
-                error_file: './logs/err.log',
-                out_file: './logs/out.log',
-                log_file: './logs/combined.log',
-                time: true,
-                max_memory_restart: '500M'
-              }]
-            };
-            EOF
-
-            # Crear directorio de logs
-            mkdir -p logs
-
-            # Reiniciar PM2
-            echo "🔄 Reiniciando PM2..."
-            pm2 delete navi-tracker-frontend 2>/dev/null || true
-            pm2 start ecosystem.config.js
-
-            # Verificar estado de PM2
-            sleep 5
-            pm2 status
-
-            # Reiniciar Apache2
-            echo "🔄 Reiniciando Apache2..."
+            # Restart Apache2
+            echo "🔄 Restarting Apache2..."
             sudo systemctl restart apache2
 
-            # Verificar que la aplicación esté respondiendo
-            echo "🔍 Verificando que la aplicación esté funcionando..."
-            sleep 10
+            # Verificar que los servicios están corriendo
+            echo "🔍 Verifying services..."
 
-            # Test de conectividad local
-            if curl -f http://localhost:3150 > /dev/null 2>&1; then
-              echo "✅ Aplicación respondiendo en puerto 3150"
+            # Verificar PM2
+            if pm2 list | grep -q "online.*navi-tracker-frontend"; then
+              echo "✅ PM2 service is running"
             else
-              echo "⚠️  Aplicación no responde, verificando logs..."
-              pm2 logs navi-tracker-frontend --lines 10 || true
+              echo "❌ PM2 service failed to start"
+              pm2 logs navi-tracker-frontend --lines 10
+              exit 1
             fi
 
-            # Limpiar backups antiguos (más de 3 días)
-            echo "🧹 Limpiando backups antiguos..."
-            find . -maxdepth 1 -name "*.backup.*" -mtime +3 -delete || true
+            # Verificar Apache2
+            if systemctl is-active --quiet apache2; then
+              echo "✅ Apache2 is running"
+            else
+              echo "❌ Apache2 failed to start"
+              sudo systemctl status apache2
+              exit 1
+            fi
 
-            echo "🎉 Deployment completado!"
-            echo "📊 Estado final:"
-            echo "- Node.js: $(node --version)"
-            echo "- npm: $(npm --version)"
-            echo "- Servidor: $STANDALONE_SERVER"
-            echo "- PM2: $(pm2 list | grep navi-tracker-frontend | awk '{print $12}' || echo 'verificar manualmente')"
-            echo "- Apache2: $(sudo systemctl is-active apache2)"
+            # Health check
+            echo "🏥 Performing health check..."
+            sleep 5
 
-            # Log del deployment
-            echo "$(date): Deployment exitoso - Node.js $(node --version) - Commit $(git rev-parse --short HEAD)" >> deployment.log
+            if curl -f -s http://localhost:3150 > /dev/null; then
+              echo "✅ Health check passed - Application is responding"
+            else
+              echo "⚠️ Health check failed - Application might be starting up"
+              echo "📊 PM2 status:"
+              pm2 list
+              echo "📋 Recent logs:"
+              pm2 logs navi-tracker-frontend --lines 5
+            fi
+
+            echo "🎉 Deployment completed successfully!"
+            echo "📊 Final status:"
+            pm2 list
+            echo "💾 Disk usage:"
+            df -h | head -2

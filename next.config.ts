@@ -1,59 +1,102 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["@prisma/client", "prisma"],
-
-  // Configuración para deployment en producción
-  output: "standalone",
-
-  // Configuración para builds rápidos en producción
-  typescript: {
-    ignoreBuildErrors: true, // desactiva “Checking validity of types”  [oai_citation:0‡nextjs.org](https://nextjs.org/docs/app/api-reference/config/next-config-js/typescript?utm_source=chatgpt.com)
+  // Optimizaciones de compilación
+  compiler: {
+    // Remover console.log en producción
+    removeConsole: process.env.NODE_ENV === "production",
   },
-  productionBrowserSourceMaps: false, // ahorra RAM  [oai_citation:1‡nextjs.org](https://nextjs.org/docs/app/guides/memory-usage?utm_source=chatgpt.com)
-  experimental: {
-    //  ⛔  quita `outputFileTracingRoot` si lo tenías
-    serverSourceMaps: false,
+
+  // Optimizaciones de build
+  typescript: {
+    // Ignorar errores de TypeScript en build (para acelerar)
+    ignoreBuildErrors: process.env.NODE_ENV === "production",
   },
 
   eslint: {
-    // Solo deshabilitar en producción para deployment rápido
+    // Ignorar errores de ESLint en build
     ignoreDuringBuilds: process.env.NODE_ENV === "production",
   },
 
-  poweredByHeader: false,
+  // Configuración de salida
+  output: "standalone",
+
+  // Configuración para builds rápidos en producción
+  productionBrowserSourceMaps: false, // ahorra RAM
   compress: true,
 
-  // Configuración de imágenes
+  // Configuración de imágenes optimizada
   images: {
-    domains: ["localhost"],
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "**",
-      },
-    ],
+    formats: ["image/webp", "image/avif"],
+    deviceSizes: [640, 750, 828, 1080, 1200],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256],
+    minimumCacheTTL: 60,
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // Headers de seguridad
+  // Optimizaciones de webpack
+  webpack: (config, { dev, isServer }) => {
+    // Optimizaciones de memoria
+    config.optimization = {
+      ...config.optimization,
+      splitChunks: {
+        chunks: "all",
+        cacheGroups: {
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: "vendors",
+            chunks: "all",
+            maxSize: 244000, // 244KB max por chunk
+          },
+        },
+      },
+    };
+
+    // Reducir uso de memoria en development
+    if (dev) {
+      config.optimization.splitChunks = false;
+      config.optimization.minimize = false;
+    }
+
+    // Optimizaciones para el servidor
+    if (isServer) {
+      config.optimization.minimize = false;
+    }
+
+    return config;
+  },
+
+  // Configuración de headers
   async headers() {
     return [
       {
         source: "/(.*)",
         headers: [
           {
-            key: "X-Frame-Options",
-            value: "DENY",
-          },
-          {
             key: "X-Content-Type-Options",
             value: "nosniff",
           },
           {
-            key: "Referrer-Policy",
-            value: "origin-when-cross-origin",
+            key: "X-Frame-Options",
+            value: "DENY",
+          },
+          {
+            key: "X-XSS-Protection",
+            value: "1; mode=block",
           },
         ],
+      },
+    ];
+  },
+
+  // Configuración de redirects
+  async redirects() {
+    return [
+      {
+        source: "/dashboard",
+        destination: "/",
+        permanent: false,
       },
     ];
   },

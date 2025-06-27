@@ -2,7 +2,8 @@ import { MealType, FoodAnalysisResponse } from "@/types";
 
 // Configuración de la API
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://api-navi-tracker.luciano-yomayel.com";
 console.log("API_BASE_URL", API_BASE_URL);
 // Función helper para obtener el token desde el store
 function getAuthToken(): string | null {
@@ -25,7 +26,7 @@ async function fetchAPI<T = unknown>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_BASE_URL}/api${endpoint}`;
+  const url = `${API_BASE_URL}${endpoint}`;
 
   // Obtener token automáticamente
   const token = getAuthToken();
