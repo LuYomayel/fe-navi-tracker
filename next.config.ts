@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
 
+// Detectar si estamos en Netlify
+const isNetlifyBuild = process.env.NETLIFY === "true";
+
 const nextConfig: NextConfig = {
   // Optimizaciones de compilación
   compiler: {
@@ -18,10 +21,10 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: process.env.NODE_ENV === "production",
   },
 
-  // Configuración de salida para sitio estático
-  output: "export",
-  trailingSlash: true,
-  skipTrailingSlashRedirect: true,
+  // Configuración de salida condicional
+  output: isNetlifyBuild ? "export" : "standalone",
+  trailingSlash: isNetlifyBuild ? true : false,
+  skipTrailingSlashRedirect: isNetlifyBuild ? true : false,
 
   // Configuración para builds rápidos en producción
   productionBrowserSourceMaps: false, // ahorra RAM
@@ -29,7 +32,7 @@ const nextConfig: NextConfig = {
 
   // Configuración de imágenes optimizada
   images: {
-    unoptimized: true, // Necesario para export estático
+    unoptimized: isNetlifyBuild, // Solo para export estático
     formats: ["image/webp", "image/avif"],
     deviceSizes: [640, 750, 828, 1080, 1200],
     imageSizes: [16, 32, 48, 64, 96, 128, 256],
@@ -70,39 +73,43 @@ const nextConfig: NextConfig = {
     return config;
   },
 
-  // Configuración de headers (no funciona con export estático)
-  // async headers() {
-  //   return [
-  //     {
-  //       source: "/(.*)",
-  //       headers: [
-  //         {
-  //           key: "X-Content-Type-Options",
-  //           value: "nosniff",
-  //         },
-  //         {
-  //           key: "X-Frame-Options",
-  //           value: "DENY",
-  //         },
-  //         {
-  //           key: "X-XSS-Protection",
-  //           value: "1; mode=block",
-  //         },
-  //       ],
-  //     },
-  //   ];
-  // },
+  // Configuración de headers (solo para VPS)
+  ...(!isNetlifyBuild && {
+    async headers() {
+      return [
+        {
+          source: "/(.*)",
+          headers: [
+            {
+              key: "X-Content-Type-Options",
+              value: "nosniff",
+            },
+            {
+              key: "X-Frame-Options",
+              value: "DENY",
+            },
+            {
+              key: "X-XSS-Protection",
+              value: "1; mode=block",
+            },
+          ],
+        },
+      ];
+    },
+  }),
 
-  // Configuración de redirects (no funciona con export estático)
-  // async redirects() {
-  //   return [
-  //     {
-  //       source: "/dashboard",
-  //       destination: "/",
-  //       permanent: false,
-  //     },
-  //   ];
-  // },
+  // Configuración de redirects (solo para VPS)
+  ...(!isNetlifyBuild && {
+    async redirects() {
+      return [
+        {
+          source: "/dashboard",
+          destination: "/",
+          permanent: false,
+        },
+      ];
+    },
+  }),
 };
 
 export default nextConfig;

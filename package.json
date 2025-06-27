@@ -6,6 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "NODE_OPTIONS='--max-old-space-size=2048' next build",
     "build:fast": "NODE_OPTIONS='--max-old-space-size=1024' SKIP_TYPE_CHECK=true next build",
+    "build:vps": "NODE_OPTIONS='--max-old-space-size=2048' next build",
+    "build:netlify": "NODE_OPTIONS='--max-old-space-size=1024' SKIP_TYPE_CHECK=true NETLIFY=true next build",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",

@@ -1,6 +1,6 @@
 [build]
-  # Comando de build optimizado
-  command = "npm run build:fast"
+  # Comando de build específico para Netlify
+  command = "npm run build:netlify"
   
   # Directorio de salida correcto para Next.js
   publish = "out"
