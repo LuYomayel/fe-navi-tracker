@@ -2,8 +2,8 @@
   # Comando de build optimizado
   command = "npm run build:fast"
   
-  # Directorio de salida
-  publish = ".next"
+  # Directorio de salida correcto para Next.js
+  publish = "out"
   
   # Variables de entorno para el build
   [build.environment]
@@ -13,12 +13,11 @@
     NEXT_TELEMETRY_DISABLED = "1"
     SKIP_TYPE_CHECK = "true"
 
-# Configuración de redirects para SPA
+# Configuración de redirects para Next.js SPA
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-  conditions = {Role = ["admin", "editor"]}
 
 # Configuración de headers para optimización
 [[headers]]
@@ -86,12 +85,15 @@
 # Variables de entorno específicas para diferentes contextos
 [context.production.environment]
   NEXT_PUBLIC_API_URL = "https://api-navi-tracker.luciano-yomayel.com"
+  NEXT_PUBLIC_BACKEND_URL = "https://api-navi-tracker.luciano-yomayel.com"
   NODE_ENV = "production"
 
 [context.deploy-preview.environment]
   NEXT_PUBLIC_API_URL = "https://api-navi-tracker-staging.luciano-yomayel.com"
+  NEXT_PUBLIC_BACKEND_URL = "https://api-navi-tracker-staging.luciano-yomayel.com"
   NODE_ENV = "production"
 
 [context.branch-deploy.environment]
   NEXT_PUBLIC_API_URL = "https://api-navi-tracker-dev.luciano-yomayel.com"
+  NEXT_PUBLIC_BACKEND_URL = "https://api-navi-tracker-dev.luciano-yomayel.com"
   NODE_ENV = "development" 

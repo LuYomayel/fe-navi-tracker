@@ -18,8 +18,10 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: process.env.NODE_ENV === "production",
   },
 
-  // Configuración de salida
-  output: "standalone",
+  // Configuración de salida para sitio estático
+  output: "export",
+  trailingSlash: true,
+  skipTrailingSlashRedirect: true,
 
   // Configuración para builds rápidos en producción
   productionBrowserSourceMaps: false, // ahorra RAM
@@ -27,6 +29,7 @@ const nextConfig: NextConfig = {
 
   // Configuración de imágenes optimizada
   images: {
+    unoptimized: true, // Necesario para export estático
     formats: ["image/webp", "image/avif"],
     deviceSizes: [640, 750, 828, 1080, 1200],
     imageSizes: [16, 32, 48, 64, 96, 128, 256],
@@ -67,39 +70,39 @@ const nextConfig: NextConfig = {
     return config;
   },
 
-  // Configuración de headers
-  async headers() {
-    return [
-      {
-        source: "/(.*)",
-        headers: [
-          {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
-          },
-          {
-            key: "X-Frame-Options",
-            value: "DENY",
-          },
-          {
-            key: "X-XSS-Protection",
-            value: "1; mode=block",
-          },
-        ],
-      },
-    ];
-  },
+  // Configuración de headers (no funciona con export estático)
+  // async headers() {
+  //   return [
+  //     {
+  //       source: "/(.*)",
+  //       headers: [
+  //         {
+  //           key: "X-Content-Type-Options",
+  //           value: "nosniff",
+  //         },
+  //         {
+  //           key: "X-Frame-Options",
+  //           value: "DENY",
+  //         },
+  //         {
+  //           key: "X-XSS-Protection",
+  //           value: "1; mode=block",
+  //         },
+  //       ],
+  //     },
+  //   ];
+  // },
 
-  // Configuración de redirects
-  async redirects() {
-    return [
-      {
-        source: "/dashboard",
-        destination: "/",
-        permanent: false,
-      },
-    ];
-  },
+  // Configuración de redirects (no funciona con export estático)
+  // async redirects() {
+  //   return [
+  //     {
+  //       source: "/dashboard",
+  //       destination: "/",
+  //       permanent: false,
+  //     },
+  //   ];
+  // },
 };
 
 export default nextConfig;
