@@ -5,6 +5,7 @@ import { GlobalToaster } from "@/components/ui/global-toaster";
 import PWAInstaller from "@/components/PWAInstaller";
 import NetworkStatus from "@/components/NetworkStatus";
 import PWAUpdatePrompt from "@/components/PWAUpdatePrompt";
+import UnregisterSW from "@/components/UnregisterSW";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -64,6 +65,7 @@ export default function RootLayout({
         <PWAInstaller />
         <NetworkStatus />
         <PWAUpdatePrompt />
+        <UnregisterSW />
       </body>
     </html>
   );

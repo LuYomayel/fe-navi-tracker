@@ -27,7 +27,7 @@ import {
   FoodCategory as _FoodCategory,
   NutritionAnalysis,
 } from "@/types";
-import { useNaviTrackerStore } from "@/store";
+
 import { api } from "@/lib/api-client";
 import { getDateKey } from "@/lib/utils";
 import { toast } from "@/lib/toast-helper";
@@ -302,33 +302,6 @@ export function FoodAnalyzer({
       if (!apiResponse.success) {
         throw Error(apiResponse.message || "Error al guardar la wea");
       }
-      // Usar el store de Zustand que tiene integración con base de datos
-      const store = useNaviTrackerStore.getState();
-
-      const analysis = {
-        userId: "default",
-        date: getDateKey(selectedDate),
-        mealType: resultToSave.mealType,
-        foods: resultToSave.foods,
-        totalCalories: resultToSave.totalCalories,
-        macronutrients: resultToSave.macronutrients,
-        imageUrl: analysisMethod === "photo" ? "" : "", // No guardamos la imagen para evitar QuotaExceededError
-        aiConfidence: resultToSave.confidence,
-        userAdjustments: {
-          adjustedCalories: resultToSave.totalCalories,
-          adjustedFoods: resultToSave.foods,
-          notes: `Ajuste aplicado: ${adjustmentPercentage}%`,
-        },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      // Usar el store que ya tiene integración con base de datos
-      await store.addNutritionAnalysis(analysis);
-
-      console.log("✅ Análisis nutricional guardado:", analysis);
-      toast.success("✅ Análisis nutricional guardado correctamente");
-
       // Reset component
       handleReset();
       onClose();
