@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import {
   Camera,
   Upload,
@@ -96,18 +96,6 @@ export function BodyAnalyzer({
   const [showGoalsModal, setShowGoalsModal] = useState(false);
   const [selectedBodyAnalysis, setSelectedBodyAnalysis] =
     useState<BodyAnalysis | null>(null);
-
-  // Limpiar localStorage viejo al abrir el componente
-  useEffect(() => {
-    if (isOpen) {
-      try {
-        localStorage.removeItem("bodyAnalyses");
-        console.log("🧹 localStorage limpiado de datos pesados");
-      } catch {
-        console.log("No hay datos viejos para limpiar");
-      }
-    }
-  }, [isOpen]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -288,55 +276,10 @@ export function BodyAnalyzer({
       onAnalysisSaved?.();
     } catch (error) {
       console.error("❌ Error guardando análisis corporal:", error);
-
-      // Fallback: guardar en localStorage con toda la información
-      try {
-        const analysisLight = {
-          id: `body_${Date.now()}`,
-          bodyType: analysisResult.bodyType,
-          confidence: analysisResult.confidence,
-          date: new Date().toISOString().split("T")[0],
-          fitnessGoal: formData.fitnessGoal,
-          // Guardar toda la información de la API
-          fullAnalysisData: {
-            measurements: analysisResult.measurements,
-            bodyComposition: analysisResult.bodyComposition,
-            recommendations: analysisResult.recommendations,
-            progress: analysisResult.progress,
-            disclaimer: analysisResult.disclaimer,
-            insights: analysisResult.insights,
-          },
-        };
-
-        const existingAnalyses = JSON.parse(
-          localStorage.getItem("bodyAnalysesLight") || "[]"
-        );
-
-        if (existingAnalyses.length >= 10) {
-          existingAnalyses.shift();
-        }
-
-        existingAnalyses.push(analysisLight);
-        localStorage.setItem(
-          "bodyAnalysesLight",
-          JSON.stringify(existingAnalyses)
-        );
-
-        console.log("✅ Análisis guardado en localStorage (versión completa)");
-        toast.success(
-          "Análisis guardado",
-          "Análisis corporal guardado correctamente"
-        );
-
-        onClose();
-        onAnalysisSaved?.();
-      } catch (localStorageError) {
-        console.error("❌ Error guardando en localStorage:", localStorageError);
-        toast.error(
-          "Error",
-          "Error al guardar el análisis. Intenta limpiar el almacenamiento del navegador."
-        );
-      }
+      toast.error(
+        "Error",
+        "No se pudo guardar el análisis. Inténtalo de nuevo más tarde."
+      );
     }
   };
 

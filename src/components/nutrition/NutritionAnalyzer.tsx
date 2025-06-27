@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import {
   Camera,
   Upload,
@@ -25,11 +25,13 @@ import {
   DetectedFood,
   Macronutrients,
   FoodCategory as _FoodCategory,
+  NutritionAnalysis,
 } from "@/types";
 import { useNaviTrackerStore } from "@/store";
 import { api } from "@/lib/api-client";
 import { getDateKey } from "@/lib/utils";
 import { toast } from "@/lib/toast-helper";
+import Image from "next/image";
 
 interface FoodAnalyzerProps {
   isOpen: boolean;
@@ -85,18 +87,6 @@ export function FoodAnalyzer({
   const [editableResult, setEditableResult] = useState<AnalysisResult | null>(
     null
   );
-
-  // Limpiar localStorage viejo al abrir el componente
-  useEffect(() => {
-    if (isOpen) {
-      try {
-        localStorage.removeItem("nutritionAnalyses");
-        console.log("🧹 localStorage de análisis nutricionales limpiado");
-      } catch {
-        console.log("No hay datos viejos para limpiar");
-      }
-    }
-  }, [isOpen]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -285,9 +275,7 @@ export function FoodAnalyzer({
 
     try {
       // Esto es lo que tengo que enviar a la API
-
-      // Guardar en base de datos
-      const apiResponse = await api.nutrition.createAnalysis({
+      const data: NutritionAnalysis = {
         id: "default",
         userId: "default",
         date: getDateKey(selectedDate),
@@ -304,10 +292,16 @@ export function FoodAnalyzer({
         },
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      };
+      console.log("Body: ", data);
+      // return;
+      // Guardar en base de datos
+      const apiResponse = await api.nutrition.createAnalysis(data);
 
       console.log("🔍 API Response:", apiResponse);
-
+      if (!apiResponse.success) {
+        throw Error(apiResponse.message || "Error al guardar la wea");
+      }
       // Usar el store de Zustand que tiene integración con base de datos
       const store = useNaviTrackerStore.getState();
 
@@ -345,48 +339,10 @@ export function FoodAnalyzer({
     } catch (error) {
       console.error("❌ Error guardando análisis nutricional:", error);
 
-      // Fallback: guardar solo los datos esenciales en localStorage (sin imagen)
-      try {
-        const analysisLight = {
-          id: `nutrition_${Date.now()}`,
-          date: getDateKey(selectedDate),
-          mealType: resultToSave.mealType,
-          totalCalories: resultToSave.totalCalories,
-          confidence: resultToSave.confidence,
-          timestamp: new Date().toISOString(),
-        };
-
-        const existingAnalyses = JSON.parse(
-          localStorage.getItem("nutritionAnalysesLight") || "[]"
-        );
-
-        // Mantener solo los últimos 10 análisis para evitar problemas de espacio
-        if (existingAnalyses.length >= 10) {
-          existingAnalyses.shift();
-        }
-
-        existingAnalyses.push(analysisLight);
-        localStorage.setItem(
-          "nutritionAnalysesLight",
-          JSON.stringify(existingAnalyses)
-        );
-
-        console.log("✅ Análisis guardado en localStorage (versión ligera)");
-        toast.success("✅ Análisis nutricional guardado correctamente");
-
-        // Reset component
-        handleReset();
-        onClose();
-
-        if (onAnalysisSaved) {
-          onAnalysisSaved();
-        }
-      } catch (localStorageError) {
-        console.error("❌ Error guardando en localStorage:", localStorageError);
-        toast.error(
-          "❌ Error al guardar el análisis. Intenta limpiar el almacenamiento del navegador."
-        );
-      }
+      toast.error(
+        "Error",
+        error instanceof Error ? error.message : "Error desconocido"
+      );
     }
   };
 
@@ -603,7 +559,7 @@ export function FoodAnalyzer({
                   Confirma los detalles
                 </h3>
                 <div className="space-y-4">
-                  <img
+                  <Image
                     src={selectedImage}
                     alt="Comida seleccionada"
                     className="w-full max-w-md mx-auto rounded-lg border"
@@ -674,7 +630,7 @@ export function FoodAnalyzer({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <img
+                  <Image
                     src={selectedImage}
                     alt="Comida analizada"
                     className="w-full rounded-lg border"
@@ -1077,54 +1033,6 @@ export function FoodAnalyzer({
                 onChange={handleImageUpload}
                 className="hidden"
               />
-            </div>
-          )}
-
-          {step === "selecting" && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-medium mb-4">
-                  Confirma los detalles
-                </h3>
-                <div className="space-y-4">
-                  <img
-                    src={selectedImage}
-                    alt="Comida seleccionada"
-                    className="w-full max-w-md mx-auto rounded-lg border"
-                  />
-
-                  <div>
-                    <Label htmlFor="mealType">Tipo de comida</Label>
-                    <select
-                      id="mealType"
-                      value={selectedMealType}
-                      onChange={(e) =>
-                        setSelectedMealType(e.target.value as MealType)
-                      }
-                      className="w-full p-2 border rounded-lg bg-background"
-                    >
-                      {mealTypeOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.emoji} {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={handleReset}
-                  className="flex-1"
-                >
-                  Cambiar foto
-                </Button>
-                <Button onClick={handleAnalyze} className="flex-1">
-                  Analizar alimentos
-                </Button>
-              </div>
             </div>
           )}
         </div>

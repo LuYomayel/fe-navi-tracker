@@ -873,15 +873,9 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
     }),
     {
       name: "navi-tracker-storage",
+      // Solo guardamos preferencias de usuario; el resto viene de la API
       partialize: (state) => ({
-        activities: state.activities,
-        completions: state.completions,
-        dailyNotes: state.dailyNotes,
         preferences: state.preferences,
-        nutritionAnalyses: state.nutritionAnalyses,
-        bodyAnalyses: state.bodyAnalyses,
-        skinFoldRecords: state.skinFoldRecords,
-        chatHistory: state.chatHistory,
       }),
     }
   )
