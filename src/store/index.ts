@@ -872,7 +872,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
       },
     }),
     {
-      name: "navi-tracker-storage",
+      name: "navi-preferences",
       // Solo guardamos preferencias de usuario; el resto viene de la API
       partialize: (state) => ({
         preferences: state.preferences,

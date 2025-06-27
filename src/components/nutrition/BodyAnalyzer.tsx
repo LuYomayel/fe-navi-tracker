@@ -24,7 +24,6 @@ import {
   BodyAnalysisApiResponse,
   BodyAnalysis,
 } from "@/types";
-import { useNaviTrackerStore } from "@/store";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { toast } from "@/lib/toast-helper";
@@ -262,11 +261,8 @@ export function BodyAnalyzer({
 
       console.log("💾 Guardando análisis completo:", analysis);
 
-      // Usar el store de Zustand que tiene integración con base de datos
-      const { addBodyAnalysis } = useNaviTrackerStore.getState();
-      await addBodyAnalysis(analysis);
+      // Ya se creó en el backend; simplemente refrescamos la lista si es necesario
 
-      console.log("✅ Análisis corporal guardado:", analysis);
       toast.success(
         "Análisis guardado",
         "Análisis corporal guardado correctamente"
