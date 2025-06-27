@@ -846,15 +846,18 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           set({ isLoading: true });
 
           // 🚀 Cargar datos reales desde la API
-          const [activitiesResponse, nutritionResponse] = await Promise.all([
-            api.activities.getAll().catch(() => ({ data: [] })),
-            api.nutrition.getAnalyses().catch(() => ({ data: [] })),
-          ]);
+          const [activitiesResponse, nutritionResponse, bodyAnalysesResponse] =
+            await Promise.all([
+              api.activities.getAll().catch(() => ({ data: [] })),
+              api.nutrition.getAnalyses().catch(() => ({ data: [] })),
+              api.bodyAnalysis.getAll().catch(() => ({ data: [] })),
+            ]);
 
           set({
             activities: (activitiesResponse.data as Activity[]) || [],
             nutritionAnalyses:
               (nutritionResponse.data as NutritionAnalysis[]) || [],
+            bodyAnalyses: (bodyAnalysesResponse.data as BodyAnalysis[]) || [],
             // bodyAnalyses se mantienen desde localStorage por ahora
             isInitialized: true,
             isLoading: false,
