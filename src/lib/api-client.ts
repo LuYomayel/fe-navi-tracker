@@ -369,6 +369,13 @@ export const api = {
     getCurrentGoals: () => apiClient.get("/preferences/goals"),
     post: (data: any) => apiClient.post("/preferences", data),
   },
+
+  // Tasks - Para consultar el estado de trabajos en cola
+  tasks: {
+    getStatus: (taskId: string) => apiClient.get(`/tasks/${taskId}/status`),
+    getResult: (taskId: string) => apiClient.get(`/tasks/${taskId}/result`),
+    getJobInfo: (taskId: string) => apiClient.get(`/tasks/${taskId}`),
+  },
 };
 
 export default apiClient;
