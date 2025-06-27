@@ -6,7 +6,8 @@ ssh -i "$SSH_KEY_PATH" "$SERVER_USER@$SERVER_HOST" << EOF
     # Navegar al directorio del proyecto
     cd $SERVER_PATH
     echo "📂 Directorio actual: \$(pwd)"
-
+    rm -rf .next node_modules
+    
     echo "🔻 Deteniendo servicios para liberar RAM..."
     sudo systemctl stop apache2 || true
     echo "💾 Saving PM2 snapshot…"
