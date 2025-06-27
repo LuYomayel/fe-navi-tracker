@@ -35,6 +35,28 @@ jobs:
 
             echo "📁 Directorio actual: $(pwd)"
 
+            # Verificar versión de Node.js
+            echo "🔍 Verificando versión de Node.js..."
+            node --version
+
+            # Actualizar Node.js si es necesario (usando nvm)
+            if command -v nvm &> /dev/null; then
+              echo "📦 Actualizando Node.js con nvm..."
+              export NVM_DIR="$HOME/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+              [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+              
+              # Instalar y usar Node.js 20 LTS
+              nvm install 20
+              nvm use 20
+              nvm alias default 20
+              
+              echo "✅ Node.js actualizado a: $(node --version)"
+            else
+              echo "⚠️  nvm no está disponible. Versión actual de Node.js: $(node --version)"
+              echo "⚠️  Se requiere Node.js >= 18.18.0 para las dependencias"
+            fi
+
             # Hacer backup de la versión actual
             echo "💾 Creando backup..."
             if [ -d ".next" ]; then
@@ -54,15 +76,25 @@ jobs:
             echo "🧹 Limpiando cache de npm..."
             npm cache clean --force || true
 
-            # Instalar dependencias (usando install en lugar de ci para evitar conflictos)
+            # Verificar Node.js antes de instalar
+            echo "🔍 Verificando Node.js final: $(node --version)"
+            echo "🔍 Verificando npm: $(npm --version)"
+
+            # Instalar dependencias con configuración para ignorar engine warnings
             echo "📦 Instalando dependencias..."
-            npm install --production=false
+            npm install --production=false --legacy-peer-deps --engine-strict=false
 
             # Verificar instalación
             echo "🔍 Verificando instalación..."
             if [ ! -d "node_modules" ]; then
               echo "❌ Error: node_modules no fue creado"
-              exit 1
+              echo "🔍 Intentando instalación alternativa..."
+              npm install --force --production=false
+              
+              if [ ! -d "node_modules" ]; then
+                echo "❌ Error: Falló la instalación de dependencias"
+                exit 1
+              fi
             fi
 
             # Build del proyecto
@@ -117,6 +149,8 @@ jobs:
 
             echo "🎉 Deployment completado exitosamente!"
             echo "📊 Estado final:"
+            echo "- Node.js: $(node --version)"
+            echo "- npm: $(npm --version)"
             echo "- PM2: $(pm2 list | grep navi-tracker-frontend || echo 'Proceso no encontrado con nombre navi-tracker-frontend')"
             echo "- Apache2: $(sudo systemctl is-active apache2)"
             echo "- Espacio en disco: $(df -h . | tail -1 | awk '{print $4}' | sed 's/G/ GB disponibles/')"
