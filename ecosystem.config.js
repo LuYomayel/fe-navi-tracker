@@ -1,21 +1,26 @@
 module.exports = {
   apps: [
     {
-      name: "navitracker",
-      script: "npm",
-      args: "start",
-      cwd: "/var/www/navitracker",
+      name: "navi-tracker-frontend",
+      script: ".next/standalone/server.js",
+      cwd: "/home/fe-navi-tracker",
       instances: 1,
       autorestart: true,
       watch: false,
       max_memory_restart: "1G",
       env: {
         NODE_ENV: "production",
-        PORT: 3000,
+        PORT: 3150,
+        HOSTNAME: "0.0.0.0",
+        NEXT_PUBLIC_BACKEND_URL: "https://api-navi-tracker.luciano-yomayel.com",
+        NEXT_PUBLIC_API_URL: "https://api-navi-tracker.luciano-yomayel.com",
       },
       env_production: {
         NODE_ENV: "production",
-        PORT: 3000,
+        PORT: 3150,
+        HOSTNAME: "0.0.0.0",
+        NEXT_PUBLIC_BACKEND_URL: "https://api-navi-tracker.luciano-yomayel.com",
+        NEXT_PUBLIC_API_URL: "https://api-navi-tracker.luciano-yomayel.com",
       },
       log_date_format: "YYYY-MM-DD HH:mm Z",
       error_file: "./logs/err.log",
@@ -42,8 +47,8 @@ module.exports = {
       user: "ubuntu", // Cambiar por tu usuario
       host: "tu-servidor.com", // Cambiar por tu servidor
       ref: "origin/main",
-      repo: "git@github.com:tu-usuario/navitracker.git", // Cambiar por tu repo
-      path: "/var/www/navitracker",
+      repo: "git@github.com:tu-usuario/fe-navi-tracker.git", // Cambiar por tu repo
+      path: "/home/fe-navi-tracker",
       "pre-deploy-local": "",
       "post-deploy":
         "npm install && npm run build && pm2 reload ecosystem.config.js --env production",

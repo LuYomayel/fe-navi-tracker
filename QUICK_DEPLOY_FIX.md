@@ -1,10 +1,12 @@
 # 🚀 **Solución Rápida - Errores de Deployment**
 
-## ✅ **Problemas Solucionados**
+## ✅ **Problemas Identificados y Solucionados**
 
 1. **Sharp version conflict** - ✅ Resuelto
-2. **Deployment workflow mejorado** - ✅ Listo
-3. **Build funcionando correctamente** - ✅ Verificado
+2. **Directorio incorrecto** - ✅ Corregido a `/home/fe-navi-tracker`
+3. **Puerto incorrecto** - ✅ Cambiado a `3150`
+4. **Nombre de proceso PM2** - ✅ Actualizado a `navi-tracker-frontend`
+5. **Deployment workflow mejorado** - ✅ Listo
 
 ---
 
@@ -20,13 +22,14 @@
 3. New repository secret
 ```
 
-**Configura estos 3 secrets mínimos:**
+**Configura estos secrets con TU CONFIGURACIÓN REAL:**
 
-| Secret     | Valor                         | Ejemplo                 |
-| ---------- | ----------------------------- | ----------------------- |
-| `HOST`     | IP o dominio de tu servidor   | `192.168.1.100`         |
-| `USERNAME` | Tu usuario SSH                | `ubuntu`                |
-| `SSH_KEY`  | Tu clave SSH privada completa | `-----BEGIN OPENSSH...` |
+| Secret         | Valor                         | Tu Configuración        |
+| -------------- | ----------------------------- | ----------------------- |
+| `HOST`         | IP o dominio de tu servidor   | Tu servidor             |
+| `USERNAME`     | Tu usuario SSH                | Tu usuario              |
+| `SSH_KEY`      | Tu clave SSH privada completa | `-----BEGIN OPENSSH...` |
+| `PROJECT_PATH` | **`/home/fe-navi-tracker`**   | ✅ Corregido            |
 
 ### **Paso 2: Obtener tu SSH_KEY**
 
@@ -45,9 +48,33 @@ cat ~/.ssh/id_ed25519
 # Prueba que puedes conectarte:
 ssh tu-usuario@tu-servidor.com
 
-# Verifica el directorio del proyecto:
-ssh tu-usuario@tu-servidor.com "ls -la /var/www/navitracker"
+# Verifica el directorio del proyecto (CORREGIDO):
+ssh tu-usuario@tu-servidor.com "ls -la /home/fe-navi-tracker"
 ```
+
+---
+
+## 🔧 **Configuración Actualizada**
+
+### **Directorio del Proyecto:**
+
+- ❌ **Anterior:** `/var/www/navitracker`
+- ✅ **Correcto:** `/home/fe-navi-tracker`
+
+### **Puerto de la Aplicación:**
+
+- ❌ **Anterior:** `3000`
+- ✅ **Correcto:** `3150`
+
+### **Nombre del Proceso PM2:**
+
+- ❌ **Anterior:** `navitracker`
+- ✅ **Correcto:** `navi-tracker-frontend`
+
+### **Script de PM2:**
+
+- ❌ **Anterior:** `npm start`
+- ✅ **Correcto:** `.next/standalone/server.js`
 
 ---
 
@@ -58,19 +85,19 @@ Una vez configurados los secrets:
 ```bash
 # Commit y push los cambios
 git add .
-git commit -m "fix: resolver errores de deployment y actualizar sharp"
+git commit -m "fix: corregir configuración de deployment - directorio y puerto"
 git push origin main
 ```
 
-**¡El deployment se ejecutará automáticamente!**
+**¡El deployment se ejecutará automáticamente con la configuración correcta!**
 
 ---
 
 ## 📊 **Verificar que Funciona**
 
 1. **Ve a GitHub Actions:** `tu-repo → Actions`
-2. **Verifica el workflow:** Debería ejecutarse sin errores
-3. **Revisa los logs:** Para ver el progreso paso a paso
+2. **Verifica el workflow:** Debería encontrar el proyecto en `/home/fe-navi-tracker`
+3. **Revisa los logs:** Para confirmar que se conecta al puerto 3150
 
 ---
 
@@ -80,7 +107,7 @@ git push origin main
 
 ```bash
 # En tu servidor:
-sudo chown -R tu-usuario:tu-usuario /var/www/navitracker
+sudo chown -R tu-usuario:tu-usuario /home/fe-navi-tracker
 ```
 
 ### **Error: "sudo: no tty present"**
@@ -100,16 +127,27 @@ npm install -g pm2
 pm2 list
 ```
 
+### **Verificar configuración actual:**
+
+```bash
+# En tu servidor:
+cd /home/fe-navi-tracker
+pm2 list
+pm2 show navi-tracker-frontend
+curl -I http://localhost:3150
+```
+
 ---
 
 ## 💡 **Resumen de Cambios Realizados**
 
 ✅ **Sharp actualizado** a versión 0.34.2  
-✅ **Workflow mejorado** con mejor manejo de errores  
-✅ **npm install** en lugar de npm ci para evitar conflictos  
-✅ **Backups automáticos** antes del deployment  
-✅ **Verificaciones adicionales** post-deployment  
-✅ **Logs detallados** para debugging
+✅ **Directorio corregido** a `/home/fe-navi-tracker`  
+✅ **Puerto corregido** a `3150`  
+✅ **Proceso PM2 corregido** a `navi-tracker-frontend`  
+✅ **Script PM2 corregido** a `.next/standalone/server.js`  
+✅ **Workflow mejorado** con configuración real  
+✅ **Ecosystem.config.js actualizado** con tu configuración
 
 ---
 
@@ -120,4 +158,23 @@ pm2 list
 3. ✅ Ver el deployment automático funcionando
 4. ✅ ¡Disfrutar del CI/CD automático!
 
-**¡Tu aplicación se actualizará automáticamente en cada push a main!** 🚀
+**¡Ahora el deployment debería encontrar tu proyecto y funcionar correctamente!** 🚀
+
+### **Configuración de Secrets Correcta:**
+
+```
+HOST=tu-servidor.com
+USERNAME=tu-usuario
+SSH_KEY=-----BEGIN OPENSSH PRIVATE KEY-----...
+PROJECT_PATH=/home/fe-navi-tracker
+```
+
+**Una vez configurados los secrets, el deployment automático:**
+
+1. Se conectará a `/home/fe-navi-tracker`
+2. Ejecutará git pull, npm install, npm run build
+3. Reiniciará `navi-tracker-frontend` en PM2
+4. Verificará que responda en puerto `3150`
+5. Reiniciará Apache2
+
+¡Todo listo para funcionar! 🎉

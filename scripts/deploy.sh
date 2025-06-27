@@ -12,6 +12,11 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Configuración por defecto
+DEFAULT_PROJECT_PATH="/home/fe-navi-tracker"
+DEFAULT_PM2_NAME="navi-tracker-frontend"
+DEFAULT_PORT="3150"
+
 # Función para logging
 log() {
     echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1"
@@ -61,9 +66,13 @@ log "📥 Actualizando código desde Git..."
 git fetch origin
 git pull origin main
 
+# Limpiar cache de npm
+log "🧹 Limpiando cache de npm..."
+npm cache clean --force || true
+
 # Instalar dependencias
 log "📦 Instalando dependencias..."
-npm ci
+npm install
 
 # Verificar dependencias críticas
 log "🔍 Verificando dependencias críticas..."
@@ -90,11 +99,16 @@ if [ ! -d ".next/static" ]; then
     warning "No se encontró directorio static"
 fi
 
+if [ ! -f ".next/standalone/server.js" ]; then
+    warning "No se encontró server.js standalone - verifica la configuración de Next.js"
+fi
+
 # Mostrar estadísticas del build
 log "📊 Estadísticas del build:"
 echo "  - Build ID: $(cat .next/BUILD_ID 2>/dev/null || echo 'No disponible')"
 echo "  - Tamaño total: $(du -sh .next 2>/dev/null || echo 'No disponible')"
 echo "  - Archivos estáticos: $(find .next/static -type f 2>/dev/null | wc -l || echo '0') archivos"
+echo "  - Standalone server: $([ -f .next/standalone/server.js ] && echo 'Disponible' || echo 'No encontrado')"
 
 # Si estamos en producción, reiniciar servicios
 if [ "$1" = "--production" ]; then
@@ -102,8 +116,19 @@ if [ "$1" = "--production" ]; then
     
     # Reiniciar PM2
     if command -v pm2 &> /dev/null; then
-        log "Reiniciando PM2..."
-        pm2 restart 5 || pm2 start npm --name "navitracker" -- start
+        log "Reiniciando PM2 ($DEFAULT_PM2_NAME)..."
+        
+        # Verificar si el proceso existe
+        if pm2 list | grep -q "$DEFAULT_PM2_NAME"; then
+            pm2 restart $DEFAULT_PM2_NAME
+        else
+            warning "Proceso $DEFAULT_PM2_NAME no encontrado, intentando reiniciar por ID..."
+            pm2 restart 5 || {
+                warning "No se pudo reiniciar por ID, iniciando nuevo proceso..."
+                pm2 start .next/standalone/server.js --name "$DEFAULT_PM2_NAME"
+            }
+        fi
+        
         pm2 status
     else
         warning "PM2 no está instalado o no está en el PATH"
@@ -119,15 +144,23 @@ if [ "$1" = "--production" ]; then
     fi
     
     # Test de conectividad
-    log "🔍 Verificando conectividad..."
+    log "🔍 Verificando conectividad en puerto $DEFAULT_PORT..."
     sleep 5
-    if curl -f http://localhost:3000 > /dev/null 2>&1; then
-        success "Aplicación respondiendo en puerto 3000"
+    if curl -f http://localhost:$DEFAULT_PORT > /dev/null 2>&1; then
+        success "Aplicación respondiendo en puerto $DEFAULT_PORT"
     else
-        warning "La aplicación no responde en puerto 3000"
+        warning "La aplicación no responde en puerto $DEFAULT_PORT"
+        if command -v pm2 &> /dev/null; then
+            log "Verificando logs de PM2..."
+            pm2 logs $DEFAULT_PM2_NAME --lines 10 || pm2 logs --lines 10
+        fi
     fi
 else
     log "ℹ️  Para reiniciar servicios en producción, usa: $0 --production"
+    log "ℹ️  Configuración detectada:"
+    echo "    - Directorio: $DEFAULT_PROJECT_PATH"
+    echo "    - Proceso PM2: $DEFAULT_PM2_NAME"
+    echo "    - Puerto: $DEFAULT_PORT"
 fi
 
 # Limpiar backups antiguos (más de 7 días)
@@ -148,10 +181,15 @@ echo "  - Branch: $(git branch --show-current)"
 echo "  - Fecha: $(date)"
 echo "  - Usuario: $(whoami)"
 echo "  - Directorio: $(pwd)"
+echo "  - Configuración:"
+echo "    * Directorio proyecto: $DEFAULT_PROJECT_PATH"
+echo "    * Proceso PM2: $DEFAULT_PM2_NAME"
+echo "    * Puerto aplicación: $DEFAULT_PORT"
 echo
 log "Comandos útiles:"
-echo "  - Ver logs de PM2: pm2 logs navitracker"
+echo "  - Ver logs de PM2: pm2 logs $DEFAULT_PM2_NAME"
 echo "  - Ver estado de Apache: sudo systemctl status apache2"
 echo "  - Ver logs de deployment: tail -f deployment.log"
 echo "  - Rollback: git reset --hard HEAD~1 && $0"
+echo "  - Test aplicación: curl -I http://localhost:$DEFAULT_PORT"
 echo "==================================" 

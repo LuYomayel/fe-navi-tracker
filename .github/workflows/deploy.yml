@@ -22,7 +22,7 @@ jobs:
             echo "🚀 Iniciando deployment de NaviTracker..."
 
             # Navegar al directorio del proyecto
-            cd ${{ secrets.PROJECT_PATH || '/var/www/navitracker' }}
+            cd ${{ secrets.PROJECT_PATH || '/home/fe-navi-tracker' }}
 
             # Verificar que estamos en el directorio correcto
             if [ ! -f "package.json" ]; then
@@ -77,12 +77,12 @@ jobs:
 
             echo "✅ Build completado exitosamente"
 
-            # Reiniciar PM2 (proceso 5)
+            # Reiniciar PM2 (navi-tracker-frontend)
             echo "🔄 Reiniciando PM2..."
-            if pm2 list | grep -q "navitracker"; then
-              pm2 restart navitracker
+            if pm2 list | grep -q "navi-tracker-frontend"; then
+              pm2 restart navi-tracker-frontend
             else
-              pm2 restart 5 || pm2 start npm --name "navitracker" -- start
+              pm2 restart 5 || pm2 start .next/standalone/server.js --name "navi-tracker-frontend"
             fi
 
             # Verificar estado de PM2
@@ -100,11 +100,11 @@ jobs:
             sleep 10
 
             # Test de conectividad local
-            if curl -f http://localhost:3000 > /dev/null 2>&1; then
-              echo "✅ Aplicación respondiendo en puerto 3000"
+            if curl -f http://localhost:3150 > /dev/null 2>&1; then
+              echo "✅ Aplicación respondiendo en puerto 3150"
             else
-              echo "⚠️  Aplicación no responde en puerto 3000, verificando PM2..."
-              pm2 logs navitracker --lines 20 || pm2 logs --lines 20
+              echo "⚠️  Aplicación no responde en puerto 3150, verificando PM2..."
+              pm2 logs navi-tracker-frontend --lines 20 || pm2 logs --lines 20
             fi
 
             # Limpiar cache de Next.js si es necesario
@@ -117,7 +117,7 @@ jobs:
 
             echo "🎉 Deployment completado exitosamente!"
             echo "📊 Estado final:"
-            echo "- PM2: $(pm2 list | grep navitracker || echo 'Proceso no encontrado con nombre navitracker')"
+            echo "- PM2: $(pm2 list | grep navi-tracker-frontend || echo 'Proceso no encontrado con nombre navi-tracker-frontend')"
             echo "- Apache2: $(sudo systemctl is-active apache2)"
             echo "- Espacio en disco: $(df -h . | tail -1 | awk '{print $4}' | sed 's/G/ GB disponibles/')"
             echo "- Build ID: $(cat .next/BUILD_ID 2>/dev/null || echo 'No disponible')"
