@@ -27,6 +27,9 @@ jobs:
             # Verificar que estamos en el directorio correcto
             if [ ! -f "package.json" ]; then
               echo "❌ Error: No se encontró package.json en el directorio actual"
+              echo "📁 Directorio actual: $(pwd)"
+              echo "📂 Contenido del directorio:"
+              ls -la
               exit 1
             fi
 
@@ -34,7 +37,12 @@ jobs:
 
             # Hacer backup de la versión actual
             echo "💾 Creando backup..."
-            sudo cp -r . ../navitracker-backup-$(date +%Y%m%d-%H%M%S) || true
+            if [ -d ".next" ]; then
+              cp -r .next .next.backup.$(date +%Y%m%d-%H%M%S) || true
+            fi
+            if [ -d "node_modules" ]; then
+              mv node_modules node_modules.backup.$(date +%Y%m%d-%H%M%S) || true
+            fi
 
             # Git pull desde main
             echo "📥 Actualizando código desde Git..."
@@ -42,9 +50,20 @@ jobs:
             git reset --hard origin/main
             git pull origin main
 
-            # Instalar dependencias
+            # Limpiar cache de npm
+            echo "🧹 Limpiando cache de npm..."
+            npm cache clean --force || true
+
+            # Instalar dependencias (usando install en lugar de ci para evitar conflictos)
             echo "📦 Instalando dependencias..."
-            npm ci --production=false
+            npm install --production=false
+
+            # Verificar instalación
+            echo "🔍 Verificando instalación..."
+            if [ ! -d "node_modules" ]; then
+              echo "❌ Error: node_modules no fue creado"
+              exit 1
+            fi
 
             # Build del proyecto
             echo "🔨 Construyendo proyecto..."
@@ -60,7 +79,11 @@ jobs:
 
             # Reiniciar PM2 (proceso 5)
             echo "🔄 Reiniciando PM2..."
-            pm2 restart 5 || pm2 start npm --name "navitracker" -- start
+            if pm2 list | grep -q "navitracker"; then
+              pm2 restart navitracker
+            else
+              pm2 restart 5 || pm2 start npm --name "navitracker" -- start
+            fi
 
             # Verificar estado de PM2
             pm2 status
@@ -81,18 +104,23 @@ jobs:
               echo "✅ Aplicación respondiendo en puerto 3000"
             else
               echo "⚠️  Aplicación no responde en puerto 3000, verificando PM2..."
-              pm2 logs navitracker --lines 20
+              pm2 logs navitracker --lines 20 || pm2 logs --lines 20
             fi
 
             # Limpiar cache de Next.js si es necesario
             echo "🧹 Limpiando cache..."
             rm -rf .next/cache/* || true
 
+            # Limpiar backups antiguos (más de 3 días)
+            echo "🧹 Limpiando backups antiguos..."
+            find . -maxdepth 1 -name "*.backup.*" -mtime +3 -delete || true
+
             echo "🎉 Deployment completado exitosamente!"
             echo "📊 Estado final:"
-            echo "- PM2: $(pm2 list | grep navitracker || echo 'No encontrado')"
+            echo "- PM2: $(pm2 list | grep navitracker || echo 'Proceso no encontrado con nombre navitracker')"
             echo "- Apache2: $(sudo systemctl is-active apache2)"
-            echo "- Espacio en disco: $(df -h . | tail -1 | awk '{print $4}' | sed 's/G/ GB/')"
+            echo "- Espacio en disco: $(df -h . | tail -1 | awk '{print $4}' | sed 's/G/ GB disponibles/')"
+            echo "- Build ID: $(cat .next/BUILD_ID 2>/dev/null || echo 'No disponible')"
 
             # Notificar en logs
             echo "$(date): Deployment exitoso desde commit $(git rev-parse --short HEAD)" >> deployment.log
