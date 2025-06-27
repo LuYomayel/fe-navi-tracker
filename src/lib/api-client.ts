@@ -1,4 +1,9 @@
-import { MealType, FoodAnalysisResponse, NutritionAnalysis } from "@/types";
+import {
+  MealType,
+  FoodAnalysisResponse,
+  NutritionAnalysis,
+  BodyAnalysis,
+} from "@/types";
 
 // Configuración de la API
 const API_BASE_URL =
@@ -286,6 +291,8 @@ export const api = {
       goals?: string[];
       allowGeneric?: boolean;
     }) => apiClient.post("/body-analysis", data),
+    saveAnalysis: (data: BodyAnalysis) =>
+      apiClient.post("/body-analysis/save", data),
     getAll: (days?: number) =>
       apiClient.get(`/body-analysis${days ? `?days=${days}` : ""}`),
     getById: (id: string) => apiClient.get(`/body-analysis/${id}`),

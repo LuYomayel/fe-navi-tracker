@@ -23,6 +23,7 @@ import {
   ActivityLevel,
   BodyAnalysisApiResponse,
   BodyAnalysis,
+  NutritionAnalysis,
 } from "@/types";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -367,7 +368,12 @@ export function BodyAnalyzer({
           insights: analysisResult.insights,
         },
       };
-
+      const response = await api.bodyAnalysis.saveAnalysis(
+        analysis as BodyAnalysis
+      );
+      if (!response.success) {
+        throw new Error(response.message || "Error al guardar el análisis");
+      }
       console.log("💾 Guardando análisis completo:", analysis);
 
       // Ya se creó en el backend; simplemente refrescamos la lista si es necesario
