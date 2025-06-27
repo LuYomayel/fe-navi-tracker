@@ -1,0 +1,98 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # Permite ejecutar manualmente
+
+jobs:
+  deploy:
+    name: Deploy to Production Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.PORT || 22 }}
+          script: |
+            echo "🚀 Iniciando deployment de NaviTracker..."
+
+            # Navegar al directorio del proyecto
+            cd ${{ secrets.PROJECT_PATH || '/var/www/navitracker' }}
+
+            # Verificar que estamos en el directorio correcto
+            if [ ! -f "package.json" ]; then
+              echo "❌ Error: No se encontró package.json en el directorio actual"
+              exit 1
+            fi
+
+            echo "📁 Directorio actual: $(pwd)"
+
+            # Hacer backup de la versión actual
+            echo "💾 Creando backup..."
+            sudo cp -r . ../navitracker-backup-$(date +%Y%m%d-%H%M%S) || true
+
+            # Git pull desde main
+            echo "📥 Actualizando código desde Git..."
+            git fetch origin
+            git reset --hard origin/main
+            git pull origin main
+
+            # Instalar dependencias
+            echo "📦 Instalando dependencias..."
+            npm ci --production=false
+
+            # Build del proyecto
+            echo "🔨 Construyendo proyecto..."
+            npm run build
+
+            # Verificar que el build fue exitoso
+            if [ ! -d ".next" ]; then
+              echo "❌ Error: Build falló - no se encontró directorio .next"
+              exit 1
+            fi
+
+            echo "✅ Build completado exitosamente"
+
+            # Reiniciar PM2 (proceso 5)
+            echo "🔄 Reiniciando PM2..."
+            pm2 restart 5 || pm2 start npm --name "navitracker" -- start
+
+            # Verificar estado de PM2
+            pm2 status
+
+            # Reiniciar Apache2
+            echo "🔄 Reiniciando Apache2..."
+            sudo systemctl restart apache2
+
+            # Verificar estado de Apache2
+            sudo systemctl status apache2 --no-pager -l
+
+            # Verificar que la aplicación esté respondiendo
+            echo "🔍 Verificando que la aplicación esté funcionando..."
+            sleep 10
+
+            # Test de conectividad local
+            if curl -f http://localhost:3000 > /dev/null 2>&1; then
+              echo "✅ Aplicación respondiendo en puerto 3000"
+            else
+              echo "⚠️  Aplicación no responde en puerto 3000, verificando PM2..."
+              pm2 logs navitracker --lines 20
+            fi
+
+            # Limpiar cache de Next.js si es necesario
+            echo "🧹 Limpiando cache..."
+            rm -rf .next/cache/* || true
+
+            echo "🎉 Deployment completado exitosamente!"
+            echo "📊 Estado final:"
+            echo "- PM2: $(pm2 list | grep navitracker || echo 'No encontrado')"
+            echo "- Apache2: $(sudo systemctl is-active apache2)"
+            echo "- Espacio en disco: $(df -h . | tail -1 | awk '{print $4}' | sed 's/G/ GB/')"
+
+            # Notificar en logs
+            echo "$(date): Deployment exitoso desde commit $(git rev-parse --short HEAD)" >> deployment.log

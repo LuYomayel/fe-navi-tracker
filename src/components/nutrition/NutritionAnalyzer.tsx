@@ -8,6 +8,7 @@ import {
   Loader2,
   Check,
   Calculator,
+  Bot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -67,16 +68,8 @@ export function FoodAnalyzer({
   const [analysisMethod, setAnalysisMethod] = useState<AnalysisMethod>("photo");
   const [selectedImage, setSelectedImage] = useState<string>("");
   const [manualData, setManualData] = useState({
-    name: "",
+    ingredients: "",
     servings: 1,
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fat: 0,
-    fiber: 0,
-    sugar: 0,
-    sodium: 0,
-    description: "",
   });
 
   const [selectedMealType, setSelectedMealType] = useState<MealType>(
@@ -142,67 +135,58 @@ export function FoodAnalyzer({
   };
 
   const handleManualInput = async () => {
-    if (!manualData.name.trim() || manualData.calories <= 0) {
-      toast.error(
-        "Error",
-        "Por favor completa al menos el nombre y las calorías"
-      );
+    if (!manualData.ingredients.trim()) {
+      toast.error("Error", "Por favor describe los ingredientes de tu comida");
       return;
     }
-    const analysisData = await api.analyzeFood.analyzeManual({
-      mealType: selectedMealType,
-      name: manualData.name,
-      servings: manualData.servings,
-      calories: manualData.calories,
-      protein: manualData.protein,
-      carbs: manualData.carbs,
-      fat: manualData.fat,
-      fiber: manualData.fiber,
-      sugar: manualData.sugar,
-      sodium: manualData.sodium,
-    });
 
-    console.log("🔍 Resultado de análisis manual:", analysisData);
-    const result: AnalysisResult = {
-      foods: [
-        {
-          name: manualData.name,
-          quantity: `${manualData.servings} porción${
-            manualData.servings > 1 ? "es" : ""
-          }`,
-          calories: manualData.calories,
-          confidence: 1.0,
-          category: _FoodCategory.OTHER,
-          macronutrients: {
-            protein: manualData.protein,
-            carbs: manualData.carbs,
-            fat: manualData.fat,
-            fiber: manualData.fiber,
-            sugar: manualData.sugar,
-            sodium: manualData.sodium,
-          },
+    setIsAnalyzing(true);
+    setStep("analyzing");
+
+    try {
+      // 🚀 Llamar a la nueva API de análisis manual con ingredientes
+      const analysisData = await api.analyzeFood.analyzeManualFood({
+        ingredients: manualData.ingredients,
+        servings: manualData.servings,
+        mealType: selectedMealType,
+      });
+
+      console.log("🔍 Resultado de análisis manual con IA:", analysisData);
+
+      const result: AnalysisResult = {
+        foods: (analysisData.data as AnalysisResult).foods || [],
+        totalCalories: (analysisData.data as AnalysisResult).totalCalories || 0,
+        macronutrients: (analysisData.data as AnalysisResult)
+          .macronutrients || {
+          protein: 0,
+          carbs: 0,
+          fat: 0,
+          fiber: 0,
+          sugar: 0,
+          sodium: 0,
         },
-      ],
-      totalCalories: manualData.calories,
-      macronutrients: {
-        protein: manualData.protein,
-        carbs: manualData.carbs,
-        fat: manualData.fat,
-        fiber: manualData.fiber,
-        sugar: manualData.sugar,
-        sodium: manualData.sodium,
-      },
-      confidence: 1.0,
-      mealType: selectedMealType,
-      recommendations: [
-        "Datos ingresados manualmente",
-        "Verifica que los valores sean correctos",
-      ],
-    };
+        confidence: (analysisData.data as AnalysisResult).confidence || 0.8,
+        mealType: selectedMealType,
+        recommendations: (analysisData.data as AnalysisResult)
+          .recommendations || [
+          "Análisis basado en descripción de ingredientes",
+          "Los valores son estimaciones basadas en IA",
+        ],
+      };
 
-    setAnalysisResult(result);
-    setEditableResult({ ...result });
-    setStep("results");
+      setAnalysisResult(result);
+      setEditableResult({ ...result });
+      setStep("results");
+    } catch (error) {
+      console.error("❌ Error analyzing manual ingredients:", error);
+      toast.error(
+        "Error",
+        "No se pudo analizar los ingredientes. Inténtalo de nuevo."
+      );
+      setStep("selecting");
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const handleAnalyze = async () => {
@@ -411,16 +395,8 @@ export function FoodAnalyzer({
     setAnalysisMethod("photo");
     setSelectedImage("");
     setManualData({
-      name: "",
+      ingredients: "",
       servings: 1,
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-      fiber: 0,
-      sugar: 0,
-      sodium: 0,
-      description: "",
     });
     setAnalysisResult(null);
     setEditableResult(null);
@@ -505,188 +481,102 @@ export function FoodAnalyzer({
                   Ingresa los datos manualmente
                 </h3>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="foodName">Nombre del plato/comida</Label>
-                      <Input
-                        id="foodName"
-                        placeholder="Ej: Pollo con arroz"
-                        value={manualData.name}
-                        onChange={(e) =>
-                          setManualData((prev) => ({
-                            ...prev,
-                            name: e.target.value,
-                          }))
-                        }
-                      />
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Bot className="h-5 w-5 text-blue-600" />
+                      <h4 className="font-medium text-blue-900 dark:text-blue-100">
+                        Análisis con IA
+                      </h4>
                     </div>
-                    <div>
-                      <Label htmlFor="servings">Porciones</Label>
-                      <Input
-                        id="servings"
-                        type="number"
-                        min="1"
-                        value={manualData.servings}
-                        onChange={(e) =>
-                          setManualData((prev) => ({
-                            ...prev,
-                            servings: parseInt(e.target.value) || 1,
-                          }))
-                        }
-                      />
-                    </div>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      Describe los ingredientes de tu comida y la IA calculará
+                      automáticamente las calorías y macronutrientes. Sé
+                      específico con las cantidades cuando sea posible.
+                    </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-4">
                     <div>
-                      <Label htmlFor="calories">Calorías totales</Label>
-                      <Input
-                        id="calories"
-                        type="number"
-                        min="0"
-                        placeholder="Ej: 450"
-                        value={manualData.calories || ""}
+                      <Label htmlFor="ingredients">
+                        Ingredientes y descripción
+                      </Label>
+                      <Textarea
+                        id="ingredients"
+                        placeholder="Ej: 150g de pechuga de pollo a la plancha, 100g de arroz integral cocido, 1 cucharada de aceite de oliva, ensalada mixta con tomate y pepino"
+                        value={manualData.ingredients}
                         onChange={(e) =>
                           setManualData((prev) => ({
                             ...prev,
-                            calories: parseFloat(e.target.value) || 0,
+                            ingredients: e.target.value,
                           }))
                         }
+                        rows={4}
+                        className="resize-none"
                       />
+                      <p className="text-xs text-gray-500 mt-1">
+                        💡 Incluye cantidades (gramos, tazas, unidades) y
+                        métodos de cocción para mayor precisión
+                      </p>
                     </div>
-                    <div>
-                      <Label htmlFor="mealType">Tipo de comida</Label>
-                      <select
-                        id="mealType"
-                        value={selectedMealType}
-                        onChange={(e) =>
-                          setSelectedMealType(e.target.value as MealType)
-                        }
-                        className="w-full p-2 border rounded-lg bg-background"
-                      >
-                        {mealTypeOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.emoji} {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
 
-                  <div className="space-y-3">
-                    <h4 className="font-medium">Macronutrientes (gramos)</h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="protein">Proteína</Label>
+                        <Label htmlFor="servings">Número de porciones</Label>
                         <Input
-                          id="protein"
+                          id="servings"
                           type="number"
-                          min="0"
-                          step="0.1"
-                          value={manualData.protein || ""}
+                          min="1"
+                          value={manualData.servings}
                           onChange={(e) =>
                             setManualData((prev) => ({
                               ...prev,
-                              protein: parseFloat(e.target.value) || 0,
+                              servings: parseInt(e.target.value) || 1,
                             }))
                           }
                         />
                       </div>
                       <div>
-                        <Label htmlFor="carbs">Carbohidratos</Label>
-                        <Input
-                          id="carbs"
-                          type="number"
-                          min="0"
-                          step="0.1"
-                          value={manualData.carbs || ""}
+                        <Label htmlFor="mealType">Tipo de comida</Label>
+                        <select
+                          id="mealType"
+                          value={selectedMealType}
                           onChange={(e) =>
-                            setManualData((prev) => ({
-                              ...prev,
-                              carbs: parseFloat(e.target.value) || 0,
-                            }))
+                            setSelectedMealType(e.target.value as MealType)
                           }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="fat">Grasas</Label>
-                        <Input
-                          id="fat"
-                          type="number"
-                          min="0"
-                          step="0.1"
-                          value={manualData.fat || ""}
-                          onChange={(e) =>
-                            setManualData((prev) => ({
-                              ...prev,
-                              fat: parseFloat(e.target.value) || 0,
-                            }))
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="fiber">Fibra</Label>
-                        <Input
-                          id="fiber"
-                          type="number"
-                          min="0"
-                          step="0.1"
-                          value={manualData.fiber || ""}
-                          onChange={(e) =>
-                            setManualData((prev) => ({
-                              ...prev,
-                              fiber: parseFloat(e.target.value) || 0,
-                            }))
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="sugar">Azúcares</Label>
-                        <Input
-                          id="sugar"
-                          type="number"
-                          min="0"
-                          step="0.1"
-                          value={manualData.sugar || ""}
-                          onChange={(e) =>
-                            setManualData((prev) => ({
-                              ...prev,
-                              sugar: parseFloat(e.target.value) || 0,
-                            }))
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="sodium">Sodio (mg)</Label>
-                        <Input
-                          id="sodium"
-                          type="number"
-                          min="0"
-                          value={manualData.sodium || ""}
-                          onChange={(e) =>
-                            setManualData((prev) => ({
-                              ...prev,
-                              sodium: parseFloat(e.target.value) || 0,
-                            }))
-                          }
-                        />
+                          className="w-full p-2 border rounded-lg bg-background"
+                        >
+                          {mealTypeOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.emoji} {option.label}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <Label htmlFor="description">Descripción (opcional)</Label>
-                    <Textarea
-                      id="description"
-                      placeholder="Ingredientes principales, método de cocción, etc."
-                      value={manualData.description}
-                      onChange={(e) =>
-                        setManualData((prev) => ({
-                          ...prev,
-                          description: e.target.value,
-                        }))
-                      }
-                    />
+                    <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                      <h5 className="font-medium mb-2 text-sm">
+                        Ejemplos de descripciones:
+                      </h5>
+                      <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                        <li>
+                          • &quot;200g salmón al horno, 150g quinoa, brócoli al
+                          vapor&quot;
+                        </li>
+                        <li>
+                          • &quot;1 taza de pasta con salsa de tomate, queso
+                          parmesano&quot;
+                        </li>
+                        <li>
+                          • &quot;Ensalada césar con pollo, crutones,
+                          aderezo&quot;
+                        </li>
+                        <li>
+                          • &quot;Tacos de carne (3 tortillas, 120g carne,
+                          guacamole)&quot;
+                        </li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
               </div>

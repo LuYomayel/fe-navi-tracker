@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NaviTracker - Sin Conexión</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+      }
+
+      .container {
+        text-align: center;
+        padding: 2rem;
+        max-width: 400px;
+      }
+
+      .logo {
+        width: 80px;
+        height: 80px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 2rem;
+        font-size: 24px;
+        font-weight: bold;
+      }
+
+      h1 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        font-weight: 700;
+      }
+
+      p {
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+        opacity: 0.9;
+        line-height: 1.5;
+      }
+
+      .retry-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+      }
+
+      .retry-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: translateY(-2px);
+      }
+
+      .features {
+        margin-top: 2rem;
+        text-align: left;
+      }
+
+      .feature {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        opacity: 0.8;
+      }
+
+      .feature-icon {
+        width: 20px;
+        height: 20px;
+        margin-right: 12px;
+        opacity: 0.7;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo">NT</div>
+      <h1>Sin Conexión</h1>
+      <p>
+        No hay conexión a internet disponible. Algunas funciones pueden no estar
+        disponibles.
+      </p>
+
+      <button class="retry-btn" onclick="window.location.reload()">
+        Reintentar Conexión
+      </button>
+
+      <div class="features">
+        <div class="feature">
+          <svg class="feature-icon" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>Datos guardados localmente</span>
+        </div>
+        <div class="feature">
+          <svg class="feature-icon" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v8H4V6z"
+            />
+          </svg>
+          <span>Funciones básicas disponibles</span>
+        </div>
+        <div class="feature">
+          <svg class="feature-icon" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              d="M4 2a1 1 0 011 1v2.586l8.707 8.707a1 1 0 01-1.414 1.414L4 7.414V15a1 1 0 11-2 0V3a1 1 0 011-1z"
+            />
+          </svg>
+          <span>Sincronización automática al reconectar</span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Detectar cuando se restaura la conexión
+      window.addEventListener("online", function () {
+        window.location.reload();
+      });
+
+      // Verificar conexión cada 30 segundos
+      setInterval(function () {
+        fetch("/", { method: "HEAD", mode: "no-cors" })
+          .then(() => {
+            window.location.reload();
+          })
+          .catch(() => {
+            // Sigue sin conexión
+          });
+      }, 30000);
+    </script>
+  </body>
+</html>

@@ -367,6 +367,15 @@ export const api = {
       sodium: number;
       mealType: MealType;
     }) => apiClient.post<FoodAnalysisResponse>("/analyze-food/manual", data),
+    analyzeManualFood: (data: {
+      ingredients: string;
+      servings: number;
+      mealType: MealType;
+    }) =>
+      apiClient.post<FoodAnalysisResponse>(
+        "/analyze-food/manual-ingredients",
+        data
+      ),
   },
 
   preferences: {
