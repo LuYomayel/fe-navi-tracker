@@ -39,10 +39,10 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
 
   // Estados para los objetivos ajustables
   const [adjustableGoals, setAdjustableGoals] = useState({
-    dailyCalories: 2000,
-    protein: 150,
-    carbs: 250,
-    fat: 67,
+    dailyCalories: bodyAnalysis?.recommendations?.dailyCalories || 2000,
+    protein: bodyAnalysis?.recommendations?.macroSplit?.protein || 150,
+    carbs: bodyAnalysis?.recommendations?.macroSplit?.carbs || 250,
+    fat: bodyAnalysis?.recommendations?.macroSplit?.fat || 67,
     fiber: 25,
     sugar: 50,
     sodium: 2300,
@@ -54,14 +54,14 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
   // Calcular objetivos iniciales cuando se abre el modal
   useEffect(() => {
     if (isOpen) {
-      if (bodyAnalysis?.fullAnalysisData && !isManualMode) {
+      console.log("🔄 Body Analysis:", bodyAnalysis);
+      if (bodyAnalysis && !isManualMode) {
         // Modo con análisis corporal - usar datos de la API
-        const apiRecommendations =
-          bodyAnalysis.fullAnalysisData.recommendations;
+        const apiRecommendations = bodyAnalysis.recommendations;
 
         // Usar los valores de la API como base
-        const baseCalories = apiRecommendations.dailyCalories || 2000;
-        const macroSplit = apiRecommendations.macroSplit || {
+        const baseCalories = apiRecommendations?.dailyCalories || 2000;
+        const macroSplit = apiRecommendations?.macroSplit || {
           protein: 30,
           carbs: 40,
           fat: 30,
@@ -159,7 +159,7 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
 
   if (!bodyAnalysis && !isManualMode) return null;
 
-  const fullData = bodyAnalysis?.fullAnalysisData;
+  const fullData: BodyAnalysis = bodyAnalysis as BodyAnalysis;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -189,8 +189,8 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
                   </div>
                   <div>
                     <strong>Grasa corporal:</strong>{" "}
-                    {fullData.measurements.bodyFatPercentage ||
-                      fullData.measurements.estimatedBodyFat}
+                    {fullData.measurements?.bodyFatPercentage ||
+                      fullData.measurements?.estimatedBodyFat}
                     %
                   </div>
                   <div>
@@ -206,30 +206,30 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
                 <div className="space-y-2">
                   <div>
                     <strong>Prioridad:</strong>{" "}
-                    {fullData.recommendations.priority}
+                    {fullData.recommendations?.priority}
                   </div>
                   <div>
                     <strong>Nivel fitness:</strong>{" "}
-                    {fullData.measurements.overallFitness}
+                    {fullData.measurements?.overallFitness}
                   </div>
                   <div>
                     <strong>Definición muscular:</strong>{" "}
-                    {fullData.measurements.muscleDefinition}
+                    {fullData.measurements?.muscleDefinition}
                   </div>
                   <div>
                     <strong>Confianza:</strong>{" "}
-                    {Math.round((bodyAnalysis?.confidence || 0) * 100)}%
+                    {Math.round((bodyAnalysis?.aiConfidence || 0) * 100)}%
                   </div>
                 </div>
               </div>
 
               {/* Objetivos específicos de la API */}
-              {fullData.recommendations.goals &&
-                fullData.recommendations.goals.length > 0 && (
+              {fullData.recommendations?.goals &&
+                fullData.recommendations?.goals.length > 0 && (
                   <div>
                     <strong className="text-sm">Objetivos específicos:</strong>
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {fullData.recommendations.goals.map((goal, index) => (
+                      {fullData.recommendations?.goals.map((goal, index) => (
                         <span
                           key={index}
                           className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs"
@@ -242,18 +242,18 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
                 )}
 
               {/* Recomendaciones nutricionales */}
-              {fullData.recommendations.nutrition &&
-                fullData.recommendations.nutrition.length > 0 && (
+              {fullData.recommendations?.nutrition &&
+                fullData.recommendations?.nutrition.length > 0 && (
                   <div>
                     <strong className="text-sm">
                       Recomendaciones nutricionales:
                     </strong>
                     <div className="space-y-1 mt-1 max-h-32 overflow-y-auto">
-                      {fullData.recommendations.nutrition.map(
+                      {fullData.recommendations?.nutrition.map(
                         (recommendation, index) => (
                           <div
                             key={index}
-                            className="text-xs p-2 bg-blue-50 dark:bg-blue-900/20 rounded"
+                            className="text-xs p-2 bg-blue-50/50 rounded"
                           >
                             {recommendation}
                           </div>
@@ -267,12 +267,12 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
 
           {/* Mensaje para modo manual */}
           {isManualMode && (
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
-              <h3 className="font-semibold flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
+            <div className="bg-yellow-50/50 p-4 rounded-lg">
+              <h3 className="font-semibold flex items-center gap-2 text-yellow-800">
                 <Info className="h-4 w-4" />
                 Configuración Manual
               </h3>
-              <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+              <p className="text-sm text-yellow-700 mt-1">
                 Establece tus objetivos nutricionales manualmente. Los valores
                 se calculan automáticamente basándose en tus datos personales.
               </p>
@@ -465,7 +465,7 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
               </div>
 
               {/* Mostrar porcentajes calculados */}
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+              <div className=" p-3 rounded-lg">
                 <div className="text-xs text-muted-foreground mb-1">
                   Distribución de macronutrientes:
                 </div>
@@ -584,7 +584,7 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
                       preferences?.gender ||
                       "male"
                     }
-                    className="w-full p-2 border rounded-md bg-background"
+                    className="w-full p-2 border rounded-md bg-gray-100/50"
                     required
                   >
                     <option value="male">Masculino</option>
@@ -637,6 +637,7 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
             </div>
 
             {/* Preview del payload (para desarrollo) */}
+            {/*
             <div className="space-y-2">
               <Button
                 type="button"
@@ -648,7 +649,7 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
               </Button>
 
               {showPayloadPreview && (
-                <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+                <div className="bg-gray-100/50 p-4 rounded-lg">
                   <h4 className="font-medium text-sm mb-2">
                     Datos que se enviarán al endpoint:
                   </h4>
@@ -662,6 +663,7 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
                 </div>
               )}
             </div>
+            */}
 
             <div className="flex gap-2 pt-4">
               <Button type="submit" className="flex-1">

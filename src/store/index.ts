@@ -170,6 +170,9 @@ interface NaviTrackerState {
   setShowAIAssistant: (show: boolean) => void;
   updatePreferences: (preferences: Partial<UserPreferences>) => void;
   initializeFromDatabase: () => Promise<void>;
+  getAllFoodAnalysis: () => Promise<void>;
+  getAllBodyAnalysis: () => Promise<void>;
+  getAllSkinFoldRecords: () => Promise<void>;
 }
 
 export const useNaviTrackerStore = create<NaviTrackerState>()(
@@ -673,6 +676,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
 
       deleteBodyAnalysis: async (id) => {
         try {
+          await api.bodyAnalysis.delete(id);
           set((state) => ({
             bodyAnalyses: state.bodyAnalyses.filter(
               (analysis) => analysis.id !== id
@@ -852,7 +856,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
               api.nutrition.getAnalyses().catch(() => ({ data: [] })),
               api.bodyAnalysis.getAll().catch(() => ({ data: [] })),
             ]);
-
+          console.log("🔄 Body Analyses:", bodyAnalysesResponse);
           set({
             activities: (activitiesResponse.data as Activity[]) || [],
             nutritionAnalyses:
@@ -871,6 +875,33 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             "Error de sincronización",
             "No se pudieron cargar todos los datos. Trabajando en modo local."
           );
+        }
+      },
+      getAllFoodAnalysis: async () => {
+        try {
+          const response = await api.nutrition.getAnalyses();
+          const analysis = response.data as NutritionAnalysis[];
+          set({ nutritionAnalyses: analysis });
+        } catch (error) {
+          console.error("❌ Error cargando análisis nutricionales:", error);
+        }
+      },
+      getAllBodyAnalysis: async () => {
+        try {
+          const response = await api.bodyAnalysis.getAll();
+          const analysis = response.data as BodyAnalysis[];
+          set({ bodyAnalyses: analysis });
+        } catch (error) {
+          console.error("❌ Error cargando análisis corporales:", error);
+        }
+      },
+      getAllSkinFoldRecords: async () => {
+        try {
+          const response = await api.skinFold.getRecords();
+          const records = response.data as SkinFoldRecord[];
+          set({ skinFoldRecords: records });
+        } catch (error) {
+          console.error("❌ Error cargando registros de pliegues:", error);
         }
       },
     }),

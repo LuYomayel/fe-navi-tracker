@@ -230,8 +230,17 @@ export interface BodyAnalysis {
     bodyFat?: number;
     muscleMass?: number;
     bmi?: number;
+    height?: number;
+    weight?: number;
   };
-  recommendations?: string[];
+  bodyComposition: BodyComposition;
+  recommendations?: NutritionRecommendations;
+  progress: {
+    strengths: string[];
+    areasToImprove: string[];
+    generalAdvice: string;
+  };
+  disclaimer: string;
   confidence: number;
   createdAt?: Date;
   updatedAt?: Date;
@@ -248,6 +257,7 @@ export interface BodyAnalysis {
     disclaimer: string;
     insights?: string[];
   };
+  insights?: string[];
 }
 
 export interface BodyMeasurements {

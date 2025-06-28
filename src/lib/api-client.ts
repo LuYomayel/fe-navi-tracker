@@ -3,6 +3,7 @@ import {
   FoodAnalysisResponse,
   NutritionAnalysis,
   BodyAnalysis,
+  SkinFoldRecord,
 } from "@/types";
 
 // Configuración de la API
@@ -256,7 +257,7 @@ export const api = {
 
   // Nutrición
   nutrition: {
-    getAnalyses: () => apiClient.get("/nutrition"),
+    getAnalyses: () => apiClient.get<NutritionAnalysis[]>("/nutrition"),
     createAnalysis: (data: NutritionAnalysis) =>
       apiClient.post("/nutrition", data),
     getByDate: (date: string) => apiClient.get(`/nutrition?date=${date}`),
@@ -375,6 +376,24 @@ export const api = {
     getPreferences: () => apiClient.get("/preferences"),
     getCurrentGoals: () => apiClient.get("/preferences/goals"),
     post: (data: any) => apiClient.post("/preferences", data),
+  },
+
+  // Skin Fold
+  skinFold: {
+    getRecords: () => apiClient.get<SkinFoldRecord[]>("/skin-fold"),
+    createRecord: (data: SkinFoldRecord) => apiClient.post("/skin-fold", data),
+    updateRecord: (id: string, data: SkinFoldRecord) =>
+      apiClient.put(`/skin-fold/${id}`, data),
+    deleteRecord: (id: string) => apiClient.delete(`/skin-fold?id=${id}`),
+    analyzeSkinFold: (data: {
+      imageBase64: string;
+      user: {
+        age: number;
+        height: number;
+        weight: number;
+        gender: string;
+      };
+    }) => apiClient.post("/body-analysis/skinfold", data),
   },
 
   // Tasks - Para consultar el estado de trabajos en cola

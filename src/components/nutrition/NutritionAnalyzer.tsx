@@ -532,7 +532,7 @@ export function FoodAnalyzer({
                   Confirma los detalles
                 </h3>
                 <div className="space-y-4">
-                  <Image
+                  <img
                     src={selectedImage}
                     alt="Comida seleccionada"
                     className="w-full max-w-md mx-auto rounded-lg border"
@@ -603,7 +603,7 @@ export function FoodAnalyzer({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Image
+                  <img
                     src={selectedImage}
                     alt="Comida analizada"
                     className="w-full rounded-lg border"

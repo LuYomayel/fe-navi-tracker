@@ -88,8 +88,8 @@ export function AIAssistant({ isOpen, onClose }: AIAssistantProps) {
     setIsLoading(true);
 
     try {
-      // Preparar contexto de conversación (últimos 6 mensajes)
-      const chatHistory = updatedMessages.slice(-6).map((msg) => ({
+      // Preparar contexto de conversación. Todos los mensajes de la conversación.
+      const chatHistory = updatedMessages.map((msg: AIMessage) => ({
         role: msg.type === "user" ? "user" : "assistant",
         content: msg.content,
       }));

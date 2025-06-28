@@ -48,6 +48,7 @@ import {
   BodyAnalysis as _BodyAnalysis,
   SkinFoldRecord as _SkinFoldRecord,
   NutritionGoals,
+  BodyAnalysis,
 } from "@/types";
 import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
@@ -87,14 +88,14 @@ const NutritionDashboard: React.FC<{
   };
 
   // Obtener información adicional del análisis corporal
-  const bodyAnalysisInfo = lastBodyAnalysis?.fullAnalysisData;
+  const bodyAnalysisInfo: BodyAnalysis = lastBodyAnalysis as BodyAnalysis;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <div className=" rounded-lg shadow-sm border p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-xl font-semibold">Dashboard Nutricional</h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="">
             Progreso del día de hoy
             {nutritionGoals && (
               <span className="ml-2 text-sm">
@@ -118,56 +119,56 @@ const NutritionDashboard: React.FC<{
 
       {/* Información del análisis corporal */}
       {bodyAnalysisInfo && (
-        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+        <div className="mb-6 p-4  rounded-lg">
           <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
             <Target className="h-4 w-4" />
             Información del Análisis Corporal
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-            <div>
-              <span className="text-muted-foreground">Tipo corporal:</span>
+            <div className="bg-gray-100/50 p-2 rounded-lg">
+              <span className="">Tipo corporal:</span>
               <div className="font-medium capitalize">
                 {lastBodyAnalysis.bodyType}
               </div>
             </div>
-            <div>
-              <span className="text-muted-foreground">Grasa corporal:</span>
+            <div className="bg-gray-100/50 p-2 rounded-lg">
+              <span className="">Grasa corporal:</span>
               <div className="font-medium">
-                {bodyAnalysisInfo.measurements.bodyFatPercentage ||
-                  bodyAnalysisInfo.measurements.estimatedBodyFat}
+                {bodyAnalysisInfo.measurements?.bodyFatPercentage ||
+                  bodyAnalysisInfo.measurements?.estimatedBodyFat}
                 %
               </div>
             </div>
-            <div>
-              <span className="text-muted-foreground">Metabolismo:</span>
+            <div className="bg-gray-100/50 p-2 rounded-lg">
+              <span className="">Metabolismo:</span>
               <div className="font-medium capitalize">
                 {bodyAnalysisInfo.bodyComposition.metabolism}
               </div>
             </div>
-            <div>
-              <span className="text-muted-foreground">Prioridad:</span>
+            <div className="bg-gray-100/50 p-2 rounded-lg">
+              <span className="">Prioridad:</span>
               <div className="font-medium capitalize">
-                {bodyAnalysisInfo.recommendations.priority}
+                {bodyAnalysisInfo.recommendations?.priority}
               </div>
             </div>
           </div>
 
           {/* Objetivos específicos del análisis */}
-          {bodyAnalysisInfo.recommendations.goals &&
-            bodyAnalysisInfo.recommendations.goals.length > 0 && (
-              <div className="mt-3">
-                <span className="text-muted-foreground text-xs">
-                  Objetivos específicos:
-                </span>
+          {bodyAnalysisInfo.recommendations?.goals &&
+            bodyAnalysisInfo.recommendations?.goals.length > 0 && (
+              <div className="mt-3 bg-gray-100/50 p-2 rounded-lg">
+                <span className=" text-xs">Objetivos específicos:</span>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {bodyAnalysisInfo.recommendations.goals.map((goal, index) => (
-                    <span
-                      key={index}
-                      className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs"
-                    >
-                      {goal}
-                    </span>
-                  ))}
+                  {bodyAnalysisInfo.recommendations?.goals.map(
+                    (goal, index) => (
+                      <span
+                        key={index}
+                        className="px-2 py-1 text-primary rounded-full text-xs"
+                      >
+                        {goal}
+                      </span>
+                    )
+                  )}
                 </div>
               </div>
             )}
@@ -177,14 +178,14 @@ const NutritionDashboard: React.FC<{
       {nutritionGoals ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Calorías */}
-          <div className="space-y-3">
+          <div className="space-y-3 bg-gray-100/50 p-4 rounded-lg">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Calorías</span>
-              <span className="text-xs text-gray-600 dark:text-gray-400">
+              <span className="text-sm font-bold">Calorías</span>
+              <span className="text-xs italic">
                 {todayProgress.totalCalories}/{nutritionGoals.dailyCalories}
               </span>
             </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div className="w-full rounded-full h-2">
               <div
                 className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                 style={{
@@ -195,7 +196,7 @@ const NutritionDashboard: React.FC<{
                 }}
               ></div>
             </div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">
+            <div className="text-xs italic">
               {Math.round(
                 getProgressPercentage(
                   todayProgress.totalCalories,
@@ -207,14 +208,14 @@ const NutritionDashboard: React.FC<{
           </div>
 
           {/* Proteína */}
-          <div className="space-y-3">
+          <div className="space-y-3 bg-gray-100/50 p-4 rounded-lg">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Proteína</span>
-              <span className="text-xs text-gray-600 dark:text-gray-400">
+              <span className="text-sm font-bold">Proteínas</span>
+              <span className="text-xs italic">
                 {todayProgress.protein.toFixed(1)}/{nutritionGoals.protein}g
               </span>
             </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div className="w-full  rounded-full h-2">
               <div
                 className="bg-green-500 h-2 rounded-full transition-all duration-300"
                 style={{
@@ -225,7 +226,7 @@ const NutritionDashboard: React.FC<{
                 }}
               ></div>
             </div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">
+            <div className="text-xs italic">
               {Math.round(
                 getProgressPercentage(
                   todayProgress.protein,
@@ -237,14 +238,14 @@ const NutritionDashboard: React.FC<{
           </div>
 
           {/* Carbohidratos */}
-          <div className="space-y-3">
+          <div className="space-y-3 bg-gray-100/50 p-4 rounded-lg">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Carbohidratos</span>
-              <span className="text-xs text-gray-600 dark:text-gray-400">
+              <span className="text-sm font-bold">Carbohidratos</span>
+              <span className="text-xs italic">
                 {todayProgress.carbs.toFixed(1)}/{nutritionGoals.carbs}g
               </span>
             </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div className="w-full  rounded-full h-2">
               <div
                 className="bg-orange-500 h-2 rounded-full transition-all duration-300"
                 style={{
@@ -255,7 +256,7 @@ const NutritionDashboard: React.FC<{
                 }}
               ></div>
             </div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">
+            <div className="text-xs italic">
               {Math.round(
                 getProgressPercentage(todayProgress.carbs, nutritionGoals.carbs)
               )}
@@ -264,14 +265,14 @@ const NutritionDashboard: React.FC<{
           </div>
 
           {/* Grasas */}
-          <div className="space-y-3">
+          <div className="space-y-3 bg-gray-100/50 p-4 rounded-lg">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Grasas</span>
-              <span className="text-xs text-gray-600 dark:text-gray-400">
+              <span className="text-sm font-bold">Grasas</span>
+              <span className="text-xs italic">
                 {todayProgress.fat.toFixed(1)}/{nutritionGoals.fat}g
               </span>
             </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div className="w-full  rounded-full h-2">
               <div
                 className="bg-purple-500 h-2 rounded-full transition-all duration-300"
                 style={{
@@ -282,7 +283,7 @@ const NutritionDashboard: React.FC<{
                 }}
               ></div>
             </div>
-            <div className="text-xs text-gray-600 dark:text-gray-400">
+            <div className="text-xs italic">
               {Math.round(
                 getProgressPercentage(todayProgress.fat, nutritionGoals.fat)
               )}
@@ -310,7 +311,7 @@ const NutritionDashboard: React.FC<{
       {/* Información adicional del análisis corporal */}
       {bodyAnalysisInfo?.recommendations?.restrictions &&
         bodyAnalysisInfo.recommendations.restrictions.length > 0 && (
-          <div className="mt-6 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+          <div className="mt-6 p-4  rounded-lg">
             <h4 className="font-semibold text-sm mb-2 text-red-800 dark:text-red-200">
               🚫 Restricciones Alimentarias
             </h4>
@@ -319,7 +320,7 @@ const NutritionDashboard: React.FC<{
                 (restriction, index) => (
                   <span
                     key={index}
-                    className="px-2 py-1 bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 rounded text-xs"
+                    className="px-2 py-1  text-red-800 dark:text-red-200 rounded text-xs"
                   >
                     {restriction}
                   </span>
@@ -332,8 +333,8 @@ const NutritionDashboard: React.FC<{
       {/* Suplementos recomendados */}
       {bodyAnalysisInfo?.recommendations?.supplements &&
         bodyAnalysisInfo.recommendations.supplements.length > 0 && (
-          <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-            <h4 className="font-semibold text-sm mb-2 text-yellow-800 dark:text-yellow-200">
+          <div className="mt-4 p-4 bg-gray-100/50 rounded-lg">
+            <h4 className="font-semibold text-sm mb-2 ">
               💊 Suplementos Recomendados
             </h4>
             <div className="flex flex-wrap gap-2">
@@ -341,7 +342,7 @@ const NutritionDashboard: React.FC<{
                 (supplement, index) => (
                   <span
                     key={index}
-                    className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 rounded text-xs"
+                    className="px-2 py-1  text-yellow-800 dark:text-yellow-200 rounded text-xs"
                   >
                     {supplement}
                   </span>
@@ -370,6 +371,9 @@ export default function NutritionPage() {
     updateSkinFoldRecord: _updateSkinFoldRecord,
     preferences,
     updatePreferences: _updatePreferences,
+    getAllFoodAnalysis,
+    getAllBodyAnalysis,
+    getAllSkinFoldRecords,
   } = useNaviTrackerStore();
 
   const [selectedDate] = useState(new Date());
@@ -1077,7 +1081,7 @@ export default function NutritionPage() {
                 return (
                   <div
                     key={analysis.id}
-                    className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+                    className="rounded-lg shadow-sm border p-4"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
@@ -1089,7 +1093,7 @@ export default function NutritionPage() {
                             {analysis.mealType.charAt(0).toUpperCase() +
                               analysis.mealType.slice(1)}
                           </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                          <div className="text-sm  flex items-center gap-2">
                             <Clock className="h-3 w-3" />
                             {dateInfo.date} - {dateInfo.time}
                           </div>
@@ -1100,7 +1104,7 @@ export default function NutritionPage() {
                           <div className="font-medium text-lg">
                             {analysis.totalCalories} kcal
                           </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                          <div className="text-sm ">
                             {Math.round(analysis.aiConfidence * 100)}% confianza
                           </div>
                         </div>
@@ -1132,10 +1136,10 @@ export default function NutritionPage() {
                       {analysis.foods.map((food, index) => (
                         <div
                           key={index}
-                          className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3"
+                          className=" rounded-lg p-3 bg-gray-200/50"
                         >
                           <div className="font-medium text-sm">{food.name}</div>
-                          <div className="text-xs text-gray-600 dark:text-gray-400">
+                          <div className="text-xs ">
                             {food.quantity} • {food.calories} kcal
                           </div>
                         </div>
@@ -1151,9 +1155,7 @@ export default function NutritionPage() {
               <h3 className="text-lg font-medium  mb-2">
                 No hay análisis nutricionales
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Empieza analizando tu primera comida
-              </p>
+              <p className=" mb-4">Empieza analizando tu primera comida</p>
               <Button
                 onClick={() => setShowFoodAnalyzer(true)}
                 className="flex items-center gap-2"
@@ -1172,9 +1174,7 @@ export default function NutritionPage() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-medium">Análisis Corporales</h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Historial de análisis de composición corporal
-              </p>
+              <p className="">Historial de análisis de composición corporal</p>
             </div>
             <Button
               onClick={() => setShowBodyAnalyzer(true)}
@@ -1190,10 +1190,10 @@ export default function NutritionPage() {
               {bodyAnalyses.map((analysis) => (
                 <div
                   key={analysis.id}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+                  className="rounded-lg shadow-sm border p-4"
                 >
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex-1">
                       <div className="font-medium">
                         Análisis{" "}
                         {analysis.createdAt
@@ -1202,29 +1202,68 @@ export default function NutritionPage() {
                             )
                           : "Fecha no disponible"}
                       </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        {/* Peso: {analysis.currentWeight}kg • Altura: {analysis.height}cm */}
-                        Análisis completado
+                      <div className="text-sm text-muted-foreground">
+                        Peso: {analysis.measurements?.weight}kg • Altura:{" "}
+                        {analysis.measurements?.height}cm Análisis completado
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {analysis.insights && analysis.insights.length > 0 && (
+                          <div className="mt-2 bg-gray-100/50 p-2 rounded-lg">
+                            <div className="text-xs font-medium text-muted-foreground mb-1">
+                              Insights:
+                            </div>
+                            <div className="space-y-1">
+                              {analysis.insights.map((insight, index) => (
+                                <div
+                                  key={index}
+                                  className="text-xs text-muted-foreground"
+                                >
+                                  • {insight}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {analysis.insights && analysis.insights.length > 0 && (
+                          <div className="mt-2 bg-gray-100/50 p-2 rounded-lg">
+                            <div className="text-xs font-medium text-muted-foreground mb-1">
+                              Recomendaciones:
+                            </div>
+                            <div className="space-y-1">
+                              {analysis.recommendations?.nutrition.map(
+                                (insight, index) => (
+                                  <div
+                                    key={index}
+                                    className="text-xs text-muted-foreground"
+                                  >
+                                    • {insight}
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        handleDeleteBodyAnalysis(analysis.id || "")
-                      }
-                      className="text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handleSetAsGoals(analysis)}
-                      className="ml-2"
-                    >
-                      <Target className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-2 mt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleDeleteBodyAnalysis(analysis.id || "")
+                        }
+                        className="text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleSetAsGoals(analysis)}
+                      >
+                        <Target className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1232,12 +1271,10 @@ export default function NutritionPage() {
           ) : (
             <div className="text-center py-12">
               <User className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+              <h3 className="text-lg font-medium  mb-2">
                 No hay análisis corporales
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Realiza tu primer análisis corporal
-              </p>
+              <p className=" mb-4">Realiza tu primer análisis corporal</p>
               <Button
                 onClick={() => setShowBodyAnalyzer(true)}
                 className="flex items-center gap-2"
@@ -1256,9 +1293,7 @@ export default function NutritionPage() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-medium">Pliegues Cutáneos</h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Historial de mediciones de pliegues cutáneos
-              </p>
+              <p className="">Historial de mediciones de pliegues cutáneos</p>
             </div>
             <Button
               onClick={() => setShowSkinFoldDialog(true)}
@@ -1274,7 +1309,7 @@ export default function NutritionPage() {
               {skinFoldRecords.map((record) => (
                 <div
                   key={record.id}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+                  className="rounded-lg shadow-sm border p-4"
                 >
                   <div className="flex items-center justify-between">
                     <div>
@@ -1286,7 +1321,7 @@ export default function NutritionPage() {
                             )
                           : "Fecha no disponible"}
                       </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                      <div className="text-sm ">
                         {/* Suma: {sumOfSkinfolds(record.measurements)}mm */}
                         Medición registrada
                       </div>
@@ -1306,10 +1341,10 @@ export default function NutritionPage() {
           ) : (
             <div className="text-center py-12">
               <Target className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+              <h3 className="text-lg font-medium  mb-2">
                 No hay mediciones de pliegues
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
+              <p className=" mb-4">
                 Registra tu primera medición de pliegues cutáneos
               </p>
               <Button
@@ -1331,6 +1366,7 @@ export default function NutritionPage() {
         selectedDate={selectedDate}
         onAnalysisSaved={() => {
           console.log("🔄 Análisis nutricional guardado, refrescando datos...");
+          getAllFoodAnalysis();
           // Los datos se actualizan automáticamente por el store de Zustand
           toast.success("Datos actualizados");
         }}
@@ -1341,6 +1377,7 @@ export default function NutritionPage() {
         onClose={() => setShowBodyAnalyzer(false)}
         onAnalysisSaved={() => {
           console.log("🔄 Análisis corporal guardado, refrescando datos...");
+          getAllBodyAnalysis();
           // Los datos se actualizan automáticamente por el store de Zustand
           toast.success("Datos actualizados");
         }}
@@ -1351,6 +1388,7 @@ export default function NutritionPage() {
         onClose={() => setShowSkinFoldDialog(false)}
         onRecordSaved={() => {
           console.log("🔄 Registro de pliegues guardado, refrescando datos...");
+          getAllSkinFoldRecords();
           // Los datos se actualizan automáticamente por el store de Zustand
           toast.success("Datos actualizados");
         }}
@@ -1368,6 +1406,7 @@ export default function NutritionPage() {
           console.log("🔄 Objetivos guardados, refrescando datos...");
           setShowGoalsModal(false);
           setSelectedBodyAnalysis(null);
+          getAllBodyAnalysis();
           toast.success("Objetivos actualizados correctamente");
         }}
       />

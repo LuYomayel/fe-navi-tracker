@@ -19,7 +19,7 @@ import {
   SkinFoldMeasurementOrder,
 } from "@/types/skinFold";
 import { validateSkinFoldRecord } from "@/lib/anthropometry";
-import { apiClient } from "@/lib/api-client";
+import { api } from "@/lib/api-client";
 
 interface SkinFoldDialogProps {
   isOpen: boolean;
@@ -118,14 +118,14 @@ export function SkinFoldDialog({
         };
 
         try {
-          const result = await apiClient.post("/body-analysis/skinfold", {
+          const result = await api.skinFold.analyzeSkinFold({
             imageBase64: base64Data,
             user: userData,
           });
 
           if (result.success && result.data) {
             // Pre-llenar el formulario con los valores de la IA
-            const analysisData = result.data as any;
+            const analysisData = result.data as SkinFoldRecord;
             setFormData((prev) => ({
               ...prev,
               values: { ...prev.values, ...analysisData.values },

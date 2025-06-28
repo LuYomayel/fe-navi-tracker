@@ -98,12 +98,12 @@ export function BodyAnalyzer({
 
   // Datos del formulario
   const [formData, setFormData] = useState({
-    height: 170,
-    weight: 70,
-    age: 25,
+    height: 165,
+    weight: 83,
+    age: 24,
     gender: "male" as "male" | "female" | "other",
-    activityLevel: ActivityLevel.MODERATE,
-    fitnessGoal: "gain_muscle",
+    activityLevel: ActivityLevel.ACTIVE,
+    fitnessGoal: "define",
     targetWeight: 75,
   });
 
@@ -368,9 +368,11 @@ export function BodyAnalyzer({
           insights: analysisResult.insights,
         },
       };
+      console.log("💾 Analysis:", analysis);
       const response = await api.bodyAnalysis.saveAnalysis(
         analysis as BodyAnalysis
       );
+
       if (!response.success) {
         throw new Error(response.message || "Error al guardar el análisis");
       }
@@ -387,6 +389,7 @@ export function BodyAnalyzer({
       onAnalysisSaved?.();
     } catch (error) {
       console.error("❌ Error guardando análisis corporal:", error);
+      console.log("💾 Error:", error.message);
       toast.error(
         "Error",
         "No se pudo guardar el análisis. Inténtalo de nuevo más tarde."
@@ -894,7 +897,7 @@ export function BodyAnalyzer({
               </div>
 
               {/* Tipo corporal */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg">
+              <div className=" p-6 rounded-lg">
                 <div className="flex items-center gap-3 mb-3">
                   {analysisResult.bodyType &&
                     getBodyTypeDescription(analysisResult.bodyType).emoji}
@@ -955,7 +958,7 @@ export function BodyAnalyzer({
                       (recommendation, index) => (
                         <div
                           key={index}
-                          className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs"
+                          className="p-2 bg-blue-50/50 dark:bg-blue-900/20 rounded text-xs"
                         >
                           {recommendation}
                         </div>
@@ -1067,7 +1070,7 @@ export function BodyAnalyzer({
                         (goal, index) => (
                           <div
                             key={index}
-                            className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-l-4 border-purple-400 text-sm font-medium capitalize"
+                            className="p-3 bg-purple-50/50 rounded-lg border-l-4 border-purple-400 text-sm font-medium capitalize"
                           >
                             {goal}
                           </div>
@@ -1092,7 +1095,7 @@ export function BodyAnalyzer({
                             (strength, index) => (
                               <div
                                 key={index}
-                                className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-sm capitalize"
+                                className="p-3 bg-green-50/50 rounded-lg text-sm capitalize"
                               >
                                 {strength}
                               </div>
@@ -1114,7 +1117,7 @@ export function BodyAnalyzer({
                             (area, index) => (
                               <div
                                 key={index}
-                                className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-sm capitalize"
+                                className="p-3 bg-orange-50/50 rounded-lg text-sm capitalize"
                               >
                                 {area}
                               </div>
@@ -1132,7 +1135,7 @@ export function BodyAnalyzer({
                   <h4 className="font-semibold flex items-center gap-2">
                     💡 Consejo General
                   </h4>
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-l-4 border-blue-400">
+                  <div className="p-4 bg-blue-50/50 rounded-lg border-l-4 border-blue-400">
                     <p className="text-sm capitalize">
                       {analysisResult.progress.generalAdvice}
                     </p>
@@ -1149,7 +1152,7 @@ export function BodyAnalyzer({
                   {analysisResult.insights?.map((insight, index) => (
                     <div
                       key={index}
-                      className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm capitalize"
+                      className="p-3 bg-gray-50/50 rounded-lg text-sm capitalize"
                     >
                       {insight}
                     </div>
@@ -1169,7 +1172,7 @@ export function BodyAnalyzer({
                         (supplement, index) => (
                           <div
                             key={index}
-                            className="p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded border-l-4 border-yellow-400 text-sm"
+                            className="p-2 bg-yellow-50/50 rounded border-l-4 border-yellow-400 text-sm"
                           >
                             {supplement}
                           </div>
