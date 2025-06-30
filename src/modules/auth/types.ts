@@ -7,6 +7,12 @@ export interface User {
   createdAt: string;
   updatedAt?: string;
   avatar?: string;
+  // Sistema de XP y Niveles
+  level?: number;
+  xp?: number;
+  totalXp?: number;
+  streak?: number;
+  lastStreakDate?: string;
   // Preferencias del usuario
   preferences?: UserPreferences;
   // Suscripción/Plan

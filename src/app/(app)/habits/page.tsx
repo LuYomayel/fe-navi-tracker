@@ -13,6 +13,11 @@ import { DailyReflection } from "@/components/calendar/DailyReflection";
 import { AIAssistant } from "@/components/ai/AIAssistant";
 import ReadingAssistant from "@/components/ai/ReadingAssistant";
 import { NutritionTracker } from "@/components/nutrition/NutritionTracker";
+import { XpDashboard } from "@/components/xp/XpDashboard";
+import { NaviCompanion } from "@/components/navi/NaviCompanion";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Heart } from "lucide-react";
 
 export default function HabitsPage() {
   const router = useRouter();
@@ -58,12 +63,25 @@ export default function HabitsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Seguimiento de Hábitos 📈</h1>
-        <p className="text-muted-foreground mt-2">
-          Gestiona tus hábitos diarios, ve tu progreso y mantén la constancia
-        </p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold">Seguimiento de Hábitos 📈</h1>
+          <p className="text-muted-foreground mt-2">
+            Gestiona tus hábitos diarios, ve tu progreso y mantén la constancia
+          </p>
+        </div>
+
+        {/* Botón para ver a Navi */}
+        <Link href="/navi">
+          <Button variant="outline" size="sm" className="gap-2">
+            <Heart className="h-4 w-4" />
+            Ver a Navi
+          </Button>
+        </Link>
       </div>
+
+      {/* Dashboard de XP y Progreso */}
+      <XpDashboard />
 
       {/* Calendario semanal principal con todas las funcionalidades */}
       <div className="bg-card rounded-lg shadow-sm border">
@@ -105,6 +123,9 @@ export default function HabitsPage() {
         onClose={() => setShowNutritionAnalyzer(false)}
         selectedDate={selectedModalDate || new Date()}
       />
+
+      {/* Navi - Compañero Virtual */}
+      <NaviCompanion />
     </div>
   );
 }

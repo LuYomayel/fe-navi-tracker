@@ -11,6 +11,7 @@ import type {
 } from "@/types";
 import { toast } from "@/lib/toast-helper";
 import { api } from "@/lib/api-client";
+import { XpAction } from "@/types/xp";
 
 // Helper functions
 const generateId = () => Math.random().toString(36).substring(2, 15);
@@ -204,6 +205,12 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
       isInitialized: false,
 
       // Activity actions
+      getActivities: async () => {
+        const response = await api.activities.getAll();
+        console.log("response", response);
+        const activities = response.data as Activity[];
+        set({ activities });
+      },
       addActivity: async (activity) => {
         try {
           set({ isLoading: true });
@@ -400,25 +407,23 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           });
 
           const completion = response.data as DailyCompletion;
-
           set((state) => {
-            const existingIndex = state.completions.findIndex(
-              (c) => c.activityId === activityId && c.date === dateKey
-            );
-
+            const activity = state.activities.find((a) => a.id === activityId);
             if (completion.completed) {
               // Agregar o actualizar completación
-              if (existingIndex >= 0) {
-                const newCompletions = [...state.completions];
-                newCompletions[existingIndex] = completion;
-                return { completions: newCompletions };
-              } else {
-                return { completions: [...state.completions, completion] };
-              }
+              const activitiesNew = state.activities.map((a) =>
+                a.id === activityId
+                  ? {
+                      ...a,
+                      completions: [...(a.completions || []), completion],
+                    }
+                  : a
+              );
+              return { activities: activitiesNew };
             } else {
               // Remover completación
               return {
-                completions: state.completions.filter(
+                completions: activity?.completions?.filter(
                   (c) => !(c.activityId === activityId && c.date === dateKey)
                 ),
               };
@@ -426,6 +431,80 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           });
 
           console.log("✅ Completación guardada");
+
+          // ➕ Agregar XP por hábito completado y emitir evento global
+          try {
+            if (completion.completed) {
+              const activityObj = get().activities.find(
+                (a) => a.id === activityId
+              );
+              const habitName = activityObj?.name || "Hábito";
+
+              const result = await api.xp.addHabitXp({
+                habitName,
+                date: dateKey,
+              });
+              console.log("result", result);
+              if (!result.success) {
+                toast.error(
+                  "Error",
+                  "No se pudo agregar el XP. Inténtalo de nuevo."
+                );
+                return;
+              }
+              // Emitir evento para que Navi reaccione
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(new Event("habit-completed"));
+              }
+
+              // BONUS: comprobar si todos los hábitos para hoy están completos
+              const stateAfter = get();
+              const allDone = stateAfter.activities
+                .filter((act) => !act.archived)
+                .every((act) => {
+                  // Día de la semana (0 = domingo)
+                  const dow = new Date(date).getDay();
+                  const dayIndex = (dow + 6) % 7; // convierte domingo=6
+                  if (!act.days[dayIndex]) return true; // no programado ese día
+                  return act.completions?.some(
+                    (c) =>
+                      c.activityId === act.id &&
+                      c.date === dateKey &&
+                      c.completed
+                  );
+                });
+
+              if (allDone) {
+                const bonusKey = `day-bonus-${dateKey}`;
+                if (
+                  typeof window !== "undefined" &&
+                  !localStorage.getItem(bonusKey)
+                ) {
+                  try {
+                    // Otorgar bonus XP solo una vez al día
+                    const result = await api.xp.addXp({
+                      action: XpAction.DAY_COMPLETE,
+                      xpAmount: 50,
+                      description: "Todos los hábitos del día completados",
+                    });
+                    console.log("result", result);
+                    localStorage.setItem(bonusKey, "true");
+                  } catch (error) {
+                    console.error("❌ Error manejando XP/bonus:", error);
+
+                    toast.error(
+                      "Error",
+                      "No se pudo agregar el XP. Inténtalo de nuevo."
+                    );
+                  }
+
+                  window.dispatchEvent(new Event("day-completed"));
+                }
+              }
+            }
+          } catch (err) {
+            console.error("❌ Error manejando XP/bonus:", err);
+          }
         } catch (error) {
           console.error("❌ Error guardando completación:", error);
           toast.error(
@@ -507,10 +586,13 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
       getCompletion: (activityId, date) => {
         const dateKey = date.toISOString().split("T")[0];
         const state = get();
-        return state.completions.some(
-          (completion) =>
-            completion.activityId === activityId && completion.date === dateKey
-        );
+        return state.activities
+          .find((activity) => activity.id === activityId)
+          ?.completions?.some(
+            (completion) =>
+              completion.activityId === activityId &&
+              completion.date === dateKey
+          );
       },
 
       addOrUpdateReflection: async (
@@ -856,7 +938,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
               api.nutrition.getAnalyses().catch(() => ({ data: [] })),
               api.bodyAnalysis.getAll().catch(() => ({ data: [] })),
             ]);
-          console.log("🔄 Body Analyses:", bodyAnalysesResponse);
+
           set({
             activities: (activitiesResponse.data as Activity[]) || [],
             nutritionAnalyses:

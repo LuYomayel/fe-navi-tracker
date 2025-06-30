@@ -1,5 +1,7 @@
 // import { EachMonthOfIntervalOptions } from "date-fns";
 
+import { User } from "@/modules/auth/types";
+
 export interface Activity {
   id: string;
   name: string;
@@ -12,6 +14,9 @@ export interface Activity {
   archivedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  completions?: DailyCompletion[];
+  userId: string;
+  user: User;
 }
 
 export interface DailyCompletion {

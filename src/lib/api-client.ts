@@ -4,6 +4,7 @@ import {
   NutritionAnalysis,
   BodyAnalysis,
   SkinFoldRecord,
+  XpAction,
 } from "@/types";
 
 // Configuración de la API
@@ -401,6 +402,23 @@ export const api = {
     getStatus: (taskId: string) => apiClient.get(`/tasks/${taskId}/status`),
     getResult: (taskId: string) => apiClient.get(`/tasks/${taskId}/result`),
     getJobInfo: (taskId: string) => apiClient.get(`/tasks/${taskId}`),
+  },
+
+  // XP System
+  xp: {
+    getStats: () => apiClient.get("/xp/stats"),
+    addXp: (data: {
+      action: XpAction;
+      xpAmount: number;
+      description: string;
+      metadata?: any;
+    }) => apiClient.post("/xp/add", data),
+    addHabitXp: (data: { habitName: string; date?: string }) =>
+      apiClient.post("/xp/habit-complete", data),
+    addNutritionXp: (data: { mealType: string; date?: string }) =>
+      apiClient.post("/xp/nutrition-log", data),
+    addDailyCommentXp: (data: { date?: string }) =>
+      apiClient.post("/xp/daily-comment", data),
   },
 };
 
