@@ -212,6 +212,17 @@ export function NaviCompanion({ className = "" }: NaviCompanionProps) {
       setTimeout(() => setIsAnimating(false), 1500);
       setTimeout(() => setShowMessage(false), 4000);
     };
+
+    // 11. Registrar actividad física (+60 XP)
+    const handlePhysicalActivity = () => {
+      setCurrentState("proud");
+      setBubbleMessage("¡Actividad física registrada! ¡Eres una máquina! 💪");
+      setShowMessage(true);
+      setIsAnimating(true);
+      setTimeout(() => setIsAnimating(false), 1500);
+      setTimeout(() => setShowMessage(false), 4000);
+    };
+
     // Registrar todos los event listeners
     window.addEventListener("habit-completed", handleHabitCompleted);
     window.addEventListener("day-completed", handleDayCompleted);
@@ -225,6 +236,7 @@ export function NaviCompanion({ className = "" }: NaviCompanionProps) {
     window.addEventListener("streak-3-days", handleStreak3Days);
     window.addEventListener("streak-7-days", handleStreak7Days);
     window.addEventListener("perfect-week", handlePerfectWeek);
+    window.addEventListener("physical-activity", handlePhysicalActivity);
 
     return () => {
       // Limpiar todos los event listeners
@@ -240,6 +252,7 @@ export function NaviCompanion({ className = "" }: NaviCompanionProps) {
       window.removeEventListener("streak-3-days", handleStreak3Days);
       window.removeEventListener("streak-7-days", handleStreak7Days);
       window.removeEventListener("perfect-week", handlePerfectWeek);
+      window.removeEventListener("physical-activity", handlePhysicalActivity);
     };
   }, []);
 

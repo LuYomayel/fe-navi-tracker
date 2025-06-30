@@ -201,3 +201,69 @@ export const CATEGORY_NAMES: Record<string, string> = {};
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 15);
 }
+
+/**
+ * Calcula el balance calórico diario combinando análisis nutricionales y actividades físicas
+ * @param nutritionAnalyses - Array de análisis nutricionales
+ * @param physicalActivities - Array de actividades físicas
+ * @param date - Fecha para calcular el balance (formato YYYY-MM-DD)
+ * @returns Objeto con calorías consumidas, quemadas y balance neto
+ */
+export function calculateDailyCalorieBalance(
+  nutritionAnalyses: any[],
+  physicalActivities: any[],
+  date: string
+) {
+  // Calorías consumidas de comidas
+  const dayNutrition = nutritionAnalyses.filter(
+    (analysis) => analysis.date === date
+  );
+  const caloriesConsumed = dayNutrition.reduce(
+    (total, analysis) => total + (analysis.totalCalories || 0),
+    0
+  );
+
+  // Calorías quemadas por actividad física
+  const dayActivities = physicalActivities.filter(
+    (activity) => activity.date === date
+  );
+  const caloriesBurned = dayActivities.reduce(
+    (total, activity) => total + (activity.activeEnergyKcal || 0),
+    0
+  );
+
+  // Balance neto (positivo = superávit, negativo = déficit)
+  const netCalories = caloriesConsumed - caloriesBurned;
+
+  return {
+    caloriesConsumed,
+    caloriesBurned,
+    netCalories,
+    isDeficit: netCalories < 0,
+    isSurplus: netCalories > 0,
+    mealsCount: dayNutrition.length,
+    activitiesCount: dayActivities.length,
+  };
+}
+
+/**
+ * Formatea el balance calórico para mostrar en UI
+ * @param balance - Resultado de calculateDailyCalorieBalance
+ * @returns Objeto con texto formateado y colores CSS
+ */
+export function formatCalorieBalance(
+  balance: ReturnType<typeof calculateDailyCalorieBalance>
+) {
+  const { caloriesConsumed, caloriesBurned, netCalories, isDeficit } = balance;
+
+  return {
+    consumedText: `✅ Consumidas: ${caloriesConsumed} kcal`,
+    burnedText: `🔥 Quemadas: ${caloriesBurned} kcal`,
+    balanceText: `📊 Balance neto: ${
+      netCalories > 0 ? "+" : ""
+    }${netCalories} kcal ${isDeficit ? "(déficit)" : "(superávit)"}`,
+    balanceColor: isDeficit ? "text-blue-600" : "text-orange-600",
+    consumedColor: "text-green-600",
+    burnedColor: "text-red-600",
+  };
+}

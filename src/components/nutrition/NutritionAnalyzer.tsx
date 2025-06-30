@@ -26,12 +26,12 @@ import {
   Macronutrients,
   FoodCategory as _FoodCategory,
   NutritionAnalysis,
+  XpAction,
 } from "@/types";
 
 import { api } from "@/lib/api-client";
 import { getDateKey } from "@/lib/utils";
 import { toast } from "@/lib/toast-helper";
-import Image from "next/image";
 
 interface FoodAnalyzerProps {
   isOpen: boolean;
@@ -277,7 +277,7 @@ export function FoodAnalyzer({
       // Esto es lo que tengo que enviar a la API
       const data: NutritionAnalysis = {
         id: "default",
-        userId: "default",
+        userId: "usr_test_id_123",
         date: getDateKey(selectedDate),
         mealType: resultToSave.mealType,
         foods: resultToSave.foods,
@@ -302,6 +302,21 @@ export function FoodAnalyzer({
       if (!apiResponse.success) {
         throw Error(apiResponse.message || "Error al guardar la wea");
       }
+
+      const expResponse = await api.xp.addXp({
+        action: XpAction.NUTRITION_LOG,
+        xpAmount: 40,
+        description: "Cumplir el objetivo calórico/macros del día",
+      });
+      console.log("🔍 XP Response:", expResponse);
+      if (!expResponse.success) {
+        throw Error(expResponse.message || "Error al agregar experiencia");
+      }
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("nutrition-log"));
+      }
+
       // Reset component
       handleReset();
       onClose();

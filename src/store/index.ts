@@ -8,6 +8,7 @@ import type {
   NutritionAnalysis,
   BodyAnalysis,
   SkinFoldRecord,
+  PhysicalActivity,
 } from "@/types";
 import { toast } from "@/lib/toast-helper";
 import { api } from "@/lib/api-client";
@@ -83,6 +84,7 @@ interface NaviTrackerState {
   nutritionAnalyses: NutritionAnalysis[];
   bodyAnalyses: BodyAnalysis[];
   skinFoldRecords: SkinFoldRecord[];
+  physicalActivities: PhysicalActivity[];
   chatHistory: Array<{
     id: string;
     role: "user" | "assistant";
@@ -174,6 +176,16 @@ interface NaviTrackerState {
   getAllFoodAnalysis: () => Promise<void>;
   getAllBodyAnalysis: () => Promise<void>;
   getAllSkinFoldRecords: () => Promise<void>;
+  getAllPhysicalActivities: () => Promise<void>;
+  getDailyCalorieBalance: (date: Date) => {
+    caloriesConsumed: number;
+    caloriesBurned: number;
+    netCalories: number;
+    isDeficit: boolean;
+    isSurplus: boolean;
+    mealsCount: number;
+    activitiesCount: number;
+  };
 }
 
 export const useNaviTrackerStore = create<NaviTrackerState>()(
@@ -186,6 +198,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
       nutritionAnalyses: [],
       bodyAnalyses: [],
       skinFoldRecords: [],
+      physicalActivities: [],
       chatHistory: [],
       preferences: {
         darkMode: false,
@@ -207,14 +220,14 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
       // Activity actions
       getActivities: async () => {
         const response = await api.activities.getAll();
-        console.log("response", response);
+
         const activities = response.data as Activity[];
         set({ activities });
       },
       addActivity: async (activity) => {
         try {
           set({ isLoading: true });
-          console.log("activity", activity);
+
           // 🚀 Usar API real en lugar de datos locales
           const response = await api.activities.create({
             ...activity,
@@ -523,7 +536,6 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
                       xpAmount: 50,
                       description: "Todos los hábitos del día completados",
                     });
-                    console.log("result", result);
                     localStorage.setItem(bonusKey, "true");
                   } catch (error) {
                     console.error("❌ Error manejando XP/bonus:", error);
@@ -1000,11 +1012,13 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             nutritionResponse,
             bodyAnalysesResponse,
             notesResponse,
+            physicalActivitiesResponse,
           ] = await Promise.all([
             api.activities.getAll().catch(() => ({ data: [] })),
             api.nutrition.getAnalyses().catch(() => ({ data: [] })),
             api.bodyAnalysis.getAll().catch(() => ({ data: [] })),
             api.notes.getAll().catch(() => ({ data: [] })),
+            api.physicalActivity.getAll().catch(() => ({ data: [] })),
           ]);
 
           set({
@@ -1013,6 +1027,8 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
               (nutritionResponse.data as NutritionAnalysis[]) || [],
             bodyAnalyses: (bodyAnalysesResponse.data as BodyAnalysis[]) || [],
             dailyNotes: (notesResponse.data as DailyNote[]) || [],
+            physicalActivities:
+              (physicalActivitiesResponse.data as PhysicalActivity[]) || [],
             // bodyAnalyses se mantienen desde localStorage por ahora
             isInitialized: true,
             isLoading: false,
@@ -1054,6 +1070,58 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
         } catch (error) {
           console.error("❌ Error cargando registros de pliegues:", error);
         }
+      },
+      getAllPhysicalActivities: async () => {
+        try {
+          const response = await api.physicalActivity.getAll();
+          const activities = response.data as PhysicalActivity[];
+          set({ physicalActivities: activities });
+        } catch (error) {
+          console.error("❌ Error cargando actividades físicas:", error);
+        }
+      },
+
+      getDailyCalorieBalance: (date: Date) => {
+        const state = get();
+        const dateKey = date.toISOString().split("T")[0];
+
+        // Calorías consumidas de comidas
+        const dayNutrition = state.nutritionAnalyses.filter(
+          (analysis) => analysis.date === dateKey
+        );
+
+        const caloriesConsumed = dayNutrition.reduce(
+          (total, analysis) => total + (analysis.totalCalories || 0),
+          0
+        );
+
+        // Calorías quemadas por actividad física
+        const dayActivities = state.physicalActivities.filter(
+          (activity) => activity.date === dateKey
+        );
+        console.log(
+          "dayActivities",
+          dayActivities,
+          dateKey,
+          state.physicalActivities
+        );
+        const caloriesBurned = dayActivities.reduce(
+          (total, activity) => total + (activity.activeEnergyKcal || 0),
+          0
+        );
+
+        // Balance neto (positivo = superávit, negativo = déficit)
+        const netCalories = caloriesConsumed - caloriesBurned;
+
+        return {
+          caloriesConsumed,
+          caloriesBurned,
+          netCalories,
+          isDeficit: netCalories < 0,
+          isSurplus: netCalories > 0,
+          mealsCount: dayNutrition.length,
+          activitiesCount: dayActivities.length,
+        };
       },
     }),
     {

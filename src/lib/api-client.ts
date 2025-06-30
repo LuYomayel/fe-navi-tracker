@@ -6,6 +6,9 @@ import {
   SkinFoldRecord,
   XpAction,
   DailyNote,
+  DailyNutritionBalance,
+  PhysicalActivity,
+  CreatePhysicalActivityDto,
 } from "@/types";
 
 // Configuración de la API
@@ -130,8 +133,8 @@ async function fetchAPI<T = unknown>(
         );
       } catch (_jsonError) {
         // Si no se puede parsear el JSON, usar el formato anterior
-        console.log(_jsonError.message);
-        throw new Error(_jsonError.message);
+        console.log((_jsonError as Error).message);
+        throw new Error((_jsonError as Error).message);
       }
     }
 
@@ -293,11 +296,15 @@ export const api = {
   nutrition: {
     getAnalyses: () => apiClient.get<NutritionAnalysis[]>("/nutrition"),
     createAnalysis: (data: NutritionAnalysis) =>
-      apiClient.post("/nutrition", data),
+      apiClient.post("/nutrition", data as any),
     getByDate: (date: string) => apiClient.get(`/nutrition?date=${date}`),
     updateAnalysis: (id: string, data: any) =>
       apiClient.put(`/nutrition/${id}`, data),
     deleteAnalysis: (id: string) => apiClient.delete(`/nutrition/${id}`),
+    getDailyBalance: (date?: string) =>
+      apiClient.get<DailyNutritionBalance>(
+        `/nutrition/daily-balance${date ? `?date=${date}` : ""}`
+      ),
   },
 
   // Completions
@@ -452,6 +459,19 @@ export const api = {
       apiClient.post("/xp/nutrition-log", data),
     addDailyCommentXp: (data: { date?: string }) =>
       apiClient.post("/xp/daily-comment", data),
+  },
+
+  // Actividad Física
+  physicalActivity: {
+    getAll: (date?: string) =>
+      apiClient.get<PhysicalActivity[]>(
+        `/physical-activities${date ? `?date=${date}` : ""}`
+      ),
+    create: (data: CreatePhysicalActivityDto) =>
+      apiClient.post("/physical-activities", data),
+    update: (id: string, data: Partial<PhysicalActivity>) =>
+      apiClient.put(`/physical-activities/${id}`, data),
+    delete: (id: string) => apiClient.delete(`/physical-activities/${id}`),
   },
 };
 

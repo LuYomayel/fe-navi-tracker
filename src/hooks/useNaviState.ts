@@ -56,7 +56,7 @@ export function useNaviState() {
     const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
       .toISOString()
       .split("T")[0];
-    console.log("xpStats", xpStats);
+
     // Estado 1: Celebrando (subió de nivel o logro importante)
     if (isLevelingUp) {
       return {
@@ -108,7 +108,6 @@ export function useNaviState() {
       .filter((completion) => completion.date === today);
 
     if (completionsToday && xpStats?.xp && xpStats.xp > 0) {
-      console.log("hasActivityToday", completionsToday);
       const messages = [
         "¡Excelente trabajo hoy! 😊",
         "¡Estoy muy feliz por ti! ✨",

@@ -550,3 +550,59 @@ export interface CurrentGoals {
 
 // Tipos XP
 export * from "./xp";
+
+// Tipos para actividad física
+export interface PhysicalActivity {
+  id: string;
+  userId: string;
+  date: string; // YYYY-MM-DD
+  steps?: number;
+  distanceKm?: number;
+  activeEnergyKcal?: number;
+  exerciseMinutes?: number;
+  standHours?: number;
+  screenshotUrl?: string;
+  source: string;
+  aiConfidence?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreatePhysicalActivityDto {
+  date: string;
+  steps?: number;
+  distanceKm?: number;
+  activeEnergyKcal?: number;
+  exerciseMinutes?: number;
+  standHours?: number;
+  screenshotUrl?: string;
+  source: string;
+  aiConfidence?: number;
+}
+
+// Tipos para balance nutricional diario
+export interface DailyNutritionBalance {
+  consumed: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber: number;
+  };
+  burned: {
+    calories: number;
+    steps: number;
+    distanceKm: number;
+    exerciseMinutes: number;
+  };
+  netCalories: number;
+  goals: {
+    dailyCalorieGoal: number;
+    proteinGoal: number;
+    carbsGoal: number;
+    fatGoal: number;
+    fiberGoal: number;
+  };
+  nutritionAnalyses: NutritionAnalysis[];
+  physicalActivities: PhysicalActivity[];
+}

@@ -19,6 +19,7 @@ import {
   Filter,
   Target,
   ChevronDown,
+  Dumbbell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -54,6 +55,9 @@ import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
 import { SetGoalsDialog } from "@/components/nutrition/SetGoalsDialog";
 import { NaviCompanion } from "@/components/navi/NaviCompanion";
+import { PhysicalActivityTracker } from "@/components/nutrition/PhysicalActivityTracker";
+import { CreatePhysicalActivityDialog } from "@/components/nutrition/CreatePhysicalActivityDialog";
+import { CalorieBalanceWidget } from "@/components/nutrition/CalorieBalanceWidget";
 
 interface DailyProgress {
   totalCalories: number;
@@ -62,6 +66,9 @@ interface DailyProgress {
   fat: number;
   fiber: number;
   mealsCount: number;
+  // Balance calórico
+  caloriesBurned: number;
+  netCalories: number; // totalCalories - caloriesBurned
 }
 
 // Componente del Dashboard Nutricional
@@ -71,12 +78,14 @@ const NutritionDashboard: React.FC<{
   lastBodyAnalysis: _BodyAnalysis | null;
   onOpenBodyAnalyzer: () => void;
   onOpenManualGoals: () => void;
+  onOpenCreatePhysicalActivity: () => void;
 }> = ({
   todayProgress,
   nutritionGoals,
   lastBodyAnalysis,
   onOpenBodyAnalyzer,
   onOpenManualGoals,
+  onOpenCreatePhysicalActivity,
 }) => {
   const _getProgressColor = (percentage: number) => {
     if (percentage >= 90) return "bg-green-500";
@@ -100,17 +109,51 @@ const NutritionDashboard: React.FC<{
             Progreso del día de hoy
             {nutritionGoals && (
               <span className="ml-2 text-sm">
-                {todayProgress.totalCalories} de{" "}
+                {todayProgress.totalCalories - todayProgress.caloriesBurned} de{" "}
                 {nutritionGoals?.dailyCalories || "---"} kcal
               </span>
             )}
           </p>
+          {/* Balance calórico */}
+          <div className="mt-2 text-sm space-y-1">
+            <div className="flex items-center gap-4">
+              <span className="text-green-600">
+                ✅ Consumidas: {todayProgress.totalCalories} kcal
+              </span>
+              <span className="text-red-600">
+                🔥 Quemadas: {todayProgress.caloriesBurned} kcal
+              </span>
+            </div>
+            <div className="font-medium">
+              <span
+                className={`${
+                  todayProgress.netCalories > 0
+                    ? "text-orange-600"
+                    : "text-blue-600"
+                }`}
+              >
+                📊 Balance neto: {todayProgress.netCalories > 0 ? "+" : ""}
+                {todayProgress.netCalories} kcal
+                {todayProgress.netCalories > 0 ? " (superávit)" : " (déficit)"}
+              </span>
+            </div>
+          </div>
         </div>
         <div className="flex gap-2">
+          <Button
+            onClick={onOpenCreatePhysicalActivity}
+            variant="outline"
+            size="sm"
+          >
+            <Dumbbell className="h-4 w-4 mr-2" />
+            Actividad Física
+          </Button>
+          {/*
           <Button onClick={onOpenBodyAnalyzer} variant="outline" size="sm">
             <User className="h-4 w-4 mr-2" />
             Análisis Corporal
           </Button>
+          */}
           <Button onClick={onOpenManualGoals} variant="secondary" size="sm">
             <Target className="h-4 w-4 mr-2" />
             {nutritionGoals ? "Ajustar Objetivos" : "Establecer Objetivos"}
@@ -119,7 +162,7 @@ const NutritionDashboard: React.FC<{
       </div>
 
       {/* Información del análisis corporal */}
-      {bodyAnalysisInfo && (
+      {bodyAnalysisInfo && lastBodyAnalysis && (
         <div className="mb-6 p-4  rounded-lg">
           <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
             <Target className="h-4 w-4" />
@@ -135,9 +178,7 @@ const NutritionDashboard: React.FC<{
             <div className="bg-gray-100/50 p-2 rounded-lg">
               <span className="">Grasa corporal:</span>
               <div className="font-medium">
-                {bodyAnalysisInfo.measurements?.bodyFatPercentage ||
-                  bodyAnalysisInfo.measurements?.estimatedBodyFat}
-                %
+                {bodyAnalysisInfo.measurements?.bodyFat || "N/A"}%
               </div>
             </div>
             <div className="bg-gray-100/50 p-2 rounded-lg">
@@ -183,7 +224,8 @@ const NutritionDashboard: React.FC<{
             <div className="flex items-center justify-between">
               <span className="text-sm font-bold">Calorías</span>
               <span className="text-xs italic">
-                {todayProgress.totalCalories}/{nutritionGoals.dailyCalories}
+                {todayProgress.totalCalories - todayProgress.caloriesBurned}/
+                {nutritionGoals.dailyCalories}
               </span>
             </div>
             <div className="w-full rounded-full h-2">
@@ -191,7 +233,7 @@ const NutritionDashboard: React.FC<{
                 className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                 style={{
                   width: `${getProgressPercentage(
-                    todayProgress.totalCalories,
+                    todayProgress.totalCalories - todayProgress.caloriesBurned,
                     nutritionGoals.dailyCalories
                   )}%`,
                 }}
@@ -200,7 +242,7 @@ const NutritionDashboard: React.FC<{
             <div className="text-xs italic">
               {Math.round(
                 getProgressPercentage(
-                  todayProgress.totalCalories,
+                  todayProgress.totalCalories - todayProgress.caloriesBurned,
                   nutritionGoals.dailyCalories
                 )
               )}
@@ -365,6 +407,7 @@ export default function NutritionPage() {
     nutritionAnalyses,
     bodyAnalyses,
     skinFoldRecords,
+    physicalActivities,
     deleteNutritionAnalysis,
     deleteBodyAnalysis,
     updateNutritionAnalysis: _updateNutritionAnalysis,
@@ -375,16 +418,20 @@ export default function NutritionPage() {
     getAllFoodAnalysis,
     getAllBodyAnalysis,
     getAllSkinFoldRecords,
+    getAllPhysicalActivities,
+    getDailyCalorieBalance,
   } = useNaviTrackerStore();
 
   const [selectedDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState<
-    "overview" | "food" | "body" | "skinfold"
+    "overview" | "food" | "body" | "skinfold" | "physical-activity"
   >("overview");
   const [showFoodAnalyzer, setShowFoodAnalyzer] = useState(false);
   const [showBodyAnalyzer, setShowBodyAnalyzer] = useState(false);
   const [showSkinFoldDialog, setShowSkinFoldDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showPhysicalActivityDialog, setShowPhysicalActivityDialog] =
+    useState(false);
   const [editingAnalysis, setEditingAnalysis] =
     useState<NutritionAnalysis | null>(null);
 
@@ -457,8 +504,12 @@ export default function NutritionPage() {
       (analysis: NutritionAnalysis) => analysis.date === today
     );
 
-    const totals = todayAnalyses.reduce(
-      (acc: DailyProgress, analysis: NutritionAnalysis) => {
+    const dailyCalorieBalance = getDailyCalorieBalance(new Date());
+    console.log("dailyCalorieBalance", dailyCalorieBalance);
+
+    // Calcular calorías de comida
+    const foodTotals = todayAnalyses.reduce(
+      (acc, analysis: NutritionAnalysis) => {
         acc.totalCalories += analysis.totalCalories;
         acc.protein += analysis.macronutrients.protein;
         acc.carbs += analysis.macronutrients.carbs;
@@ -472,12 +523,29 @@ export default function NutritionPage() {
         carbs: 0,
         fat: 0,
         fiber: 0,
-        mealsCount: todayAnalyses.length,
       }
     );
 
-    return totals;
-  }, [nutritionAnalyses]);
+    // Calcular calorías quemadas por actividad física
+    const todayActivities = physicalActivities.filter(
+      (activity) => activity.date === today
+    );
+
+    const caloriesBurned = todayActivities.reduce(
+      (total, activity) => total + (activity.activeEnergyKcal || 0),
+      0
+    );
+
+    // Balance neto (calorías consumidas - calorías quemadas)
+    const netCalories = foodTotals.totalCalories - caloriesBurned;
+
+    return {
+      ...foodTotals,
+      mealsCount: todayAnalyses.length,
+      caloriesBurned,
+      netCalories,
+    };
+  }, [nutritionAnalyses, physicalActivities]);
 
   // Obtener el último análisis corporal
   const lastBodyAnalysis = useMemo(() => {
@@ -615,7 +683,7 @@ export default function NutritionPage() {
     }
   };
 
-  const handleDeleteBodyAnalysis = async (analysisId: string) => {
+  const _handleDeleteBodyAnalysis = async (analysisId: string) => {
     if (
       confirm("¿Estás seguro de que quieres eliminar este análisis corporal?")
     ) {
@@ -698,7 +766,7 @@ export default function NutritionPage() {
     };
   };
 
-  const handleSetAsGoals = (analysis: _BodyAnalysis) => {
+  const _handleSetAsGoals = (analysis: _BodyAnalysis) => {
     console.log("🔍 Analysis:", analysis);
     setSelectedBodyAnalysis(analysis);
     setShowGoalsModal(true);
@@ -727,7 +795,12 @@ export default function NutritionPage() {
           {[
             { id: "overview", label: "Resumen", icon: BarChart3 },
             { id: "food", label: "Seguimiento", icon: Camera },
-            { id: "body", label: "Análisis Corporal", icon: User },
+            //{ id: "body", label: "Análisis Corporal", icon: User },
+            {
+              id: "physical-activity",
+              label: "Actividad Física",
+              icon: Dumbbell,
+            },
             { id: "skinfold", label: "Pliegues Cutáneos", icon: Target },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -759,9 +832,13 @@ export default function NutritionPage() {
             lastBodyAnalysis={lastBodyAnalysis}
             onOpenBodyAnalyzer={() => setShowBodyAnalyzer(true)}
             onOpenManualGoals={handleOpenManualGoals}
+            onOpenCreatePhysicalActivity={() =>
+              setShowPhysicalActivityDialog(true)
+            }
           />
 
           {/* Quick Actions */}
+          {/*}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Button
               onClick={() => setShowFoodAnalyzer(true)}
@@ -771,6 +848,7 @@ export default function NutritionPage() {
               <span>Analizar Alimento</span>
             </Button>
 
+            
             <Button
               onClick={() => setShowBodyAnalyzer(true)}
               variant="outline"
@@ -779,7 +857,7 @@ export default function NutritionPage() {
               <User className="h-6 w-6" />
               <span>Análisis Corporal</span>
             </Button>
-
+            
             <Button
               onClick={() => setShowSkinFoldDialog(true)}
               variant="outline"
@@ -789,65 +867,69 @@ export default function NutritionPage() {
               <span>Pliegues Cutáneos</span>
             </Button>
           </div>
-
+          */}
           {/* Estadísticas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Estadísticas
-              </h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span>Promedio de calorías:</span>
-                  <span className="font-medium">
-                    {weeklyStats.averageCalories} kcal/día
-                  </span>
+          <div className="space-y-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Estadísticas
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span>Promedio de calorías:</span>
+                    <span className="font-medium">
+                      {weeklyStats.averageCalories} kcal/día
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Análisis nutricionales:</span>
+                    <span className="font-medium">
+                      {weeklyStats.totalAnalyses} registros
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Análisis corporales:</span>
+                    <span className="font-medium">
+                      {weeklyStats.bodyAnalysesCount} análisis
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span>Análisis nutricionales:</span>
-                  <span className="font-medium">
-                    {weeklyStats.totalAnalyses} registros
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Análisis corporales:</span>
-                  <span className="font-medium">
-                    {weeklyStats.bodyAnalysesCount} análisis
-                  </span>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Acciones rápidas</h3>
+                <div className="space-y-2">
+                  <Button
+                    onClick={() => setShowFoodAnalyzer(true)}
+                    variant="outline"
+                    className="w-full justify-start"
+                  >
+                    <Camera className="h-4 w-4 mr-2" />
+                    Analizar comida por foto
+                  </Button>
+                  <Button
+                    onClick={() => setShowBodyAnalyzer(true)}
+                    variant="outline"
+                    className="w-full justify-start"
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Análisis corporal completo
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab("food")}
+                    variant="outline"
+                    className="w-full justify-start"
+                  >
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Ver historial nutricional
+                  </Button>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Acciones rápidas</h3>
-              <div className="space-y-2">
-                <Button
-                  onClick={() => setShowFoodAnalyzer(true)}
-                  variant="outline"
-                  className="w-full justify-start"
-                >
-                  <Camera className="h-4 w-4 mr-2" />
-                  Analizar comida por foto
-                </Button>
-                <Button
-                  onClick={() => setShowBodyAnalyzer(true)}
-                  variant="outline"
-                  className="w-full justify-start"
-                >
-                  <User className="h-4 w-4 mr-2" />
-                  Análisis corporal completo
-                </Button>
-                <Button
-                  onClick={() => setActiveTab("food")}
-                  variant="outline"
-                  className="w-full justify-start"
-                >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Ver historial nutricional
-                </Button>
-              </div>
-            </div>
+            <CalorieBalanceWidget date={selectedDate} />
           </div>
         </div>
       )}
@@ -1170,6 +1252,7 @@ export default function NutritionPage() {
       )}
 
       {/* Body Analysis Tab */}
+      {/*
       {activeTab === "body" && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
@@ -1287,7 +1370,15 @@ export default function NutritionPage() {
           )}
         </div>
       )}
-
+      */}
+      {/* Physical Activity Tab */}
+      {activeTab === "physical-activity" && (
+        <div className="space-y-6">
+          <PhysicalActivityTracker
+            date={selectedDate.toISOString().split("T")[0]}
+          />
+        </div>
+      )}
       {/* Skinfold Tab */}
       {activeTab === "skinfold" && (
         <div className="space-y-6">
@@ -1417,6 +1508,16 @@ export default function NutritionPage() {
         onClose={handleCloseEditDialog}
         analysis={editingAnalysis}
         onAnalysisUpdated={handleAnalysisUpdated}
+      />
+
+      <CreatePhysicalActivityDialog
+        open={showPhysicalActivityDialog}
+        onOpenChange={() => setShowPhysicalActivityDialog(false)}
+        date={selectedDate.toISOString().split("T")[0]}
+        onActivityCreated={() => {
+          console.log("🔄 Actividad física creada, refrescando datos...");
+          getAllPhysicalActivities();
+        }}
       />
 
       <NaviCompanion />
