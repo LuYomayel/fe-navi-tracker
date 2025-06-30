@@ -1,7 +1,40 @@
 import type { NextConfig } from "next";
 
+import { join } from "path";
+import { copyFileSync, mkdirSync, existsSync, readdirSync, statSync } from "fs";
+
 // Detectar si estamos en Netlify
 const isNetlifyBuild = process.env.NETLIFY === "true";
+
+const copyPublicFolder = () => {
+  const src = join(process.cwd(), "public");
+  const dest = join(process.cwd(), "out");
+
+  if (!existsSync(dest)) {
+    mkdirSync(dest);
+  }
+
+  const copyRecursive = (srcDir: string, destDir: string) => {
+    if (!existsSync(destDir)) {
+      mkdirSync(destDir);
+    }
+    for (const item of readdirSync(srcDir)) {
+      const srcPath = join(srcDir, item);
+      const destPath = join(destDir, item);
+      if (statSync(srcPath).isDirectory()) {
+        copyRecursive(srcPath, destPath);
+      } else {
+        copyFileSync(srcPath, destPath);
+      }
+    }
+  };
+
+  copyRecursive(src, dest);
+};
+
+if (isNetlifyBuild) {
+  copyPublicFolder();
+}
 
 const nextConfig: NextConfig = {
   // Optimizaciones de compilación
