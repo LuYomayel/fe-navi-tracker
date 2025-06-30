@@ -6,12 +6,15 @@ import { copyFileSync, mkdirSync, existsSync, readdirSync, statSync } from "fs";
 // Detectar si estamos en Netlify
 const isNetlifyBuild = process.env.NETLIFY === "true";
 
+// Destination changes: Netlify static export -> `out`, standalone server -> `.next/standalone`
+const publicDestDir = isNetlifyBuild ? "out" : ".next/standalone";
+
 const copyPublicFolder = () => {
   const src = join(process.cwd(), "public");
-  const dest = join(process.cwd(), "out");
+  const dest = join(process.cwd(), publicDestDir);
 
   if (!existsSync(dest)) {
-    mkdirSync(dest);
+    mkdirSync(dest, { recursive: true });
   }
 
   const copyRecursive = (srcDir: string, destDir: string) => {
@@ -32,9 +35,7 @@ const copyPublicFolder = () => {
   copyRecursive(src, dest);
 };
 
-if (isNetlifyBuild) {
-  copyPublicFolder();
-}
+copyPublicFolder();
 
 const nextConfig: NextConfig = {
   // Optimizaciones de compilación
