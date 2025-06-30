@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { getDateKey } from "@/lib/utils";
 import { DailyReflectionWidget } from "@/components/calendar/DailyReflectionWidget";
-
+import { NaviCompanion } from "@/components/navi/NaviCompanion";
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
@@ -276,6 +276,8 @@ export default function DashboardPage() {
           </Link>
         </Button>
       </div>
+
+      <NaviCompanion />
     </div>
   );
 }

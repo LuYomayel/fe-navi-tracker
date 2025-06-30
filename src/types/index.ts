@@ -547,3 +547,6 @@ export interface CurrentGoals {
   carbs: number;
   fat: number;
 }
+
+// Tipos XP
+export * from "./xp";

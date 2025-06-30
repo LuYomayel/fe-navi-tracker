@@ -13,7 +13,8 @@ interface NaviCompanionProps {
 }
 
 export function NaviCompanion({ className = "" }: NaviCompanionProps) {
-  const { currentState, getNaviInfo, getNaviImage } = useNaviState();
+  const { currentState, getNaviInfo, getNaviImage, setCurrentState } =
+    useNaviState();
   const [isVisible, setIsVisible] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     const saved = localStorage.getItem("navi-visible");
@@ -88,12 +89,11 @@ export function NaviCompanion({ className = "" }: NaviCompanionProps) {
 
   // Escuchar eventos globales de hábitos completados y día completado
   useEffect(() => {
+    // 1. Marcar un hábito diario como realizado (+10 XP)
     const handleHabitCompleted = () => {
-      // Pequeña animación
+      setCurrentState("happy");
       setIsAnimating(true);
       setTimeout(() => setIsAnimating(false), 1000);
-
-      // Mostrar mensaje motivacional personalizado
       setBubbleMessage(
         happyMessages[Math.floor(Math.random() * happyMessages.length)]
       );
@@ -101,20 +101,145 @@ export function NaviCompanion({ className = "" }: NaviCompanionProps) {
       setTimeout(() => setShowMessage(false), 4000);
     };
 
+    // 2. Completar todos los hábitos del día (+50 XP bonus)
     const handleDayCompleted = () => {
-      setBubbleMessage("¡Día completado! Navi está eufórico 🎉");
+      setCurrentState("excited");
+      setBubbleMessage("¡Día completado! ¡Increíble trabajo! 🎉");
       setShowMessage(true);
       setIsAnimating(true);
       setTimeout(() => setIsAnimating(false), 1500);
       setTimeout(() => setShowMessage(false), 5000);
     };
 
+    // 3. Mantener racha de 3 días (+20 XP bonus)
+    const handleStreak3Days = () => {
+      setCurrentState("proud");
+      setBubbleMessage("¡3 días seguidos! ¡Excelente constancia! 🔥");
+      setShowMessage(true);
+      setIsAnimating(true);
+      setTimeout(() => setIsAnimating(false), 1500);
+      setTimeout(() => setShowMessage(false), 4000);
+    };
+
+    // 4. Mantener racha de 7 días (+60 XP bonus)
+    const handleStreak7Days = () => {
+      setCurrentState("celebrating");
+      setBubbleMessage("¡Una semana completa! ¡Eres imparable! 🚀");
+      setShowMessage(true);
+      setIsAnimating(true);
+      setTimeout(() => setIsAnimating(false), 2000);
+      setTimeout(() => setShowMessage(false), 5000);
+    };
+
+    // 5. Semana perfecta (+200 XP gran bonus)
+    const handlePerfectWeek = () => {
+      setCurrentState("celebrating");
+      setBubbleMessage("¡SEMANA PERFECTA! ¡Eres una leyenda! ⭐");
+      setShowMessage(true);
+      setIsAnimating(true);
+      setTimeout(() => setIsAnimating(false), 3000);
+      setTimeout(() => setShowMessage(false), 6000);
+    };
+
+    // 6. Crear un nuevo hábito (+30 XP)
+    const handleHabitCreated = () => {
+      setCurrentState("happy");
+      setBubbleMessage(
+        "¡Nuevo hábito creado! ¡Me encanta tu planificación! 📝"
+      );
+      setShowMessage(true);
+      setIsAnimating(true);
+      setTimeout(() => setIsAnimating(false), 1500);
+      setTimeout(() => setShowMessage(false), 4000);
+    };
+
+    // 7. Aceptar sugerencia de IA (+40 XP)
+    const handleHabitCreatedByAi = () => {
+      setCurrentState("happy");
+      setBubbleMessage("¡Sugerencia de IA aceptada! ¡Inteligente decisión! 🤖");
+      setShowMessage(true);
+      setIsAnimating(true);
+      setTimeout(() => setIsAnimating(false), 1500);
+      setTimeout(() => setShowMessage(false), 4000);
+    };
+
+    // 8. Subir foto de comida (+15 XP)
+    const handleNutritionLog = () => {
+      setCurrentState("proud");
+      setBubbleMessage("¡Comida registrada! ¡Cuidando tu nutrición! 🍎");
+      setShowMessage(true);
+      setIsAnimating(true);
+      setTimeout(() => setIsAnimating(false), 1500);
+      setTimeout(() => setShowMessage(false), 4000);
+    };
+
+    // 9. Cumplir objetivo calórico/macros del día (+25 XP)
+    const handleNutritionGoalMet = () => {
+      setCurrentState("proud");
+      setBubbleMessage("¡Objetivos nutricionales cumplidos! ¡Perfecto! 🎯");
+      setShowMessage(true);
+      setIsAnimating(true);
+      setTimeout(() => setIsAnimating(false), 1500);
+      setTimeout(() => setShowMessage(false), 4000);
+    };
+
+    // 10. Escribir reflexión diaria (+5 XP)
+    const handleDailyReflection = () => {
+      setCurrentState("happy");
+      setBubbleMessage("¡Reflexión diaria! ¡Me encanta tu introspección! 📔");
+      setShowMessage(true);
+      setIsAnimating(true);
+      setTimeout(() => setIsAnimating(false), 1000);
+      setTimeout(() => setShowMessage(false), 3500);
+    };
+
+    // Subir de nivel (evento especial)
+    const handleLevelUp = () => {
+      setCurrentState("celebrating");
+      setBubbleMessage("¡NIVEL SUBIDO! ¡Eres increíble! 🎉⭐");
+      setShowMessage(true);
+      setIsAnimating(true);
+      setTimeout(() => setIsAnimating(false), 2000);
+      setTimeout(() => setShowMessage(false), 5000);
+    };
+
+    // Bonus de racha general
+    const handleStreakBonus = () => {
+      setCurrentState("proud");
+      setBubbleMessage("¡Bonus de racha! ¡Tu constancia es admirable! 🔥");
+      setShowMessage(true);
+      setIsAnimating(true);
+      setTimeout(() => setIsAnimating(false), 1500);
+      setTimeout(() => setShowMessage(false), 4000);
+    };
+    // Registrar todos los event listeners
     window.addEventListener("habit-completed", handleHabitCompleted);
     window.addEventListener("day-completed", handleDayCompleted);
+    window.addEventListener("habit-created", handleHabitCreated);
+    window.addEventListener("habit-created-by-ai", handleHabitCreatedByAi);
+    window.addEventListener("nutrition-log", handleNutritionLog);
+    window.addEventListener("nutrition-goal-met", handleNutritionGoalMet);
+    window.addEventListener("daily-reflection", handleDailyReflection);
+    window.addEventListener("level-up", handleLevelUp);
+    window.addEventListener("streak-bonus", handleStreakBonus);
+    window.addEventListener("streak-3-days", handleStreak3Days);
+    window.addEventListener("streak-7-days", handleStreak7Days);
+    window.addEventListener("perfect-week", handlePerfectWeek);
 
     return () => {
+      // Limpiar todos los event listeners
       window.removeEventListener("habit-completed", handleHabitCompleted);
       window.removeEventListener("day-completed", handleDayCompleted);
+      window.removeEventListener("habit-created", handleHabitCreated);
+      window.removeEventListener("habit-created-by-ai", handleHabitCreatedByAi);
+      window.removeEventListener("nutrition-log", handleNutritionLog);
+      window.removeEventListener("nutrition-goal-met", handleNutritionGoalMet);
+      window.removeEventListener("daily-reflection", handleDailyReflection);
+      window.removeEventListener("level-up", handleLevelUp);
+      window.removeEventListener("streak-bonus", handleStreakBonus);
+      window.removeEventListener("streak-3-days", handleStreak3Days);
+      window.removeEventListener("streak-7-days", handleStreak7Days);
+      window.removeEventListener("perfect-week", handlePerfectWeek);
     };
   }, []);
 

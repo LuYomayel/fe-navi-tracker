@@ -5,8 +5,10 @@ import { useXp } from "./useXp";
 import { useNaviTrackerStore } from "@/store";
 
 export type NaviState =
-  | "celebrating" // Subió de nivel
-  | "happy" // Ganó XP hoy
+  | "celebrating" // Subió de nivel o logro importante
+  | "happy" // Ganó XP hoy o completó actividades
+  | "excited" // Racha activa o semana perfecta
+  | "proud" // Objetivos nutricionales cumplidos
   | "sad" // Rompió racha
   | "sick" // Más de 3 días sin actividad
   | "sleepy" // 1 día sin actividad
@@ -22,17 +24,21 @@ export interface NaviStateInfo {
 export function useNaviState() {
   const { xpStats, isLevelingUp } = useXp();
   // Usar selector específico en lugar de todo el store
+  const activities = useNaviTrackerStore((state) => state.activities);
   const completions = useNaviTrackerStore((state) => state.completions);
   // Estado inicial: intentamos leer el último estado guardado en localStorage para evitar "parpadeo".
   const [currentState, setCurrentState] = useState<NaviState>(() => {
     if (typeof window === "undefined") return "default";
     const saved = localStorage.getItem("navi-current-state");
+    console.log("saved", saved);
     if (
       saved === "celebrating" ||
       saved === "happy" ||
       saved === "sad" ||
       saved === "sick" ||
       saved === "sleepy" ||
+      saved === "excited" ||
+      saved === "proud" ||
       saved === "default"
     ) {
       return saved as NaviState;
@@ -50,8 +56,8 @@ export function useNaviState() {
     const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
       .toISOString()
       .split("T")[0];
-
-    // Estado 1: Celebrando (subió de nivel)
+    console.log("xpStats", xpStats);
+    // Estado 1: Celebrando (subió de nivel o logro importante)
     if (isLevelingUp) {
       return {
         state: "celebrating",
@@ -61,15 +67,51 @@ export function useNaviState() {
       };
     }
 
-    // Estado 2: Feliz (ganó XP hoy)
-    const hasActivityToday = completions.some(
-      (c) => c.date === today && c.completed
-    );
+    // Estado 2: Emocionado (racha activa de 7+ días o semana perfecta)
+    if (xpStats?.streak && xpStats.streak >= 7) {
+      const excitedMessages = [
+        "¡Tu racha es increíble! ¡Sigue así! 🚀",
+        "¡Estoy súper emocionado por tu constancia! ⭐",
+        "¡Eres imparable! ¡Vamos por más! 🔥",
+        "¡Tu dedicación me inspira! 💫",
+      ];
+      return {
+        state: "excited",
+        image: "/Navi_celebrating.png",
+        message:
+          excitedMessages[Math.floor(Math.random() * excitedMessages.length)],
+        emoji: "🚀",
+      };
+    }
 
-    if (hasActivityToday && xpStats?.xp && xpStats.xp > 0) {
+    // Estado 3: Orgulloso (racha de 3-6 días o buen progreso)
+    if (xpStats?.streak && xpStats.streak >= 3) {
+      const proudMessages = [
+        "¡Estoy orgulloso de tu constancia! 🌟",
+        "¡Tu progreso es admirable! ✨",
+        "¡Cada día mejor! ¡Excelente! 💖",
+        "¡Tu esfuerzo está dando frutos! 🎯",
+      ];
+      return {
+        state: "proud",
+        image: "/Navi_happy.png",
+        message:
+          proudMessages[Math.floor(Math.random() * proudMessages.length)],
+        emoji: "🌟",
+      };
+    }
+
+    // Estado 4: Feliz (ganó XP hoy o completó actividades)
+
+    const completionsToday = activities
+      .flatMap((activity) => activity.completions || [])
+      .filter((completion) => completion.date === today);
+
+    if (completionsToday && xpStats?.xp && xpStats.xp > 0) {
+      console.log("hasActivityToday", completionsToday);
       const messages = [
         "¡Excelente trabajo hoy! 😊",
-        "¡Estoy muy orgulloso de ti! ✨",
+        "¡Estoy muy feliz por ti! ✨",
         "¡Sigue así, lo estás haciendo genial! 🌟",
         "¡Tu progreso me hace feliz! 💖",
       ];
@@ -81,7 +123,7 @@ export function useNaviState() {
       };
     }
 
-    // Estado 3: Triste (rompió racha)
+    // Estado 5: Triste (rompió racha)
     if (xpStats?.streak === 0 && xpStats?.lastStreakDate) {
       const daysSinceLastStreak = Math.floor(
         (Date.now() - new Date(xpStats.lastStreakDate).getTime()) /
@@ -98,7 +140,7 @@ export function useNaviState() {
       }
     }
 
-    // Estado 4: Enfermo (más de 3 días sin actividad)
+    // Estado 6: Enfermo (más de 3 días sin actividad)
     const hasActivityInLastThreeDays = completions.some(
       (c) => c.date >= threeDaysAgo && c.completed
     );
@@ -112,12 +154,12 @@ export function useNaviState() {
       };
     }
 
-    // Estado 5: Somnoliento (1 día sin actividad)
-    const hasActivityYesterday = completions.some(
-      (c) => c.date === yesterday && c.completed
-    );
+    // Estado 7: Somnoliento (1 día sin actividad)
+    const completionsYesterday = activities
+      .flatMap((activity) => activity.completions || [])
+      .filter((completion) => completion.date === yesterday);
 
-    if (!hasActivityToday && !hasActivityYesterday) {
+    if (!completionsToday && !completionsYesterday) {
       return {
         state: "sleepy",
         image: "/Navi_sleepy.png",
@@ -177,6 +219,8 @@ export function useNaviState() {
     const stateMap: Record<NaviState, string> = {
       celebrating: "/Navi_celebrating.png",
       happy: "/Navi_happy.png",
+      excited: "/Navi_celebrating.png", // Usar celebrating para excited también
+      proud: "/Navi_happy.png", // Usar happy para proud también
       sad: "/Navi_sad.png",
       sick: "/Navi_sick.png",
       sleepy: "/Navi_sleepy.png",
@@ -193,6 +237,23 @@ export function useNaviState() {
           "¡Has alcanzado un nuevo nivel! Tu constancia está dando frutos.",
           "Este momento merece una pequeña celebración. ¡Sigue así!",
           "Tu progreso es inspirador. ¡Continuemos creciendo juntos!",
+          "Los logros como este demuestran tu dedicación. ¡Increíble!",
+        ];
+
+      case "excited":
+        return [
+          "¡Tu racha es impresionante! Eres un ejemplo de constancia.",
+          "Esta energía que tienes es contagiosa. ¡Me emociona verte así!",
+          "Estás en una racha increíble. ¡Vamos por más días perfectos!",
+          "Tu dedicación semanal es admirable. ¡Sigues superándote!",
+        ];
+
+      case "proud":
+        return [
+          "Estoy muy orgulloso de tu progreso consistente.",
+          "Tu esfuerzo diario está construyendo algo hermoso.",
+          "Cada día que mantienes tu rutina, te acercas más a tus metas.",
+          "Tu constancia de estos días es realmente admirable.",
         ];
 
       case "happy":
@@ -200,6 +261,7 @@ export function useNaviState() {
           "Tu energía positiva de hoy me contagia. ¡Excelente trabajo!",
           "Cada hábito completado es un paso hacia tus metas.",
           "Me encanta verte tan motivado. ¡Sigamos así!",
+          "Hoy has demostrado que puedes lograr lo que te propongas.",
         ];
 
       case "sad":
@@ -234,6 +296,7 @@ export function useNaviState() {
 
   return {
     currentState,
+    setCurrentState,
     stateMessage,
     getNaviInfo,
     getNaviImage,

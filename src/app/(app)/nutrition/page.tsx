@@ -53,6 +53,7 @@ import {
 import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
 import { SetGoalsDialog } from "@/components/nutrition/SetGoalsDialog";
+import { NaviCompanion } from "@/components/navi/NaviCompanion";
 
 interface DailyProgress {
   totalCalories: number;
@@ -1417,6 +1418,8 @@ export default function NutritionPage() {
         analysis={editingAnalysis}
         onAnalysisUpdated={handleAnalysisUpdated}
       />
+
+      <NaviCompanion />
     </div>
   );
 }

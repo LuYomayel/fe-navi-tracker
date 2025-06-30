@@ -5,6 +5,7 @@ import {
   BodyAnalysis,
   SkinFoldRecord,
   XpAction,
+  DailyNote,
 } from "@/types";
 
 // Configuración de la API
@@ -57,7 +58,6 @@ async function fetchAPI<T = unknown>(
 
   try {
     const response = await fetch(url, config);
-
     // Si el token ha expirado, intentar refrescar
     if (response.status === 401 && token) {
       const refreshSuccess = await refreshAuthToken();
@@ -108,8 +108,31 @@ async function fetchAPI<T = unknown>(
         clearAuthAndRedirect();
         throw new Error("Sesión expirada");
       }
-      console.error(`❌ Error HTTP: ${response.status} ${response.statusText}`);
-      throw new Error(`HTTP error! status: ${response.status}`);
+
+      // Leer el JSON de error formateado por HttpExceptionFilter
+      try {
+        const errorData = await response.json();
+        //console.error(`❌ Error HTTP ${response.status}:`, errorData);
+
+        // Si el backend devuelve el formato estructurado, usar ese mensaje
+        if (errorData && !errorData.success && errorData.message) {
+          const errorMessage =
+            Array.isArray(errorData.errors) && errorData.errors.length > 0
+              ? errorData.errors.join(", ")
+              : errorData.message;
+          console.log("errorMessage", errorMessage);
+          throw new Error(errorMessage);
+        }
+
+        // Fallback al formato anterior
+        throw new Error(
+          errorData.message || `HTTP error! status: ${response.status}`
+        );
+      } catch (_jsonError) {
+        // Si no se puede parsear el JSON, usar el formato anterior
+        console.log(_jsonError.message);
+        throw new Error(_jsonError.message);
+      }
     }
 
     const data = await response.json();
@@ -238,6 +261,16 @@ export const apiClient = {
 
 // Funciones de conveniencia para endpoints específicos
 export const api = {
+  // Notes
+  notes: {
+    getAll: () => apiClient.get("/notes"),
+    create: (data: Omit<DailyNote, "id" | "createdAt" | "updatedAt">) =>
+      apiClient.post("/notes", data),
+    update: (id: string, data: Partial<DailyNote>) =>
+      apiClient.put(`/notes/${id}`, data),
+    delete: (id: string) => apiClient.delete(`/notes?id=${id}`),
+  },
+
   // Actividades
   activities: {
     getAll: () => apiClient.get("/activities"),

@@ -214,12 +214,48 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
       addActivity: async (activity) => {
         try {
           set({ isLoading: true });
-
+          console.log("activity", activity);
           // 🚀 Usar API real en lugar de datos locales
           const response = await api.activities.create({
             ...activity,
             color: activity.color || getRandomColor(),
           });
+          if (!response.success) {
+            toast.error("Error", response.message);
+            return;
+          }
+          if (
+            activity.description &&
+            activity.description === "Detectado por IA"
+          ) {
+            const responseEXP = await api.xp.addXp({
+              action: XpAction.HABIT_CREATED_BY_AI,
+              xpAmount: 70,
+              description: `Hábito creado por IA: ${activity.name}`,
+            });
+            if (!responseEXP.success) {
+              toast.error("Error", responseEXP.message);
+              return;
+            }
+            // Emitir evento para que Navi reaccione
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new Event("habit-created-by-ai"));
+            }
+          } else {
+            const responseEXP = await api.xp.addXp({
+              action: XpAction.HABIT_CREATED,
+              xpAmount: 30,
+              description: `Hábito creado: ${activity.name}`,
+            });
+            if (!responseEXP.success) {
+              toast.error("Error", responseEXP.message);
+              return;
+            }
+            // Emitir evento para que Navi reaccione
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new Event("habit-created"));
+            }
+          }
 
           const newActivity = response.data as Activity;
 
@@ -444,7 +480,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
                 habitName,
                 date: dateKey,
               });
-              console.log("result", result);
+
               if (!result.success) {
                 toast.error(
                   "Error",
@@ -615,37 +651,47 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
         };
 
         try {
-          set((state) => {
-            const existingIndex = state.dailyNotes.findIndex(
-              (n) => n.date === dateKey
-            );
+          const noteToSave: any = {
+            date: dateKey,
+            content: customComment,
+            mood: mood,
+          };
+          const response = await api.notes.create(noteToSave);
 
-            if (existingIndex >= 0) {
-              const updatedNotes = [...state.dailyNotes];
-              updatedNotes[existingIndex] = {
-                ...updatedNotes[existingIndex],
-                content: customComment,
-                mood: mood,
-                predefinedComments: selectedComments.map((c) => c.id),
-                customComment,
-                updatedAt: new Date(),
-              };
-              return { dailyNotes: updatedNotes };
-            } else {
-              return { dailyNotes: [...state.dailyNotes, note] };
-            }
+          if (!response.success) {
+            toast.error("Error", "No se pudo guardar la reflexión");
+            return;
+          }
+
+          const newNote = response.data as DailyNote;
+          set((state) => ({
+            dailyNotes: [...state.dailyNotes, newNote],
+          }));
+
+          // Actualizar la experiencia
+          const xpResponse = await api.xp.addXp({
+            action: XpAction.DAILY_COMMENT,
+            xpAmount: 15,
+            description: "Reflexión diaria guardada",
           });
+          if (!xpResponse.success) {
+            toast.error("Error", "No se pudo guardar la reflexión");
+            return;
+          }
+
+          // Emitir evento para que Navi reaccione
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new Event("daily-comment"));
+          }
 
           toast.success(
             "Reflexión guardada",
-            "Tu reflexión diaria se ha actualizado"
+            "Tu reflexión diaria se ha guardado"
           );
         } catch (error) {
-          console.error("❌ Error guardando reflexión:", error);
-          toast.error(
-            "Error",
-            "No se pudo guardar la reflexión. Inténtalo de nuevo."
-          );
+          //console.error("❌ Error guardando reflexión:", error);
+          console.log("error", error);
+          toast.error("Error", error.message);
         }
       },
 
@@ -661,6 +707,23 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
 
           // 🚀 Usar API real
           const response = await api.nutrition.createAnalysis(analysis);
+          if (!response.success) {
+            toast.error("Error", response.message);
+            return;
+          }
+          const responseEXP = await api.xp.addXp({
+            action: XpAction.NUTRITION_LOG,
+            xpAmount: 15,
+            description: "Análisis nutricional guardado",
+          });
+          if (!responseEXP.success) {
+            toast.error("Error", responseEXP.message);
+            return;
+          }
+          // Emitir evento para que Navi reaccione
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new Event("nutrition-log"));
+          }
           const newAnalysis = response.data as NutritionAnalysis;
 
           set((state) => ({
@@ -932,18 +995,24 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           set({ isLoading: true });
 
           // 🚀 Cargar datos reales desde la API
-          const [activitiesResponse, nutritionResponse, bodyAnalysesResponse] =
-            await Promise.all([
-              api.activities.getAll().catch(() => ({ data: [] })),
-              api.nutrition.getAnalyses().catch(() => ({ data: [] })),
-              api.bodyAnalysis.getAll().catch(() => ({ data: [] })),
-            ]);
+          const [
+            activitiesResponse,
+            nutritionResponse,
+            bodyAnalysesResponse,
+            notesResponse,
+          ] = await Promise.all([
+            api.activities.getAll().catch(() => ({ data: [] })),
+            api.nutrition.getAnalyses().catch(() => ({ data: [] })),
+            api.bodyAnalysis.getAll().catch(() => ({ data: [] })),
+            api.notes.getAll().catch(() => ({ data: [] })),
+          ]);
 
           set({
             activities: (activitiesResponse.data as Activity[]) || [],
             nutritionAnalyses:
               (nutritionResponse.data as NutritionAnalysis[]) || [],
             bodyAnalyses: (bodyAnalysesResponse.data as BodyAnalysis[]) || [],
+            dailyNotes: (notesResponse.data as DailyNote[]) || [],
             // bodyAnalyses se mantienen desde localStorage por ahora
             isInitialized: true,
             isLoading: false,
