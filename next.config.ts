@@ -9,9 +9,12 @@ const isNetlifyBuild = process.env.NETLIFY === "true";
 // Destination changes: Netlify static export -> `out`, standalone server -> `.next/standalone`
 const publicDestDir = isNetlifyBuild ? "out" : ".next/standalone";
 
+// Para standalone debemos copiar a .next/standalone/public
 const copyPublicFolder = () => {
   const src = join(process.cwd(), "public");
-  const dest = join(process.cwd(), publicDestDir);
+  const dest = isNetlifyBuild
+    ? join(process.cwd(), publicDestDir)
+    : join(process.cwd(), publicDestDir, "public");
 
   if (!existsSync(dest)) {
     mkdirSync(dest, { recursive: true });
