@@ -186,6 +186,11 @@ interface NaviTrackerState {
     mealsCount: number;
     activitiesCount: number;
   };
+  // Funciones de refrescar datos
+  refreshAllData: () => Promise<void>;
+  refreshActivities: () => Promise<void>;
+  refreshNutritionData: () => Promise<void>;
+  refreshPhysicalActivities: () => Promise<void>;
 }
 
 export const useNaviTrackerStore = create<NaviTrackerState>()(
@@ -276,6 +281,11 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             activities: [...state.activities, newActivity],
             isLoading: false,
           }));
+
+          // Refrescar actividades para asegurar sincronización
+          setTimeout(() => {
+            get().refreshActivities();
+          }, 500);
 
           toast.success(
             "Hábito creado",
@@ -446,7 +456,11 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
 
       // Completion actions
       toggleCompletion: async (activityId, date) => {
-        const dateKey = date.toISOString().split("T")[0];
+        // Usar zona horaria local para consistencia
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const dateKey = `${year}-${month}-${day}`;
 
         try {
           // 🚀 Usar API real
@@ -484,26 +498,12 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           // ➕ Agregar XP por hábito completado y emitir evento global
           try {
             if (completion.completed) {
-              const activityObj = get().activities.find(
-                (a) => a.id === activityId
-              );
-              const habitName = activityObj?.name || "Hábito";
-
-              const result = await api.xp.addHabitXp({
-                habitName,
-                date: dateKey,
-              });
-
-              if (!result.success) {
-                toast.error(
-                  "Error",
-                  "No se pudo agregar el XP. Inténtalo de nuevo."
-                );
-                return;
-              }
-              // Emitir evento para que Navi reaccione
+              // El backend YA agrega XP automáticamente, no necesitamos hacerlo aquí
+              // Solo emitir evento para que Navi reaccione
               if (typeof window !== "undefined") {
                 window.dispatchEvent(new Event("habit-completed"));
+                // Emitir evento para actualizar XP stats
+                window.dispatchEvent(new Event("xp-updated"));
               }
 
               // BONUS: comprobar si todos los hábitos para hoy están completos
@@ -531,7 +531,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
                 ) {
                   try {
                     // Otorgar bonus XP solo una vez al día
-                    const result = await api.xp.addXp({
+                    await api.xp.addXp({
                       action: XpAction.DAY_COMPLETE,
                       xpAmount: 50,
                       description: "Todos los hábitos del día completados",
@@ -626,21 +626,31 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
       },
 
       getNote: (date) => {
-        const dateKey = date.toISOString().split("T")[0];
+        // Usar zona horaria local para consistencia
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const dateKey = `${year}-${month}-${day}`;
         const state = get();
         return state.dailyNotes.find((note) => note.date === dateKey);
       },
 
       getCompletion: (activityId, date) => {
-        const dateKey = date.toISOString().split("T")[0];
+        // Usar zona horaria local para consistencia
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const dateKey = `${year}-${month}-${day}`;
         const state = get();
-        return state.activities
-          .find((activity) => activity.id === activityId)
-          ?.completions?.some(
-            (completion) =>
-              completion.activityId === activityId &&
-              completion.date === dateKey
-          );
+        return (
+          state.activities
+            .find((activity) => activity.id === activityId)
+            ?.completions?.some(
+              (completion) =>
+                completion.activityId === activityId &&
+                completion.date === dateKey
+            ) || false
+        ); // Asegurar que siempre retorne boolean
       },
 
       addOrUpdateReflection: async (
@@ -649,7 +659,11 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
         customComment,
         mood
       ) => {
-        const dateKey = date.toISOString().split("T")[0];
+        // Usar zona horaria local para consistencia
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const dateKey = `${year}-${month}-${day}`;
 
         const note: DailyNote = {
           id: generateId(),
@@ -742,6 +756,11 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             nutritionAnalyses: [...state.nutritionAnalyses, newAnalysis],
             isLoading: false,
           }));
+
+          // Refrescar datos nutricionales para asegurar sincronización
+          setTimeout(() => {
+            get().refreshNutritionData();
+          }, 500);
 
           toast.success(
             "Análisis nutricional guardado",
@@ -1083,7 +1102,11 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
 
       getDailyCalorieBalance: (date: Date) => {
         const state = get();
-        const dateKey = date.toISOString().split("T")[0];
+        // Usar zona horaria local para consistencia
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const dateKey = `${year}-${month}-${day}`;
 
         // Calorías consumidas de comidas
         const dayNutrition = state.nutritionAnalyses.filter(
@@ -1122,6 +1145,61 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           mealsCount: dayNutrition.length,
           activitiesCount: dayActivities.length,
         };
+      },
+
+      // Funciones de refrescar datos
+      refreshAllData: async () => {
+        try {
+          set({ isLoading: true });
+          await Promise.all([
+            get().getAllFoodAnalysis(),
+            get().getAllBodyAnalysis(),
+            get().getAllSkinFoldRecords(),
+            get().getAllPhysicalActivities(),
+          ]);
+
+          // Recargar actividades con completaciones actualizadas
+          const activitiesResponse = await api.activities.getAll();
+          if (activitiesResponse.success) {
+            set({ activities: activitiesResponse.data as Activity[] });
+          }
+
+          console.log("✅ Todos los datos refrescados");
+        } catch (error) {
+          console.error("❌ Error refrescando datos:", error);
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      refreshActivities: async () => {
+        try {
+          const response = await api.activities.getAll();
+          if (response.success) {
+            set({ activities: response.data as Activity[] });
+            console.log("✅ Actividades refrescadas");
+          }
+        } catch (error) {
+          console.error("❌ Error refrescando actividades:", error);
+        }
+      },
+
+      refreshNutritionData: async () => {
+        try {
+          await get().getAllFoodAnalysis();
+          console.log("✅ Datos nutricionales refrescados");
+        } catch (error) {
+          console.error("❌ Error refrescando datos nutricionales:", error);
+        }
+      },
+
+      refreshPhysicalActivities: async () => {
+        try {
+          await get().getAllPhysicalActivities();
+          console.log("✅ Actividades físicas refrescadas");
+        } catch (error) {
+          console.error("❌ Error refrescando actividades físicas:", error);
+        }
       },
     }),
     {

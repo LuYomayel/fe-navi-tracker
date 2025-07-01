@@ -194,7 +194,9 @@ export const useAuthStore = create<AuthState>()(
               const session: AuthSession = {
                 user: currentUser,
                 tokens: data.data.tokens,
-                expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(), // 15 min
+                expiresAt: new Date(
+                  Date.now() + 3 * 24 * 60 * 60 * 1000
+                ).toISOString(), // 3 días
               };
 
               get().setAuthData(session);

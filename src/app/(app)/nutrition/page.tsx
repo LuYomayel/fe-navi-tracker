@@ -58,6 +58,7 @@ import { NaviCompanion } from "@/components/navi/NaviCompanion";
 import { PhysicalActivityTracker } from "@/components/nutrition/PhysicalActivityTracker";
 import { CreatePhysicalActivityDialog } from "@/components/nutrition/CreatePhysicalActivityDialog";
 import { CalorieBalanceWidget } from "@/components/nutrition/CalorieBalanceWidget";
+import { useDateHelper } from "@/hooks/useDateHelper";
 
 interface DailyProgress {
   totalCalories: number;
@@ -402,6 +403,7 @@ export default function NutritionPage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
   const { isLoading } = useInitializeStore();
+  const { getTodayKey } = useDateHelper();
 
   const {
     nutritionAnalyses,
@@ -499,7 +501,7 @@ export default function NutritionPage() {
 
   // Calcular progreso del día actual
   const todayProgress = useMemo((): DailyProgress => {
-    const today = getDateKey(new Date());
+    const today = getTodayKey();
     const todayAnalyses = nutritionAnalyses.filter(
       (analysis: NutritionAnalysis) => analysis.date === today
     );

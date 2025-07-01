@@ -20,7 +20,7 @@ export default function LoginForm() {
 
     if (success) {
       console.log("✅ Login exitoso, redirigiendo...");
-      router.push("/habits");
+      router.push("/");
     }
   };
 

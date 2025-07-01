@@ -3,7 +3,16 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Menu, Apple, LogOut, Moon, Sun, Calendar, Target } from "lucide-react";
+import {
+  Menu,
+  Apple,
+  LogOut,
+  Moon,
+  Sun,
+  Calendar,
+  Target,
+  Heart,
+} from "lucide-react";
 import { useAuthStore } from "../../auth/store";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -29,6 +38,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { XpGlobalIndicator } from "@/components/xp/XpGlobalIndicator";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -115,6 +125,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     Navega por las diferentes secciones de la aplicación
                   </SheetDescription>
                 </SheetHeader>
+
+                {/* XP en menú móvil */}
+                <div className="mt-4 mb-4">
+                  <XpGlobalIndicator />
+                </div>
                 <nav className="flex flex-col space-y-2 mt-4">
                   {menuItems.map((item) => {
                     const Icon = item.icon;
@@ -186,6 +201,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
               {/* Controles del header */}
               <nav className="flex items-center space-x-2">
+                {/* Indicador XP Global */}
+                <XpGlobalIndicator compact className="hidden sm:flex" />
+
                 {/* Toggle tema */}
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -203,6 +221,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   </TooltipContent>
                 </Tooltip>
 
+                <Link href="/navi">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Heart className="h-4 w-4" />
+                    Ver a Navi
+                  </Button>
+                </Link>
                 {/* Usuario */}
                 {user && (
                   <DropdownMenu>
@@ -248,7 +272,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </header>
 
         {/* Contenido principal */}
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 p-4">{children}</main>
       </div>
     </TooltipProvider>
   );

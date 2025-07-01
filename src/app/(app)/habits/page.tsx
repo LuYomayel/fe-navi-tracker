@@ -70,18 +70,9 @@ export default function HabitsPage() {
             Gestiona tus hábitos diarios, ve tu progreso y mantén la constancia
           </p>
         </div>
-
-        {/* Botón para ver a Navi */}
-        <Link href="/navi">
-          <Button variant="outline" size="sm" className="gap-2">
-            <Heart className="h-4 w-4" />
-            Ver a Navi
-          </Button>
-        </Link>
       </div>
 
       {/* Dashboard de XP y Progreso */}
-      <XpDashboard />
 
       {/* Calendario semanal principal con todas las funcionalidades */}
       <div className="bg-card rounded-lg shadow-sm border">

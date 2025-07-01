@@ -23,7 +23,11 @@ export function useXp() {
 
     try {
       const response = await api.xp.getStats();
+      if (!response.success) {
+        throw new Error("Error al cargar estadísticas de XP");
+      }
       const stats = response.data as XpStats;
+      console.log("stats", response);
       setXpStats(stats);
       // Actualizar usuario en el store con los datos de XP (solo si han cambiado)
       if (
@@ -190,6 +194,27 @@ export function useXp() {
       loadXpStats();
     }
   }, [user?.id, loadXpStats]);
+
+  // Escuchar eventos de actualización de XP
+  useEffect(() => {
+    const handleXpUpdate = () => {
+      loadXpStats();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("xp-updated", handleXpUpdate);
+      window.addEventListener("habit-completed", handleXpUpdate);
+      window.addEventListener("day-completed", handleXpUpdate);
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("xp-updated", handleXpUpdate);
+        window.removeEventListener("habit-completed", handleXpUpdate);
+        window.removeEventListener("day-completed", handleXpUpdate);
+      }
+    };
+  }, [loadXpStats]);
 
   return {
     xpStats,

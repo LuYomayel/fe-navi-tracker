@@ -5,8 +5,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Función helper para obtener la clave de fecha en formato YYYY-MM-DD
+// Función helper para obtener la clave de fecha en formato YYYY-MM-DD (zona horaria local)
 export function getDateKey(date: Date): string {
+  // Usar zona horaria local en lugar de UTC
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+// Función helper para obtener la clave de fecha en UTC (para compatibilidad con backend)
+export function getDateKeyUTC(date: Date): string {
   return date.toISOString().split("T")[0];
 }
 

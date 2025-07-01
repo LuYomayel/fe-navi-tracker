@@ -177,7 +177,7 @@ async function refreshAuthToken(): Promise<boolean> {
       const newState = {
         ...currentState,
         tokens: data.data.tokens,
-        expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+        expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
       };
 
       localStorage.setItem(

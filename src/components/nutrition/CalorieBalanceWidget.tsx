@@ -7,8 +7,8 @@ import { useNaviTrackerStore } from "@/store";
 import {
   calculateDailyCalorieBalance,
   formatCalorieBalance,
-  getDateKey,
 } from "@/lib/utils";
+import { useDateHelper } from "@/hooks/useDateHelper";
 
 interface CalorieBalanceWidgetProps {
   date?: Date;
@@ -20,9 +20,10 @@ export function CalorieBalanceWidget({
   showDetails = true,
 }: CalorieBalanceWidgetProps) {
   const { nutritionAnalyses, physicalActivities } = useNaviTrackerStore();
+  const { getLocalDateKey, formatShortDate } = useDateHelper();
 
   // Calcular balance calórico usando la función utilitaria
-  const dateKey = getDateKey(date);
+  const dateKey = getLocalDateKey(date);
   const balance = calculateDailyCalorieBalance(
     nutritionAnalyses,
     physicalActivities,
@@ -45,10 +46,7 @@ export function CalorieBalanceWidget({
         <CardTitle className="text-lg flex items-center gap-2">
           📊 Balance Calórico
           <span className="text-sm font-normal text-muted-foreground">
-            {date.toLocaleDateString("es-ES", {
-              day: "numeric",
-              month: "short",
-            })}
+            {formatShortDate(date)}
           </span>
         </CardTitle>
       </CardHeader>

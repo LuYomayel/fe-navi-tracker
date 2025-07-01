@@ -31,6 +31,8 @@ import {
 import { getDateKey } from "@/lib/utils";
 import { DailyReflectionWidget } from "@/components/calendar/DailyReflectionWidget";
 import { NaviCompanion } from "@/components/navi/NaviCompanion";
+import { XpDashboard } from "@/components/xp/XpDashboard";
+import { StreakWidget } from "@/components/xp/StreakWidget";
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
@@ -110,6 +112,12 @@ export default function DashboardPage() {
         <p className="text-muted-foreground mt-2">
           Aquí tienes tu resumen de hábitos y progreso de hoy
         </p>
+      </div>
+
+      {/* Dashboards de XP y Rachas */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <XpDashboard />
+        <StreakWidget />
       </div>
 
       {/* Resumen de estadísticas principales */}

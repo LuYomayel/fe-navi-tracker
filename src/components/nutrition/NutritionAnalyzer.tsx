@@ -305,8 +305,8 @@ export function FoodAnalyzer({
 
       const expResponse = await api.xp.addXp({
         action: XpAction.NUTRITION_LOG,
-        xpAmount: 40,
-        description: "Cumplir el objetivo calórico/macros del día",
+        xpAmount: 15,
+        description: "Registrar una comida",
       });
       console.log("🔍 XP Response:", expResponse);
       if (!expResponse.success) {

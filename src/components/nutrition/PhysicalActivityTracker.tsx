@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Activity, Clock, Footprints, Zap } from "lucide-react";
 import { api } from "@/lib/api-client";
-import { PhysicalActivity, XpAction } from "@/types";
+import { PhysicalActivity } from "@/types";
 import { CreatePhysicalActivityDialog } from "@/components/nutrition/CreatePhysicalActivityDialog";
 import { toast } from "@/hooks/use-toast";
 import { useNaviTrackerStore } from "@/store";
@@ -21,6 +21,7 @@ export function PhysicalActivityTracker({
   const {
     getAllPhysicalActivities: _getAllPhysicalActivities,
     physicalActivities,
+    refreshPhysicalActivities,
   } = useNaviTrackerStore();
   const [isLoading, setIsLoading] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -51,18 +52,14 @@ export function PhysicalActivityTracker({
   };
 
   const handleActivityCreated = async (_newActivity: PhysicalActivity) => {
-    //setActivities((prev) => [...prev, newActivity]);
     setShowCreateDialog(false);
 
-    // Disparar evento para Navi
-    const expResponse = await api.xp.addXp({
-      action: XpAction.PHYSICAL_ACTIVITY,
-      xpAmount: 60,
-      description: "Actividad física registrada",
-    });
-    if (expResponse.success) {
-      window.dispatchEvent(new CustomEvent("physical-activity"));
-    }
+    // Refrescar actividades físicas para mostrar la nueva
+    refreshPhysicalActivities();
+
+    // El backend YA agrega XP automáticamente, solo disparar eventos
+    window.dispatchEvent(new CustomEvent("physical-activity"));
+    window.dispatchEvent(new CustomEvent("xp-updated"));
 
     toast({
       title: "¡Actividad registrada!",
@@ -91,12 +88,12 @@ export function PhysicalActivityTracker({
     }
   };
 
-  // Filtrar actividades del día seleccionado
+  // Filtrar actividades del día seleccionado SOLO para el cálculo calórico
   const todayActivities = physicalActivities.filter(
     (activity) => activity.date === date
   );
 
-  // Calcular totales del día
+  // Calcular totales del día (solo para el día seleccionado)
   console.log("physicalActivities", physicalActivities);
   const totals = todayActivities.reduce(
     (acc, activity) => {
@@ -107,6 +104,11 @@ export function PhysicalActivityTracker({
       return acc;
     },
     { calories: 0, steps: 0, distanceKm: 0, exerciseMinutes: 0 }
+  );
+
+  // Ordenar TODAS las actividades por fecha (más recientes primero)
+  const allActivitiesSorted = [...physicalActivities].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
   if (isLoading) {
@@ -192,56 +194,78 @@ export function PhysicalActivityTracker({
       </Card>
 
       {/* Lista de actividades */}
-      {todayActivities.length > 0 && (
+      {allActivitiesSorted.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Actividades del Día</CardTitle>
+            <CardTitle className="flex items-center justify-between">
+              <span>Historial de Actividades</span>
+              <Badge variant="outline">
+                {allActivitiesSorted.length} actividades
+              </Badge>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {todayActivities.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="outline">
-                        {activity.source === "image" ? "IA" : "Manual"}
-                      </Badge>
-                      {activity.aiConfidence && (
-                        <span className="text-xs text-gray-500">
-                          {Math.round(activity.aiConfidence * 100)}% confianza
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                      {activity.activeEnergyKcal && (
-                        <span>🔥 {activity.activeEnergyKcal} kcal</span>
-                      )}
-                      {activity.steps && (
-                        <span>👟 {activity.steps.toLocaleString()} pasos</span>
-                      )}
-                      {activity.distanceKm && (
-                        <span>📏 {activity.distanceKm} km</span>
-                      )}
-                      {activity.exerciseMinutes && (
-                        <span>⏱️ {activity.exerciseMinutes} min</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteActivity(activity.id)}
-                    className="text-red-600 hover:text-red-700"
+              {allActivitiesSorted.map((activity) => {
+                const isToday = activity.date === date;
+                return (
+                  <div
+                    key={activity.id}
+                    className={`flex items-center justify-between p-3 rounded-lg ${
+                      isToday
+                        ? "bg-blue-50 border-2 border-blue-200"
+                        : "bg-gray-50"
+                    }`}
                   >
-                    Eliminar
-                  </Button>
-                </div>
-              ))}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline">
+                          {activity.source === "image" ? "IA" : "Manual"}
+                        </Badge>
+                        {isToday && (
+                          <Badge variant="default" className="bg-blue-500">
+                            Hoy
+                          </Badge>
+                        )}
+                        <span className="text-xs text-gray-500">
+                          {activity.date}
+                        </span>
+                        {activity.aiConfidence && (
+                          <span className="text-xs text-gray-500">
+                            {Math.round(activity.aiConfidence * 100)}% confianza
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                        {activity.activeEnergyKcal && (
+                          <span>🔥 {activity.activeEnergyKcal} kcal</span>
+                        )}
+                        {activity.steps && (
+                          <span>
+                            👟 {activity.steps.toLocaleString()} pasos
+                          </span>
+                        )}
+                        {activity.distanceKm && (
+                          <span>📏 {activity.distanceKm} km</span>
+                        )}
+                        {activity.exerciseMinutes && (
+                          <span>⏱️ {activity.exerciseMinutes} min</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteActivity(activity.id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      Eliminar
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
