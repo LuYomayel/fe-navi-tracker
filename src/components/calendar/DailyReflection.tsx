@@ -15,6 +15,7 @@ import {
   getCommentsGroupedByCategory,
   CATEGORY_EMOJIS,
   CATEGORY_NAMES,
+  getDateKey,
 } from "@/lib/utils";
 import { CommentCategory, PredefinedComment } from "@/types";
 
@@ -39,7 +40,7 @@ export function DailyReflection({
   const { addOrUpdateReflection, dailyNotes } = useNaviTrackerStore();
 
   const commentsByCategory = getCommentsGroupedByCategory();
-  const dateKey = selectedDate.toISOString().split("T")[0];
+  const dateKey = getDateKey(selectedDate);
   const existingNote = dailyNotes.find((note) => note.date === dateKey);
   const activeSuggestions: Array<{
     id: string;

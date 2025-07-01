@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useXp } from "./useXp";
 import { useNaviTrackerStore } from "@/store";
+import { getDateKey } from "@/lib/utils";
 
 export type NaviState =
   | "celebrating" // Subió de nivel o logro importante
@@ -49,13 +50,11 @@ export function useNaviState() {
 
   // Determinar el estado de Navi basado en la actividad del usuario
   const determineNaviState = useCallback((): NaviStateInfo => {
-    const today = new Date().toISOString().split("T")[0];
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0];
-    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0];
+    const today = getDateKey(new Date());
+    const yesterday = getDateKey(new Date(Date.now() - 24 * 60 * 60 * 1000));
+    const threeDaysAgo = getDateKey(
+      new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+    );
 
     // Estado 1: Celebrando (subió de nivel o logro importante)
     if (isLevelingUp) {
