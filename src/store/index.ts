@@ -13,6 +13,7 @@ import type {
 import { toast } from "@/lib/toast-helper";
 import { api } from "@/lib/api-client";
 import { XpAction } from "@/types/xp";
+import { getDateKey } from "@/lib/utils";
 
 // Helper functions
 const generateId = () => Math.random().toString(36).substring(2, 15);
@@ -446,7 +447,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
 
       // Completion actions
       toggleCompletion: async (activityId, date) => {
-        const dateKey = date.toISOString().split("T")[0];
+        const dateKey = getDateKey(date);
 
         try {
           // 🚀 Usar API real
@@ -564,7 +565,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
 
       // Note actions
       addOrUpdateNote: async (date, content, mood) => {
-        const dateKey = date.toISOString().split("T")[0];
+        const dateKey = getDateKey(date);
 
         const note: DailyNote = {
           id: generateId(),
@@ -606,7 +607,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
       },
 
       deleteNote: async (date) => {
-        const dateKey = date.toISOString().split("T")[0];
+        const dateKey = getDateKey(date);
 
         try {
           set((state) => ({
@@ -626,13 +627,13 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
       },
 
       getNote: (date) => {
-        const dateKey = date.toISOString().split("T")[0];
+        const dateKey = getDateKey(date);
         const state = get();
         return state.dailyNotes.find((note) => note.date === dateKey);
       },
 
       getCompletion: (activityId, date) => {
-        const dateKey = date.toISOString().split("T")[0];
+        const dateKey = getDateKey(date);
         const state = get();
         return state.activities
           .find((activity) => activity.id === activityId)
@@ -649,7 +650,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
         customComment,
         mood
       ) => {
-        const dateKey = date.toISOString().split("T")[0];
+        const dateKey = getDateKey(date);
 
         const note: DailyNote = {
           id: generateId(),
@@ -1083,7 +1084,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
 
       getDailyCalorieBalance: (date: Date) => {
         const state = get();
-        const dateKey = date.toISOString().split("T")[0];
+        const dateKey = getDateKey(date);
 
         // Calorías consumidas de comidas
         const dayNutrition = state.nutritionAnalyses.filter(

@@ -1375,7 +1375,7 @@ export default function NutritionPage() {
       {activeTab === "physical-activity" && (
         <div className="space-y-6">
           <PhysicalActivityTracker
-            date={selectedDate.toISOString().split("T")[0]}
+            date={getDateKey(selectedDate)}
           />
         </div>
       )}
@@ -1513,7 +1513,7 @@ export default function NutritionPage() {
       <CreatePhysicalActivityDialog
         open={showPhysicalActivityDialog}
         onOpenChange={() => setShowPhysicalActivityDialog(false)}
-        date={selectedDate.toISOString().split("T")[0]}
+        date={getDateKey(selectedDate)}
         onActivityCreated={() => {
           console.log("🔄 Actividad física creada, refrescando datos...");
           getAllPhysicalActivities();
