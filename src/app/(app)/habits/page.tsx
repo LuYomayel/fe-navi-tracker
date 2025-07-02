@@ -13,11 +13,7 @@ import { DailyReflection } from "@/components/calendar/DailyReflection";
 import { AIAssistant } from "@/components/ai/AIAssistant";
 import ReadingAssistant from "@/components/ai/ReadingAssistant";
 import { NutritionTracker } from "@/components/nutrition/NutritionTracker";
-import { XpDashboard } from "@/components/xp/XpDashboard";
 import { NaviCompanion } from "@/components/navi/NaviCompanion";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { Heart } from "lucide-react";
 
 export default function HabitsPage() {
   const router = useRouter();
@@ -63,7 +59,7 @@ export default function HabitsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Seguimiento de Hábitos 📈</h1>
           <p className="text-muted-foreground mt-2">
@@ -75,7 +71,7 @@ export default function HabitsPage() {
       {/* Dashboard de XP y Progreso */}
 
       {/* Calendario semanal principal con todas las funcionalidades */}
-      <div className="bg-card rounded-lg shadow-sm border">
+      <div className="bg-card rounded-lg shadow-sm border overflow-x-auto">
         <WeeklyCalendar />
       </div>
 

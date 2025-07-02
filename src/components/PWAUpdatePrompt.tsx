@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, X } from "lucide-react";
 
 export default function PWAUpdatePrompt() {
+  const isProd = process.env.NODE_ENV === "production";
   const [showUpdatePrompt, setShowUpdatePrompt] = useState(false);
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(
     null
   );
 
   useEffect(() => {
+    if (!isProd) return;
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.ready.then((registration) => {
         registration.addEventListener("updatefound", () => {
@@ -49,7 +51,7 @@ export default function PWAUpdatePrompt() {
     setShowUpdatePrompt(false);
   };
 
-  if (!showUpdatePrompt) return null;
+  if (!isProd || !showUpdatePrompt) return null;
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-4 md:max-w-sm">

@@ -9,6 +9,8 @@ import type {
   BodyAnalysis,
   SkinFoldRecord,
   PhysicalActivity,
+  WeightEntry,
+  CreateWeightEntryDto,
 } from "@/types";
 import { toast } from "@/lib/toast-helper";
 import { api } from "@/lib/api-client";
@@ -85,6 +87,7 @@ interface NaviTrackerState {
   bodyAnalyses: BodyAnalysis[];
   skinFoldRecords: SkinFoldRecord[];
   physicalActivities: PhysicalActivity[];
+  weightEntries: WeightEntry[];
   chatHistory: Array<{
     id: string;
     role: "user" | "assistant";
@@ -186,11 +189,16 @@ interface NaviTrackerState {
     mealsCount: number;
     activitiesCount: number;
   };
+  // Weight actions
+  addWeightEntry: (entry: CreateWeightEntryDto) => Promise<void>;
+  deleteWeightEntry: (id: string) => Promise<void>;
+  getAllWeightEntries: () => Promise<void>;
   // Funciones de refrescar datos
   refreshAllData: () => Promise<void>;
   refreshActivities: () => Promise<void>;
   refreshNutritionData: () => Promise<void>;
   refreshPhysicalActivities: () => Promise<void>;
+  refreshWeightEntries: () => Promise<void>;
 }
 
 export const useNaviTrackerStore = create<NaviTrackerState>()(
@@ -204,6 +212,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
       bodyAnalyses: [],
       skinFoldRecords: [],
       physicalActivities: [],
+      weightEntries: [],
       chatHistory: [],
       preferences: {
         darkMode: false,
@@ -400,6 +409,11 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
 
       archiveActivity: async (id) => {
         try {
+          const response = await api.activities.archive(id);
+          if (!response.success) {
+            toast.error("Error", response.message);
+            return;
+          }
           set((state) => ({
             activities: state.activities.map((activity) =>
               activity.id === id
@@ -1032,12 +1046,14 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             bodyAnalysesResponse,
             notesResponse,
             physicalActivitiesResponse,
+            weightEntriesResponse,
           ] = await Promise.all([
             api.activities.getAll().catch(() => ({ data: [] })),
             api.nutrition.getAnalyses().catch(() => ({ data: [] })),
             api.bodyAnalysis.getAll().catch(() => ({ data: [] })),
             api.notes.getAll().catch(() => ({ data: [] })),
             api.physicalActivity.getAll().catch(() => ({ data: [] })),
+            api.nutrition.getAllWeightEntries().catch(() => ({ data: [] })),
           ]);
 
           set({
@@ -1048,6 +1064,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             dailyNotes: (notesResponse.data as DailyNote[]) || [],
             physicalActivities:
               (physicalActivitiesResponse.data as PhysicalActivity[]) || [],
+            weightEntries: (weightEntriesResponse.data as WeightEntry[]) || [],
             // bodyAnalyses se mantienen desde localStorage por ahora
             isInitialized: true,
             isLoading: false,
@@ -1122,12 +1139,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
         const dayActivities = state.physicalActivities.filter(
           (activity) => activity.date === dateKey
         );
-        console.log(
-          "dayActivities",
-          dayActivities,
-          dateKey,
-          state.physicalActivities
-        );
+
         const caloriesBurned = dayActivities.reduce(
           (total, activity) => total + (activity.activeEnergyKcal || 0),
           0
@@ -1196,6 +1208,78 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
       refreshPhysicalActivities: async () => {
         try {
           await get().getAllPhysicalActivities();
+          console.log("✅ Actividades físicas refrescadas");
+        } catch (error) {
+          console.error("❌ Error refrescando actividades físicas:", error);
+        }
+      },
+
+      // Weight actions
+      addWeightEntry: async (entry: CreateWeightEntryDto) => {
+        try {
+          set({ isLoading: true });
+
+          // Por ahora creamos un mock entry
+          const newEntry: WeightEntry = {
+            id: generateId(),
+            userId: "current-user",
+            ...entry,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+
+          set((state) => ({
+            weightEntries: [newEntry, ...state.weightEntries].sort(
+              (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+            ),
+          }));
+
+          toast.success(
+            "Peso registrado",
+            "Tu peso se ha guardado correctamente"
+          );
+        } catch (error) {
+          console.error("❌ Error agregando peso:", error);
+          toast.error("Error", "No se pudo registrar el peso");
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      deleteWeightEntry: async (id: string) => {
+        try {
+          await api.nutrition.deleteWeightEntry(id);
+          set((state) => ({
+            weightEntries: state.weightEntries.filter(
+              (entry) => entry.id !== id
+            ),
+          }));
+
+          toast.success(
+            "Registro eliminado",
+            "El registro de peso se ha eliminado"
+          );
+        } catch (error) {
+          console.error("❌ Error eliminando peso:", error);
+          toast.error("Error", "No se pudo eliminar el registro");
+        }
+      },
+
+      getAllWeightEntries: async () => {
+        try {
+          const response = await api.nutrition.getAllWeightEntries();
+          const entries = response.data as WeightEntry[];
+          set({ weightEntries: entries });
+
+          console.log("✅ Registros de peso cargados");
+        } catch (error) {
+          console.error("❌ Error cargando registros de peso:", error);
+        }
+      },
+
+      refreshWeightEntries: async () => {
+        try {
+          await get().getAllWeightEntries();
           console.log("✅ Actividades físicas refrescadas");
         } catch (error) {
           console.error("❌ Error refrescando actividades físicas:", error);

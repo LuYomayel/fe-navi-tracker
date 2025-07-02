@@ -27,7 +27,6 @@ export function useXp() {
         throw new Error("Error al cargar estadísticas de XP");
       }
       const stats = response.data as XpStats;
-      console.log("stats", response);
       setXpStats(stats);
       // Actualizar usuario en el store con los datos de XP (solo si han cambiado)
       if (

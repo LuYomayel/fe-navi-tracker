@@ -30,7 +30,7 @@ export function useNaviState() {
   const [currentState, setCurrentState] = useState<NaviState>(() => {
     if (typeof window === "undefined") return "default";
     const saved = localStorage.getItem("navi-current-state");
-    console.log("saved", saved);
+
     if (
       saved === "celebrating" ||
       saved === "happy" ||

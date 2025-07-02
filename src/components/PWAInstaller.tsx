@@ -14,12 +14,15 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export default function PWAInstaller() {
+  const isProd = process.env.NODE_ENV === "production";
+
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
+    if (!isProd) return;
     // Registrar Service Worker
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
@@ -84,7 +87,7 @@ export default function PWAInstaller() {
   };
 
   // No mostrar si ya está instalado
-  if (isInstalled || !showInstallPrompt) {
+  if (!isProd || isInstalled || !showInstallPrompt) {
     return null;
   }
 

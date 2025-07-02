@@ -293,7 +293,6 @@ export function FoodAnalyzer({
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      console.log("Body: ", data);
       // return;
       // Guardar en base de datos
       const apiResponse = await api.nutrition.createAnalysis(data);

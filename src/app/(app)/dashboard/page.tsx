@@ -33,6 +33,8 @@ import { DailyReflectionWidget } from "@/components/calendar/DailyReflectionWidg
 import { NaviCompanion } from "@/components/navi/NaviCompanion";
 import { XpDashboard } from "@/components/xp/XpDashboard";
 import { StreakWidget } from "@/components/xp/StreakWidget";
+import { WeightWidget } from "@/components/nutrition/WeightWidget";
+
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
@@ -42,6 +44,8 @@ export default function DashboardPage() {
     nutritionAnalyses,
     bodyAnalyses,
     activities = [],
+    weightEntries,
+    preferences,
   } = useNaviTrackerStore();
 
   // Redireccionar si no está autenticado
@@ -117,7 +121,15 @@ export default function DashboardPage() {
       {/* Dashboards de XP y Rachas */}
       <div className="grid gap-6 md:grid-cols-2">
         <XpDashboard />
-        <StreakWidget />
+        {/* Widgets de Peso y Rachas */}
+        <div className="flex flex-col gap-6">
+          <WeightWidget
+            entries={weightEntries}
+            onAddWeight={() => router.push("/nutrition?tab=weight")}
+            targetWeight={preferences?.targetWeight}
+          />
+          <StreakWidget />
+        </div>
       </div>
 
       {/* Resumen de estadísticas principales */}

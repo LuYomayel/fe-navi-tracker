@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/modules/auth/store";
 import { useNaviTrackerStore } from "@/store/index";
 import { useInitializeStore } from "@/hooks/useInitializeStore";
@@ -20,6 +20,7 @@ import {
   Target,
   ChevronDown,
   Dumbbell,
+  Scale,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -57,7 +58,9 @@ import { SetGoalsDialog } from "@/components/nutrition/SetGoalsDialog";
 import { NaviCompanion } from "@/components/navi/NaviCompanion";
 import { PhysicalActivityTracker } from "@/components/nutrition/PhysicalActivityTracker";
 import { CreatePhysicalActivityDialog } from "@/components/nutrition/CreatePhysicalActivityDialog";
-import { CalorieBalanceWidget } from "@/components/nutrition/CalorieBalanceWidget";
+import { WeightTracker } from "@/components/nutrition/WeightTracker";
+import { WeightChart } from "@/components/nutrition/WeightChart";
+import { WeightWidget } from "@/components/nutrition/WeightWidget";
 import { useDateHelper } from "@/hooks/useDateHelper";
 
 interface DailyProgress {
@@ -103,7 +106,7 @@ const NutritionDashboard: React.FC<{
 
   return (
     <div className=" rounded-lg shadow-sm border p-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h2 className="text-xl font-semibold">Dashboard Nutricional</h2>
           <p className="">
@@ -140,7 +143,7 @@ const NutritionDashboard: React.FC<{
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Button
             onClick={onOpenCreatePhysicalActivity}
             variant="outline"
@@ -169,7 +172,7 @@ const NutritionDashboard: React.FC<{
             <Target className="h-4 w-4" />
             Información del Análisis Corporal
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
             <div className="bg-gray-100/50 p-2 rounded-lg">
               <span className="">Tipo corporal:</span>
               <div className="font-medium capitalize">
@@ -404,30 +407,61 @@ export default function NutritionPage() {
   const { user, isAuthenticated } = useAuthStore();
   const { isLoading } = useInitializeStore();
   const { getTodayKey } = useDateHelper();
+  const searchParams = useSearchParams();
 
   const {
     nutritionAnalyses,
     bodyAnalyses,
     skinFoldRecords,
     physicalActivities,
+    weightEntries,
     deleteNutritionAnalysis,
     deleteBodyAnalysis,
     updateNutritionAnalysis: _updateNutritionAnalysis,
     deleteSkinFoldRecord,
     updateSkinFoldRecord: _updateSkinFoldRecord,
+    addWeightEntry,
+    deleteWeightEntry,
     preferences,
     updatePreferences: _updatePreferences,
     getAllFoodAnalysis,
     getAllBodyAnalysis,
     getAllSkinFoldRecords,
     getAllPhysicalActivities,
+
     getDailyCalorieBalance,
   } = useNaviTrackerStore();
 
   const [selectedDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState<
-    "overview" | "food" | "body" | "skinfold" | "physical-activity"
+    "overview" | "food" | "body" | "skinfold" | "physical-activity" | "weight"
   >("overview");
+
+  // Establecer tab inicial basado en URL
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (
+      tabParam &&
+      [
+        "overview",
+        "food",
+        "body",
+        "skinfold",
+        "physical-activity",
+        "weight",
+      ].includes(tabParam)
+    ) {
+      setActiveTab(
+        tabParam as
+          | "overview"
+          | "food"
+          | "body"
+          | "skinfold"
+          | "physical-activity"
+          | "weight"
+      );
+    }
+  }, [searchParams]);
   const [showFoodAnalyzer, setShowFoodAnalyzer] = useState(false);
   const [showBodyAnalyzer, setShowBodyAnalyzer] = useState(false);
   const [showSkinFoldDialog, setShowSkinFoldDialog] = useState(false);
@@ -506,8 +540,7 @@ export default function NutritionPage() {
       (analysis: NutritionAnalysis) => analysis.date === today
     );
 
-    const dailyCalorieBalance = getDailyCalorieBalance(new Date());
-    console.log("dailyCalorieBalance", dailyCalorieBalance);
+    const _dailyCalorieBalance = getDailyCalorieBalance(new Date());
 
     // Calcular calorías de comida
     const foodTotals = todayAnalyses.reduce(
@@ -793,7 +826,7 @@ export default function NutritionPage() {
 
       {/* Tabs */}
       <div className="border-b">
-        <nav className="-mb-px flex space-x-8">
+        <nav className=" flex space-x-8 sm:flex-row flex-col gap-4">
           {[
             { id: "overview", label: "Resumen", icon: BarChart3 },
             { id: "food", label: "Seguimiento", icon: Camera },
@@ -803,6 +836,7 @@ export default function NutritionPage() {
               label: "Actividad Física",
               icon: Dumbbell,
             },
+            { id: "weight", label: "Peso", icon: Scale },
             { id: "skinfold", label: "Pliegues Cutáneos", icon: Target },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -828,16 +862,27 @@ export default function NutritionPage() {
       {activeTab === "overview" && (
         <div className="space-y-6">
           {/* Dashboard Nutricional */}
-          <NutritionDashboard
-            todayProgress={todayProgress}
-            nutritionGoals={nutritionGoals}
-            lastBodyAnalysis={lastBodyAnalysis}
-            onOpenBodyAnalyzer={() => setShowBodyAnalyzer(true)}
-            onOpenManualGoals={handleOpenManualGoals}
-            onOpenCreatePhysicalActivity={() =>
-              setShowPhysicalActivityDialog(true)
-            }
-          />
+          <div className="flex  gap-6 sm:flex-row flex-col">
+            <div className="w-full sm:w-2/3 h-full">
+              <NutritionDashboard
+                todayProgress={todayProgress}
+                nutritionGoals={nutritionGoals}
+                lastBodyAnalysis={lastBodyAnalysis}
+                onOpenBodyAnalyzer={() => setShowBodyAnalyzer(true)}
+                onOpenManualGoals={handleOpenManualGoals}
+                onOpenCreatePhysicalActivity={() =>
+                  setShowPhysicalActivityDialog(true)
+                }
+              />
+            </div>
+            <div className="w-full sm:w-1/3">
+              <WeightWidget
+                entries={weightEntries}
+                onAddWeight={() => {}}
+                targetWeight={preferences?.targetWeight}
+              />
+            </div>
+          </div>
 
           {/* Quick Actions */}
           {/*}
@@ -930,9 +975,9 @@ export default function NutritionPage() {
                 </div>
               </div>
             </div>
-
-            <CalorieBalanceWidget date={selectedDate} />
           </div>
+
+          {/* Widget de peso */}
         </div>
       )}
 
@@ -1381,6 +1426,28 @@ export default function NutritionPage() {
           />
         </div>
       )}
+
+      {/* Weight Tab */}
+      {activeTab === "weight" && (
+        <div className="space-y-6">
+          <WeightChart
+            entries={weightEntries}
+            targetWeight={preferences?.targetWeight}
+          />
+          <WeightTracker
+            entries={weightEntries}
+            onEntryAdded={(entry) => {
+              console.log("🔄 Peso agregado, refrescando datos...");
+              addWeightEntry(entry);
+            }}
+            onEntryDeleted={(entryId) => {
+              console.log("🔄 Peso eliminado, refrescando datos...");
+              deleteWeightEntry(entryId);
+            }}
+          />
+        </div>
+      )}
+
       {/* Skinfold Tab */}
       {activeTab === "skinfold" && (
         <div className="space-y-6">

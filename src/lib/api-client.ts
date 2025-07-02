@@ -9,6 +9,11 @@ import {
   DailyNutritionBalance,
   PhysicalActivity,
   CreatePhysicalActivityDto,
+  CreateWeightEntryDto,
+  WeightAnalysis,
+  WeightEntry,
+  CreateWeightEntryManualDto,
+  WeightStats,
 } from "@/types";
 
 // Configuración de la API
@@ -283,6 +288,7 @@ export const api = {
     update: (id: string, data: Record<string, unknown>) =>
       apiClient.put("/activities", { id, ...data }),
     delete: (id: string) => apiClient.delete(`/activities?id=${id}`),
+    archive: (id: string) => apiClient.put(`/activities/archive/${id}`),
   },
 
   // Chat
@@ -305,6 +311,31 @@ export const api = {
       apiClient.get<DailyNutritionBalance>(
         `/nutrition/daily-balance${date ? `?date=${date}` : ""}`
       ),
+    // Weight Entries
+    // GET
+    getAllWeightEntries: (date?: string) =>
+      apiClient.get<WeightEntry[]>(
+        `/nutrition/weight-entries${date ? `?date=${date}` : ""}`
+      ),
+    getWeightAnalysis: () =>
+      apiClient.get<WeightAnalysis>("/nutrition/weight-analysis"),
+    getWeightEntryById: (id: string) =>
+      apiClient.get<WeightEntry>(`/nutrition/weight-entries/${id}`),
+    getWeightStats: (timeframe?: "week" | "month" | "year") =>
+      apiClient.get<WeightStats>(
+        `/nutrition/weight-stats${timeframe ? `?timeframe=${timeframe}` : ""}`
+      ),
+    // PUT
+    updateWeightEntry: (id: string, data: Partial<WeightEntry>) =>
+      apiClient.put(`/nutrition/weight-entries/${id}`, data),
+    // DELETE
+    deleteWeightEntry: (id: string) =>
+      apiClient.delete(`/nutrition/weight-entries/${id}`),
+    // POST
+    createWeightEntryImage: (data: { imageBase64: string }) =>
+      apiClient.post("/nutrition/weight-entries/analyze-image", data),
+    createWeightEntryManual: (data: CreateWeightEntryManualDto) =>
+      apiClient.post("/nutrition/weight-entries/analyze-manual", data),
   },
 
   // Completions
