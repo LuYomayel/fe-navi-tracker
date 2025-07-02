@@ -56,37 +56,9 @@ jobs:
               fi
             done
 
-            # Verificar y actualizar Node.js si es necesario
-            echo "🔍 Checking Node.js version..."
-            NODE_VERSION=$(node --version | cut -d'v' -f2)
-            REQUIRED_VERSION="18.18.0"
-
-            if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$NODE_VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
-              echo "⚠️ Node.js version $NODE_VERSION is too old, updating..."
-              
-              # Instalar/actualizar nvm si no existe
-              if [ ! -s "$HOME/.nvm/nvm.sh" ]; then
-                echo "📦 Installing nvm..."
-                curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-              fi
-              
-              # Cargar nvm
-              export NVM_DIR="$HOME/.nvm"
-              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-              
-              # Instalar y usar Node.js 20
-              nvm install 20
-              nvm use 20
-              nvm alias default 20
-              
-              echo "✅ Node.js updated to $(node --version)"
-            else
-              echo "✅ Node.js version $NODE_VERSION is compatible"
-            fi
-
             # Instalar dependencias con optimizaciones
             echo "📦 Installing dependencies..."
-            npm ci --production=false --legacy-peer-deps --engine-strict=false --timeout=300000 --maxsockets=5
+            npm install --legacy-peer-deps
 
             # Build con configuración optimizada
             echo "🔨 Building application..."
@@ -94,24 +66,13 @@ jobs:
             export NODE_ENV="production"
 
             # Usar build rápido que ignora type checking
-            timeout 600 npm run build:fast || {
-              echo "⚠️ Fast build failed, trying regular build..."
-              timeout 600 npm run build || {
-                echo "❌ Build failed"
-                exit 1
-              }
-            }
+            npm run build:fast || npm run build
 
             echo "✅ Build completed successfully"
 
             # Restart PM2
             echo "🔄 Restarting PM2..."
-            if pm2 list | grep -q "navi-tracker-frontend"; then
-              pm2 restart navi-tracker-frontend
-            else
-              echo "⚠️ PM2 process 'navi-tracker-frontend' not found, starting new process..."
-              pm2 start ecosystem.config.js
-            fi
+            pm2 reload ecosystem.config.js --only navi-tracker-frontend || pm2 start ecosystem.config.js
 
             # Restart Apache2
             echo "🔄 Restarting Apache2..."
@@ -140,7 +101,7 @@ jobs:
 
             # Health check
             echo "🏥 Performing health check..."
-            sleep 5
+            sleep 10
 
             if curl -f -s http://localhost:3150 > /dev/null; then
               echo "✅ Health check passed - Application is responding"

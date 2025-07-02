@@ -46,7 +46,6 @@ export function WeightTracker({
 
   // Estados del formulario
   const [formData, setFormData] = useState({
-    /*
     weight: "",
     bodyFatPercentage: "",
     muscleMassPercentage: "",
@@ -55,15 +54,6 @@ export function WeightTracker({
     bfr: "",
     score: "",
     notes: "",
-    */
-    weight: 81.5,
-    bmi: 29.9,
-    bodyFatPercentage: 24.1,
-    muscleMassPercentage: 58.4,
-    bodyWaterPercentage: 53.3,
-    bfr: 24.1,
-    score: 72.2,
-    notes: "Test",
   });
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
