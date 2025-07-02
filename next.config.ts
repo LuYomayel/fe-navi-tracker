@@ -1,45 +1,5 @@
 import type { NextConfig } from "next";
 
-import { join } from "path";
-import { copyFileSync, mkdirSync, existsSync, readdirSync, statSync } from "fs";
-
-// Detectar si estamos en Netlify
-const isNetlifyBuild = process.env.NETLIFY === "true";
-
-// Destination changes: Netlify static export -> `out`, standalone server -> `.next/standalone`
-const publicDestDir = isNetlifyBuild ? "out" : ".next/standalone";
-
-// Para standalone debemos copiar a .next/standalone/public
-const copyPublicFolder = () => {
-  const src = join(process.cwd(), "public");
-  const dest = isNetlifyBuild
-    ? join(process.cwd(), publicDestDir)
-    : join(process.cwd(), publicDestDir, "public");
-
-  if (!existsSync(dest)) {
-    mkdirSync(dest, { recursive: true });
-  }
-
-  const copyRecursive = (srcDir: string, destDir: string) => {
-    if (!existsSync(destDir)) {
-      mkdirSync(destDir);
-    }
-    for (const item of readdirSync(srcDir)) {
-      const srcPath = join(srcDir, item);
-      const destPath = join(destDir, item);
-      if (statSync(srcPath).isDirectory()) {
-        copyRecursive(srcPath, destPath);
-      } else {
-        copyFileSync(srcPath, destPath);
-      }
-    }
-  };
-
-  copyRecursive(src, dest);
-};
-
-copyPublicFolder();
-
 const nextConfig: NextConfig = {
   // Optimizaciones de compilación
   compiler: {
@@ -59,9 +19,7 @@ const nextConfig: NextConfig = {
   },
 
   // Configuración de salida condicional
-  output: isNetlifyBuild ? "export" : "standalone",
-  trailingSlash: isNetlifyBuild ? true : false,
-  skipTrailingSlashRedirect: isNetlifyBuild ? true : false,
+  output: "standalone",
 
   // Configuración para builds rápidos en producción
   productionBrowserSourceMaps: false, // ahorra RAM
@@ -69,7 +27,7 @@ const nextConfig: NextConfig = {
 
   // Configuración de imágenes optimizada
   images: {
-    unoptimized: isNetlifyBuild, // Solo para export estático
+    unoptimized: false, // Solo para export estático
     formats: ["image/webp", "image/avif"],
     deviceSizes: [640, 750, 828, 1080, 1200],
     imageSizes: [16, 32, 48, 64, 96, 128, 256],
@@ -111,42 +69,38 @@ const nextConfig: NextConfig = {
   },
 
   // Configuración de headers (solo para VPS)
-  ...(!isNetlifyBuild && {
-    async headers() {
-      return [
-        {
-          source: "/(.*)",
-          headers: [
-            {
-              key: "X-Content-Type-Options",
-              value: "nosniff",
-            },
-            {
-              key: "X-Frame-Options",
-              value: "DENY",
-            },
-            {
-              key: "X-XSS-Protection",
-              value: "1; mode=block",
-            },
-          ],
-        },
-      ];
-    },
-  }),
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            key: "X-Frame-Options",
+            value: "DENY",
+          },
+          {
+            key: "X-XSS-Protection",
+            value: "1; mode=block",
+          },
+        ],
+      },
+    ];
+  },
 
   // Configuración de redirects (solo para VPS)
-  ...(!isNetlifyBuild && {
-    async redirects() {
-      return [
-        {
-          source: "/dashboard",
-          destination: "/",
-          permanent: false,
-        },
-      ];
-    },
-  }),
+  async redirects() {
+    return [
+      {
+        source: "/dashboard",
+        destination: "/",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
