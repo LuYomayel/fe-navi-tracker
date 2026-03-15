@@ -38,8 +38,9 @@ export function SkinFoldDialog({
     useNaviTrackerStore();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"ai" | "manual">("manual");
+  const [activeTab, setActiveTab] = useState<"ai" | "manual" | "pdf">("manual");
   const [aiConfidence, setAiConfidence] = useState<number | null>(null);
+  const [pdfFile, setPdfFile] = useState<{ data: string; filename: string } | null>(null);
 
   // Form state
   const [formData, setFormData] = useState<{
@@ -58,6 +59,29 @@ export function SkinFoldDialog({
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePdfUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== "application/pdf") {
+      alert("Por favor selecciona un archivo PDF");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert("El PDF es demasiado grande. Maximo 10MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      setPdfFile({ data: base64, filename: file.name });
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleInputChange = (site: SkinFoldSite, value: string) => {
     const numValue = value === "" ? undefined : parseFloat(value);
@@ -174,6 +198,7 @@ export function SkinFoldDialog({
       const recordData = {
         ...formData,
         aiConfidence: aiConfidence || undefined,
+        ...(pdfFile && { pdfUrl: pdfFile.data, pdfFilename: pdfFile.filename }),
       };
 
       if (editingRecord) {
@@ -193,6 +218,7 @@ export function SkinFoldDialog({
         values: {},
       });
       setAiConfidence(null);
+      setPdfFile(null);
 
       if (onRecordSaved) {
         onRecordSaved();
@@ -213,7 +239,7 @@ export function SkinFoldDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-4xl sm:max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             🗺️ {editingRecord ? "Editar" : "Registrar"} Pliegues Cutáneos
@@ -226,32 +252,42 @@ export function SkinFoldDialog({
         </DialogHeader>
 
         {/* Tabs */}
-        <div className="flex border-b">
+        <div className="flex border-b overflow-x-auto -mx-1">
           <button
-            className={`px-4 py-2 font-medium ${
+            className={`px-3 sm:px-4 py-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
               activeTab === "manual"
                 ? "border-b-2 border-primary text-primary"
                 : "text-muted-foreground hover:text-foreground"
             }`}
             onClick={() => setActiveTab("manual")}
           >
-            📝 Manual
+            Manual
           </button>
           <button
-            className={`px-4 py-2 font-medium ${
+            className={`px-3 sm:px-4 py-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
               activeTab === "ai"
                 ? "border-b-2 border-primary text-primary"
                 : "text-muted-foreground hover:text-foreground"
             }`}
             onClick={() => setActiveTab("ai")}
           >
-            🤖 Análisis con IA
+            IA
+          </button>
+          <button
+            className={`px-3 sm:px-4 py-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
+              activeTab === "pdf"
+                ? "border-b-2 border-primary text-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setActiveTab("pdf")}
+          >
+            PDF
           </button>
         </div>
 
         <div className="space-y-6">
           {/* Información general */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <div>
               <Label htmlFor="date">Fecha</Label>
               <Input
@@ -320,6 +356,59 @@ export function SkinFoldDialog({
             </div>
           )}
 
+          {/* PDF Upload Tab */}
+          {activeTab === "pdf" && (
+            <div className="space-y-4">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl">
+                <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
+                  📄 PDF de tu Nutricionista
+                </h3>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Subi el PDF con los resultados de pliegues cutaneos de tu nutricionista.
+                  Se guardara adjunto al registro para referencia futura.
+                </p>
+              </div>
+
+              <input
+                ref={pdfInputRef}
+                type="file"
+                accept="application/pdf"
+                onChange={handlePdfUpload}
+                className="hidden"
+              />
+
+              {pdfFile ? (
+                <div className="flex items-center gap-3 p-3 bg-secondary rounded-xl">
+                  <span className="text-2xl">📄</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{pdfFile.filename}</p>
+                    <p className="text-xs text-muted-foreground">PDF cargado correctamente</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPdfFile(null)}
+                    className="text-red-500"
+                  >
+                    Quitar
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  onClick={() => pdfInputRef.current?.click()}
+                  variant="outline"
+                  className="w-full py-8"
+                >
+                  📎 Seleccionar PDF
+                </Button>
+              )}
+
+              <p className="text-xs text-muted-foreground">
+                Tambien podes completar los valores manualmente arriba. El PDF queda guardado como adjunto.
+              </p>
+            </div>
+          )}
+
           {/* Manual Input Tab */}
           {activeTab === "manual" && (
             <div className="space-y-4">
@@ -337,7 +426,7 @@ export function SkinFoldDialog({
           )}
 
           {/* Mediciones */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {SkinFoldMeasurementOrder.map((site) => (
               <div key={site} className="space-y-2">
                 <div className="flex items-center justify-between">

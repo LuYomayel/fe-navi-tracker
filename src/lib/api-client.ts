@@ -9,7 +9,8 @@ import {
   DailyNutritionBalance,
   PhysicalActivity,
   CreatePhysicalActivityDto,
-
+  SavedMeal,
+  AICostStats,
   WeightAnalysis,
   WeightEntry,
   CreateWeightEntryManualDto,
@@ -434,12 +435,13 @@ export const api = {
 
   // Analyze Food
   analyzeFood: {
-    analyzeImage: (data: { image: string; mealType: MealType }) =>
+    analyzeImage: (data: { image: string; mealType: MealType; context?: string }) =>
       apiClient.post<FoodAnalysisResponse>("/analyze-food/image", data),
     analyzeManualFood: (data: {
       ingredients: string;
       servings: number;
       mealType: MealType;
+      context?: string;
     }) => apiClient.post<FoodAnalysisResponse>("/analyze-food/manual", data),
   },
 
@@ -502,6 +504,22 @@ export const api = {
     update: (id: string, data: Partial<PhysicalActivity>) =>
       apiClient.put(`/physical-activities/${id}`, data),
     delete: (id: string) => apiClient.delete(`/physical-activities/${id}`),
+  },
+
+  // Saved Meals
+  savedMeals: {
+    getAll: () => apiClient.get<SavedMeal[]>("/saved-meals"),
+    create: (data: Omit<SavedMeal, "id" | "userId" | "timesUsed" | "lastUsedAt" | "createdAt" | "updatedAt">) =>
+      apiClient.post("/saved-meals", data as any),
+    use: (id: string) => apiClient.post(`/saved-meals/${id}/use`),
+    update: (id: string, data: { name?: string; description?: string }) =>
+      apiClient.put(`/saved-meals/${id}`, data),
+    delete: (id: string) => apiClient.delete(`/saved-meals/${id}`),
+  },
+
+  // AI Cost Tracking
+  aiCost: {
+    getStats: () => apiClient.get<AICostStats>("/ai-cost/stats"),
   },
 };
 

@@ -388,7 +388,7 @@ export function NutritionTracker({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-6xl sm:max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
@@ -1436,7 +1436,7 @@ export function NutritionTracker({
       {/* Modal para establecer objetivos */}
       {showGoalsModal && selectedBodyAnalysis && (
         <Dialog open={showGoalsModal} onOpenChange={setShowGoalsModal}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Target className="h-5 w-5" />

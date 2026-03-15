@@ -135,45 +135,45 @@ export function PhysicalActivityTracker({
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Zap className="h-4 w-4 text-red-500" />
-                <span className="text-sm text-gray-600">Calorías</span>
+                <span className="text-sm text-muted-foreground">Calorías</span>
               </div>
               <div className="text-2xl font-bold text-red-600">
                 {totals.calories}
               </div>
-              <div className="text-xs text-gray-500">kcal quemadas</div>
+              <div className="text-xs text-muted-foreground">kcal quemadas</div>
             </div>
 
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Footprints className="h-4 w-4 text-blue-500" />
-                <span className="text-sm text-gray-600">Pasos</span>
+                <span className="text-sm text-muted-foreground">Pasos</span>
               </div>
               <div className="text-2xl font-bold text-blue-600">
                 {totals.steps.toLocaleString()}
               </div>
-              <div className="text-xs text-gray-500">pasos</div>
+              <div className="text-xs text-muted-foreground">pasos</div>
             </div>
 
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Activity className="h-4 w-4 text-green-500" />
-                <span className="text-sm text-gray-600">Distancia</span>
+                <span className="text-sm text-muted-foreground">Distancia</span>
               </div>
               <div className="text-2xl font-bold text-green-600">
                 {totals.distanceKm.toFixed(1)}
               </div>
-              <div className="text-xs text-gray-500">km</div>
+              <div className="text-xs text-muted-foreground">km</div>
             </div>
 
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 mb-1">
                 <Clock className="h-4 w-4 text-purple-500" />
-                <span className="text-sm text-gray-600">Ejercicio</span>
+                <span className="text-sm text-muted-foreground">Ejercicio</span>
               </div>
               <div className="text-2xl font-bold text-purple-600">
                 {totals.exerciseMinutes}
               </div>
-              <div className="text-xs text-gray-500">minutos</div>
+              <div className="text-xs text-muted-foreground">minutos</div>
             </div>
           </div>
         </CardContent>
@@ -227,11 +227,11 @@ export function PhysicalActivityTracker({
                             Hoy
                           </Badge>
                         )}
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-muted-foreground">
                           {activity.date}
                         </span>
                         {activity.aiConfidence && (
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-muted-foreground">
                             {Math.round(activity.aiConfidence * 100)}% confianza
                           </span>
                         )}

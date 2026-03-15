@@ -61,6 +61,7 @@ import { CreatePhysicalActivityDialog } from "@/components/nutrition/CreatePhysi
 import { WeightTracker } from "@/components/nutrition/WeightTracker";
 import { WeightChart } from "@/components/nutrition/WeightChart";
 import { WeightWidget } from "@/components/nutrition/WeightWidget";
+import { AICostWidget } from "@/components/nutrition/AICostWidget";
 import { useDateHelper } from "@/hooks/useDateHelper";
 
 interface DailyProgress {
@@ -105,10 +106,10 @@ const NutritionDashboard: React.FC<{
   const bodyAnalysisInfo: BodyAnalysis = lastBodyAnalysis as BodyAnalysis;
 
   return (
-    <div className=" rounded-lg shadow-sm border p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div className="rounded-xl shadow-sm border p-3 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div>
-          <h2 className="text-xl font-semibold">Dashboard Nutricional</h2>
+          <h2 className="text-base sm:text-xl font-semibold">Dashboard Nutricional</h2>
           <p className="">
             Progreso del día de hoy
             {nutritionGoals && (
@@ -173,25 +174,25 @@ const NutritionDashboard: React.FC<{
             Información del Análisis Corporal
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-            <div className="bg-gray-100/50 p-2 rounded-lg">
+            <div className="bg-muted/50 p-2 rounded-lg">
               <span className="">Tipo corporal:</span>
               <div className="font-medium capitalize">
                 {lastBodyAnalysis.bodyType}
               </div>
             </div>
-            <div className="bg-gray-100/50 p-2 rounded-lg">
+            <div className="bg-muted/50 p-2 rounded-lg">
               <span className="">Grasa corporal:</span>
               <div className="font-medium">
                 {bodyAnalysisInfo.measurements?.bodyFat || "N/A"}%
               </div>
             </div>
-            <div className="bg-gray-100/50 p-2 rounded-lg">
+            <div className="bg-muted/50 p-2 rounded-lg">
               <span className="">Metabolismo:</span>
               <div className="font-medium capitalize">
                 {bodyAnalysisInfo.bodyComposition.metabolism}
               </div>
             </div>
-            <div className="bg-gray-100/50 p-2 rounded-lg">
+            <div className="bg-muted/50 p-2 rounded-lg">
               <span className="">Prioridad:</span>
               <div className="font-medium capitalize">
                 {bodyAnalysisInfo.recommendations?.priority}
@@ -202,7 +203,7 @@ const NutritionDashboard: React.FC<{
           {/* Objetivos específicos del análisis */}
           {bodyAnalysisInfo.recommendations?.goals &&
             bodyAnalysisInfo.recommendations?.goals.length > 0 && (
-              <div className="mt-3 bg-gray-100/50 p-2 rounded-lg">
+              <div className="mt-3 bg-muted/50 p-2 rounded-lg">
                 <span className=" text-xs">Objetivos específicos:</span>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {bodyAnalysisInfo.recommendations?.goals.map(
@@ -222,9 +223,9 @@ const NutritionDashboard: React.FC<{
       )}
 
       {nutritionGoals ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           {/* Calorías */}
-          <div className="space-y-3 bg-gray-100/50 p-4 rounded-lg">
+          <div className="space-y-2 sm:space-y-3 bg-muted/50 p-3 sm:p-4 rounded-xl">
             <div className="flex items-center justify-between">
               <span className="text-sm font-bold">Calorías</span>
               <span className="text-xs italic">
@@ -255,7 +256,7 @@ const NutritionDashboard: React.FC<{
           </div>
 
           {/* Proteína */}
-          <div className="space-y-3 bg-gray-100/50 p-4 rounded-lg">
+          <div className="space-y-2 sm:space-y-3 bg-muted/50 p-3 sm:p-4 rounded-xl">
             <div className="flex items-center justify-between">
               <span className="text-sm font-bold">Proteínas</span>
               <span className="text-xs italic">
@@ -285,7 +286,7 @@ const NutritionDashboard: React.FC<{
           </div>
 
           {/* Carbohidratos */}
-          <div className="space-y-3 bg-gray-100/50 p-4 rounded-lg">
+          <div className="space-y-2 sm:space-y-3 bg-muted/50 p-3 sm:p-4 rounded-xl">
             <div className="flex items-center justify-between">
               <span className="text-sm font-bold">Carbohidratos</span>
               <span className="text-xs italic">
@@ -312,7 +313,7 @@ const NutritionDashboard: React.FC<{
           </div>
 
           {/* Grasas */}
-          <div className="space-y-3 bg-gray-100/50 p-4 rounded-lg">
+          <div className="space-y-2 sm:space-y-3 bg-muted/50 p-3 sm:p-4 rounded-xl">
             <div className="flex items-center justify-between">
               <span className="text-sm font-bold">Grasas</span>
               <span className="text-xs italic">
@@ -340,11 +341,11 @@ const NutritionDashboard: React.FC<{
         </div>
       ) : (
         <div className="text-center py-8">
-          <Target className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+          <Target className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <h3 className="text-lg font-medium mb-2">
             No hay objetivos nutricionales establecidos
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
+          <p className="text-gray-600 dark:text-muted-foreground mb-4">
             Realiza un análisis corporal para establecer objetivos
             personalizados
           </p>
@@ -380,7 +381,7 @@ const NutritionDashboard: React.FC<{
       {/* Suplementos recomendados */}
       {bodyAnalysisInfo?.recommendations?.supplements &&
         bodyAnalysisInfo.recommendations.supplements.length > 0 && (
-          <div className="mt-4 p-4 bg-gray-100/50 rounded-lg">
+          <div className="mt-4 p-4 bg-muted/50 rounded-lg">
             <h4 className="font-semibold text-sm mb-2 ">
               💊 Suplementos Recomendados
             </h4>
@@ -814,43 +815,41 @@ export default function NutritionPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Centro Nutricional 🍎</h1>
-        <p className="text-muted-foreground mt-2">
-          Análisis inteligente de alimentos, seguimiento de pliegues cutáneos y
-          monitoreo corporal
+        <h1 className="text-xl sm:text-2xl font-bold">Centro Nutricional</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+          Análisis de alimentos, pliegues cutáneos y monitoreo corporal
         </p>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs - horizontal scrollable on mobile */}
       <div className="border-b">
-        <nav className=" flex space-x-8 sm:flex-row flex-col gap-4">
+        <nav className="flex overflow-x-auto gap-0 -mb-px scrollbar-hide">
           {[
             { id: "overview", label: "Resumen", icon: BarChart3 },
-            { id: "food", label: "Seguimiento", icon: Camera },
-            //{ id: "body", label: "Análisis Corporal", icon: User },
+            { id: "food", label: "Comidas", icon: Camera },
             {
               id: "physical-activity",
-              label: "Actividad Física",
+              label: "Actividad",
               icon: Dumbbell,
             },
             { id: "weight", label: "Peso", icon: Scale },
-            { id: "skinfold", label: "Pliegues Cutáneos", icon: Target },
+            { id: "skinfold", label: "Pliegues", icon: Target },
           ].map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm ${
+                className={`flex items-center gap-1.5 py-2 px-2.5 sm:px-3 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${
                   activeTab === tab.id
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
                 }`}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 {tab.label}
               </button>
             );
@@ -860,10 +859,10 @@ export default function NutritionPage() {
 
       {/* Overview Tab con Dashboard */}
       {activeTab === "overview" && (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Dashboard Nutricional */}
-          <div className="flex  gap-6 sm:flex-row flex-col">
-            <div className="w-full sm:w-2/3 h-full">
+          <div className="flex flex-col md:flex-row gap-4 sm:gap-6">
+            <div className="w-full md:w-2/3 h-full">
               <NutritionDashboard
                 todayProgress={todayProgress}
                 nutritionGoals={nutritionGoals}
@@ -875,7 +874,7 @@ export default function NutritionPage() {
                 }
               />
             </div>
-            <div className="w-full sm:w-1/3">
+            <div className="w-full md:w-1/3">
               <WeightWidget
                 entries={weightEntries}
                 onAddWeight={() => {}}
@@ -916,85 +915,88 @@ export default function NutritionPage() {
           </div>
           */}
           {/* Estadísticas */}
-          <div className="space-y-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Estadísticas
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span>Promedio de calorías:</span>
-                    <span className="font-medium">
-                      {weeklyStats.averageCalories} kcal/día
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Análisis nutricionales:</span>
-                    <span className="font-medium">
-                      {weeklyStats.totalAnalyses} registros
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Análisis corporales:</span>
-                    <span className="font-medium">
-                      {weeklyStats.bodyAnalysesCount} análisis
-                    </span>
-                  </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-sm sm:text-lg font-medium flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
+                Estadísticas
+              </h3>
+              <div className="space-y-2 sm:space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Promedio calorías:</span>
+                  <span className="font-medium">
+                    {weeklyStats.averageCalories} kcal/día
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Análisis nutricionales:</span>
+                  <span className="font-medium">
+                    {weeklyStats.totalAnalyses} registros
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Análisis corporales:</span>
+                  <span className="font-medium">
+                    {weeklyStats.bodyAnalysesCount} análisis
+                  </span>
                 </div>
               </div>
+            </div>
 
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Acciones rápidas</h3>
-                <div className="space-y-2">
-                  <Button
-                    onClick={() => setShowFoodAnalyzer(true)}
-                    variant="outline"
-                    className="w-full justify-start"
-                  >
-                    <Camera className="h-4 w-4 mr-2" />
-                    Analizar comida por foto
-                  </Button>
-                  <Button
-                    onClick={() => setShowBodyAnalyzer(true)}
-                    variant="outline"
-                    className="w-full justify-start"
-                  >
-                    <User className="h-4 w-4 mr-2" />
-                    Análisis corporal completo
-                  </Button>
-                  <Button
-                    onClick={() => setActiveTab("food")}
-                    variant="outline"
-                    className="w-full justify-start"
-                  >
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Ver historial nutricional
-                  </Button>
-                </div>
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="text-sm sm:text-lg font-medium">Acciones rápidas</h3>
+              <div className="space-y-2">
+                <Button
+                  onClick={() => setShowFoodAnalyzer(true)}
+                  variant="outline"
+                  className="w-full justify-start text-sm"
+                  size="sm"
+                >
+                  <Camera className="h-4 w-4 mr-2" />
+                  Analizar comida por foto
+                </Button>
+                <Button
+                  onClick={() => setShowBodyAnalyzer(true)}
+                  variant="outline"
+                  className="w-full justify-start text-sm"
+                  size="sm"
+                >
+                  <User className="h-4 w-4 mr-2" />
+                  Análisis corporal completo
+                </Button>
+                <Button
+                  onClick={() => setActiveTab("food")}
+                  variant="outline"
+                  className="w-full justify-start text-sm"
+                  size="sm"
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Ver historial nutricional
+                </Button>
               </div>
             </div>
           </div>
 
-          {/* Widget de peso */}
+          {/* Widget de costos de IA */}
+          <AICostWidget />
         </div>
       )}
 
       {/* Food Tracking Tab */}
       {activeTab === "food" && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-medium">
-                Historial de Análisis Nutricionales
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="text-base sm:text-lg font-medium">
+                Historial Nutricional
               </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Gestiona y filtra tus análisis de comidas
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Gestiona y filtra tus análisis
               </p>
             </div>
             <Button
               onClick={() => setShowFoodAnalyzer(true)}
+              size="sm"
               className="flex items-center gap-2"
             >
               <Camera className="h-4 w-4" />
@@ -1211,65 +1213,65 @@ export default function NutritionPage() {
                 return (
                   <div
                     key={analysis.id}
-                    className="rounded-lg shadow-sm border p-4"
+                    className="rounded-xl shadow-sm border p-3 sm:p-4"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="text-2xl">
+                    <div className="flex items-start sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                        <div className="text-xl sm:text-2xl flex-shrink-0">
                           {getMealTypeIcon(analysis.mealType)}
                         </div>
-                        <div className="flex-1">
-                          <div className="font-medium">
+                        <div className="min-w-0">
+                          <div className="font-medium text-sm sm:text-base">
                             {analysis.mealType.charAt(0).toUpperCase() +
                               analysis.mealType.slice(1)}
                           </div>
-                          <div className="text-sm  flex items-center gap-2">
-                            <Clock className="h-3 w-3" />
+                          <div className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5">
+                            <Clock className="h-3 w-3 flex-shrink-0" />
                             {dateInfo.date} - {dateInfo.time}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                         <div className="text-right">
-                          <div className="font-medium text-lg">
+                          <div className="font-medium text-sm sm:text-lg">
                             {analysis.totalCalories} kcal
                           </div>
-                          <div className="text-sm ">
-                            {Math.round(analysis.aiConfidence * 100)}% confianza
+                          <div className="text-[10px] sm:text-sm text-muted-foreground">
+                            {Math.round(analysis.aiConfidence * 100)}%
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
                             onClick={() =>
                               handleEditAnalysis(analysis as NutritionAnalysis)
                             }
-                            className="hover:bg-accent"
+                            className="h-8 w-8 p-0"
                           >
-                            <Edit3 className="h-4 w-4" />
+                            <Edit3 className="h-3.5 w-3.5" />
                           </Button>
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteMeal(analysis.id)}
-                            className="text-destructive hover:bg-destructive/10"
+                            className="h-8 w-8 p-0 text-destructive"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </div>
                     </div>
 
                     {/* Detalles de alimentos */}
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                       {analysis.foods.map((food, index) => (
                         <div
                           key={index}
-                          className=" rounded-lg p-3 bg-gray-200/50"
+                          className="rounded-lg p-2 sm:p-3 bg-muted/50"
                         >
-                          <div className="font-medium text-sm">{food.name}</div>
-                          <div className="text-xs ">
+                          <div className="font-medium text-xs sm:text-sm">{food.name}</div>
+                          <div className="text-[10px] sm:text-xs text-muted-foreground">
                             {food.quantity} • {food.calories} kcal
                           </div>
                         </div>
@@ -1280,8 +1282,8 @@ export default function NutritionPage() {
               })}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <Camera className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            <div className="text-center py-8 sm:py-12">
+              <Camera className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
               <h3 className="text-lg font-medium  mb-2">
                 No hay análisis nutricionales
               </h3>
@@ -1339,7 +1341,7 @@ export default function NutritionPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         {analysis.insights && analysis.insights.length > 0 && (
-                          <div className="mt-2 bg-gray-100/50 p-2 rounded-lg">
+                          <div className="mt-2 bg-muted/50 p-2 rounded-lg">
                             <div className="text-xs font-medium text-muted-foreground mb-1">
                               Insights:
                             </div>
@@ -1356,7 +1358,7 @@ export default function NutritionPage() {
                           </div>
                         )}
                         {analysis.insights && analysis.insights.length > 0 && (
-                          <div className="mt-2 bg-gray-100/50 p-2 rounded-lg">
+                          <div className="mt-2 bg-muted/50 p-2 rounded-lg">
                             <div className="text-xs font-medium text-muted-foreground mb-1">
                               Recomendaciones:
                             </div>
@@ -1401,7 +1403,7 @@ export default function NutritionPage() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <User className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <User className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
               <h3 className="text-lg font-medium  mb-2">
                 No hay análisis corporales
               </h3>
@@ -1501,7 +1503,7 @@ export default function NutritionPage() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <Target className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <Target className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
               <h3 className="text-lg font-medium  mb-2">
                 No hay mediciones de pliegues
               </h3>

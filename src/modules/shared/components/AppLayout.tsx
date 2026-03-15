@@ -90,7 +90,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     <div className="min-h-screen bg-background">
       {/* iOS-style Header */}
       <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-xl backdrop-saturate-150 border-b border-border/50">
-        <div className="flex h-12 items-center justify-between px-4 max-w-5xl mx-auto">
+        <div className="flex h-12 items-center justify-between px-3 sm:px-4 max-w-5xl mx-auto">
           {/* Logo */}
           <Link href="/dashboard" className="flex items-center gap-2">
             <span className="text-lg font-semibold tracking-tight">
@@ -180,27 +180,27 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-4 py-4 pb-24 md:pb-6">
+      <main className="max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-4 pb-20 md:pb-6">
         {children}
       </main>
 
       {/* iOS-style Bottom Tab Bar (mobile only) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl backdrop-saturate-150 border-t border-border/50 pb-safe">
-        <div className="flex items-center justify-around h-16 px-2">
+        <div className="flex items-center justify-around h-14 px-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
             return (
               <Link
                 key={item.path}
                 href={item.path}
-                className={`flex flex-col items-center justify-center gap-0.5 min-w-[64px] py-1 transition-colors ${
+                className={`flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 py-1 transition-colors ${
                   item.active
                     ? "text-primary"
                     : "text-muted-foreground"
                 }`}
               >
                 <Icon
-                  className={`h-6 w-6 ${item.active ? "stroke-[2.5]" : ""}`}
+                  className={`h-5 w-5 sm:h-6 sm:w-6 ${item.active ? "stroke-[2.5]" : ""}`}
                 />
                 <span className="text-[10px] font-medium">{item.label}</span>
               </Link>

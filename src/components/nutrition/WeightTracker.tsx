@@ -272,7 +272,7 @@ export function WeightTracker({
               Registrar Peso
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Nuevo Registro de Peso</DialogTitle>
             </DialogHeader>

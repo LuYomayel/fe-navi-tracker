@@ -65,7 +65,7 @@ export function ReflectionHistory({ isOpen, onClose }: ReflectionHistoryProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-4xl sm:max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <History className="h-5 w-5" />
@@ -167,7 +167,7 @@ export function ReflectionHistory({ isOpen, onClose }: ReflectionHistoryProps) {
             open={!!selectedNote}
             onOpenChange={() => setSelectedNote(null)}
           >
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
                 <div className="flex items-center justify-between">
                   <DialogTitle className="flex items-center gap-2">

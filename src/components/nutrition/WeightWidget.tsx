@@ -46,7 +46,7 @@ export function WeightWidget({
   const hasChange = previous && Math.abs(weightChange) > 0.1;
 
   const getTrendIcon = () => {
-    if (!hasChange) return <Minus className="h-3 w-3 text-gray-600" />;
+    if (!hasChange) return <Minus className="h-3 w-3 text-muted-foreground" />;
     return weightChange > 0 ? (
       <TrendingUp className="h-3 w-3 text-red-600" />
     ) : (
@@ -55,7 +55,7 @@ export function WeightWidget({
   };
 
   const getTrendColor = () => {
-    if (!hasChange) return "text-gray-600";
+    if (!hasChange) return "text-muted-foreground";
     return weightChange > 0 ? "text-red-600" : "text-green-600";
   };
 

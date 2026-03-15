@@ -15,10 +15,10 @@ export function XpDashboard({ className = "" }: XpDashboardProps) {
 
   if (isLoading || !xpStats) {
     return (
-      <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 ${className}`}>
+      <div className={`grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6 ${className}`}>
         {[...Array(3)].map((_, i) => (
           <Card key={i} className="animate-pulse">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="space-y-3">
                 <div className="h-4 bg-muted rounded"></div>
                 <div className="h-8 bg-muted rounded"></div>
@@ -32,9 +32,9 @@ export function XpDashboard({ className = "" }: XpDashboardProps) {
   }
 
   return (
-    <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 ${className}`}>
+    <div className={`grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6 ${className}`}>
       {/* Barra principal de XP */}
-      <div className="lg:col-span-2">
+      <div className="md:col-span-2">
         <XpBar showDetails={true} compact={false} />
       </div>
 
@@ -84,7 +84,7 @@ export function XpDashboard({ className = "" }: XpDashboardProps) {
       </Card>
 
       {/* Log de actividad */}
-      <div className="lg:col-span-3">
+      <div className="md:col-span-3">
         <XpLogWidget maxItems={8} />
       </div>
     </div>

@@ -169,6 +169,9 @@ export interface NutritionAnalysis {
   imageUrl?: string;
   aiConfidence: number;
   userAdjustments?: UserNutritionAdjustments;
+  context?: string;
+  aiCostUsd?: number;
+  savedMealId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -578,6 +581,7 @@ export interface CreatePhysicalActivityDto {
   screenshotUrl?: string;
   source: string;
   aiConfidence?: number;
+  context?: string;
 }
 
 // Tipos para balance nutricional diario
@@ -687,4 +691,39 @@ export interface CreateWeightEntryManualDto {
   score?: number;
   source: "manual";
   notes?: string;
+}
+
+// Saved Meal template
+export interface SavedMeal {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  mealType: string;
+  foods: DetectedFood[];
+  totalCalories: number;
+  macronutrients: Macronutrients;
+  timesUsed: number;
+  lastUsedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// AI Cost tracking
+export interface AICostStats {
+  totalCost: number;
+  monthlyCost: number;
+  totalCalls: number;
+  byService: Array<{
+    service: string;
+    calls: number;
+    cost: number;
+  }>;
+  recentLogs: Array<{
+    id: string;
+    service: string;
+    model: string;
+    costUsd: number;
+    createdAt: Date;
+  }>;
 }

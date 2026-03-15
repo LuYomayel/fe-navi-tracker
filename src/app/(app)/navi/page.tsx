@@ -62,14 +62,14 @@ export default function NaviPage() {
   const daysTogether = Math.floor((xpStats?.totalXp || 0) / 25) + 1;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/30 dark:via-indigo-950/20 dark:to-purple-950/30 p-3 sm:p-4">
+      <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Conoce a Navi <span className="text-2xl">✨</span>
+        <div className="text-center mb-4 sm:mb-8">
+          <h1 className="text-2xl sm:text-4xl font-bold text-foreground mb-1 sm:mb-2">
+            Conoce a Navi <span className="text-xl sm:text-2xl">✨</span>
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-sm sm:text-lg text-muted-foreground">
             Tu compañero emocional en el viaje hacia mejores hábitos
           </p>
         </div>
@@ -80,11 +80,11 @@ export default function NaviPage() {
             currentState
           )} text-white border-0 shadow-xl`}
         >
-          <CardContent className="p-8">
-            <div className="flex flex-col md:flex-row items-center gap-8">
+          <CardContent className="p-4 sm:p-8">
+            <div className="flex flex-col md:flex-row items-center gap-4 sm:gap-8">
               {/* Imagen de Navi */}
               <div className="relative">
-                <div className="w-40 h-40 md:w-48 md:h-48 relative">
+                <div className="w-28 h-28 sm:w-40 sm:h-40 md:w-48 md:h-48 relative">
                   {/* Efecto de brillo para estados especiales */}
                   {(currentState === "celebrating" ||
                     currentState === "happy") && (
@@ -113,22 +113,22 @@ export default function NaviPage() {
 
               {/* Información de Navi */}
               <div className="flex-1 text-center md:text-left">
-                <h2 className="text-3xl font-bold mb-4">{naviInfo.message}</h2>
-                <p className="text-lg mb-6 opacity-90">
+                <h2 className="text-xl sm:text-3xl font-bold mb-2 sm:mb-4">{naviInfo.message}</h2>
+                <p className="text-sm sm:text-lg mb-4 sm:mb-6 opacity-90">
                   {getStateDescription(currentState)}
                 </p>
 
                 {/* Estadísticas rápidas */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white/20 rounded-lg p-3">
-                    <Heart className="h-5 w-5 mb-1" />
-                    <div className="text-sm opacity-80">Relación</div>
-                    <div className="font-bold">{relationshipLevel}%</div>
+                <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                  <div className="bg-white/20 rounded-xl p-2.5 sm:p-3">
+                    <Heart className="h-4 w-4 sm:h-5 sm:w-5 mb-0.5 sm:mb-1" />
+                    <div className="text-xs sm:text-sm opacity-80">Relación</div>
+                    <div className="font-bold text-sm sm:text-base">{relationshipLevel}%</div>
                   </div>
-                  <div className="bg-white/20 rounded-lg p-3">
-                    <Calendar className="h-5 w-5 mb-1" />
-                    <div className="text-sm opacity-80">Días juntos</div>
-                    <div className="font-bold">{daysTogether}</div>
+                  <div className="bg-white/20 rounded-xl p-2.5 sm:p-3">
+                    <Calendar className="h-4 w-4 sm:h-5 sm:w-5 mb-0.5 sm:mb-1" />
+                    <div className="text-xs sm:text-sm opacity-80">Días juntos</div>
+                    <div className="font-bold text-sm sm:text-base">{daysTogether}</div>
                   </div>
                 </div>
               </div>
@@ -137,7 +137,7 @@ export default function NaviPage() {
         </Card>
 
         {/* Grid de información */}
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-3 sm:gap-6">
           {/* Estado Emocional */}
           <Card>
             <CardHeader>
@@ -262,18 +262,18 @@ export default function NaviPage() {
               <div className="space-y-4">
                 <XpBar compact={false} />
 
-                <div className="grid grid-cols-2 gap-4 text-center">
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="text-2xl font-bold text-blue-600">
+                <div className="grid grid-cols-2 gap-2 sm:gap-4 text-center">
+                  <div className="bg-muted/50 rounded-xl p-2.5 sm:p-3">
+                    <div className="text-xl sm:text-2xl font-bold text-blue-600">
                       {xpStats?.level || 1}
                     </div>
-                    <div className="text-sm text-gray-600">Nivel Actual</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">Nivel Actual</div>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="text-2xl font-bold text-green-600">
+                  <div className="bg-muted/50 rounded-xl p-2.5 sm:p-3">
+                    <div className="text-xl sm:text-2xl font-bold text-green-600">
                       {xpStats?.streak || 0}
                     </div>
-                    <div className="text-sm text-gray-600">Racha Días</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">Racha Días</div>
                   </div>
                 </div>
               </div>
@@ -291,10 +291,10 @@ export default function NaviPage() {
               {advice.map((tip, index) => (
                 <div
                   key={index}
-                  className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
+                  className="flex items-start gap-3 p-3 bg-muted/50 rounded-xl"
                 >
                   <span className="text-lg">{naviInfo.emoji}</span>
-                  <p className="text-sm text-gray-700">{tip}</p>
+                  <p className="text-sm text-muted-foreground">{tip}</p>
                 </div>
               ))}
             </div>

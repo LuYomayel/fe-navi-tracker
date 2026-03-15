@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { Upload, Edit3, Loader2 } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { PhysicalActivity, CreatePhysicalActivityDto } from "@/types";
@@ -32,6 +33,7 @@ export function CreatePhysicalActivityDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [mode, setMode] = useState<"image" | "manual">("manual");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [contextText, setContextText] = useState("");
 
   // Form data para entrada manual
   const [manualData, setManualData] = useState({
@@ -63,6 +65,7 @@ export function CreatePhysicalActivityDialog({
         date,
         screenshotUrl: selectedImage,
         source: "image",
+        ...(contextText.trim() && { context: contextText.trim() }),
       };
 
       const response = await api.physicalActivity.create(activityData);
@@ -137,6 +140,7 @@ export function CreatePhysicalActivityDialog({
 
   const resetForm = () => {
     setSelectedImage(null);
+    setContextText("");
     setManualData({
       steps: "",
       distanceKm: "",
@@ -152,7 +156,7 @@ export function CreatePhysicalActivityDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl sm:max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Registrar Actividad Física</DialogTitle>
         </DialogHeader>
@@ -182,12 +186,27 @@ export function CreatePhysicalActivityDialog({
             <Card>
               <CardContent className="pt-6">
                 <div className="space-y-4">
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-muted-foreground">
                     Sube una captura de pantalla de tu app de fitness (Strava,
                     Nike Run Club, etc.)
                   </div>
 
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <div>
+                    <Label htmlFor="activityContext">Contexto adicional (opcional)</Label>
+                    <Textarea
+                      id="activityContext"
+                      placeholder="Ej: Hoy fui al gimnasio 1 hora y despues camine 30 min, la app no cuenta bien los pasos..."
+                      value={contextText}
+                      onChange={(e) => setContextText(e.target.value)}
+                      rows={2}
+                      className="resize-none"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Agrega detalles para que la IA interprete mejor la captura
+                    </p>
+                  </div>
+
+                  <div className="border-2 border-dashed border-border rounded-xl p-6 text-center">
                     {selectedImage ? (
                       <div className="space-y-4">
                         <img
@@ -241,7 +260,7 @@ export function CreatePhysicalActivityDialog({
           {mode === "manual" && (
             <Card>
               <CardContent className="pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="steps">Pasos</Label>
                     <Input

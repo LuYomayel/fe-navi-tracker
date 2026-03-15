@@ -9,6 +9,8 @@ import {
   Check,
   Calculator,
   Bot,
+  Bookmark,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -27,6 +29,7 @@ import {
   FoodCategory as _FoodCategory,
   NutritionAnalysis,
   XpAction,
+  SavedMeal,
 } from "@/types";
 
 import { api } from "@/lib/api-client";
@@ -73,6 +76,7 @@ export function FoodAnalyzer({
     ingredients: "",
     servings: 1,
   });
+  const [contextText, setContextText] = useState("");
 
   const [selectedMealType, setSelectedMealType] = useState<MealType>(
     MealType.LUNCH
@@ -88,8 +92,79 @@ export function FoodAnalyzer({
     null
   );
 
+  // Saved meals
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [savedMeals, setSavedMeals] = useState<SavedMeal[]>([]);
+  const [_loadingSavedMeals, setLoadingSavedMeals] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  // Load saved meals when dialog opens
+  React.useEffect(() => {
+    if (isOpen) {
+      loadSavedMeals();
+    }
+  }, [isOpen]);
+
+  const loadSavedMeals = async () => {
+    try {
+      setLoadingSavedMeals(true);
+      const response = await api.savedMeals.getAll();
+      if (response.success) {
+        setSavedMeals(response.data as SavedMeal[]);
+      }
+    } catch (error) {
+      console.error("Error loading saved meals:", error);
+    } finally {
+      setLoadingSavedMeals(false);
+    }
+  };
+
+  const handleQuickAddSavedMeal = async (meal: SavedMeal) => {
+    try {
+      const data: NutritionAnalysis = {
+        id: "default",
+        userId: "default",
+        date: getDateKey(selectedDate),
+        mealType: meal.mealType,
+        foods: meal.foods,
+        totalCalories: meal.totalCalories,
+        macronutrients: meal.macronutrients,
+        aiConfidence: 1.0,
+        savedMealId: meal.id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const apiResponse = await api.nutrition.createAnalysis(data);
+      if (!apiResponse.success) {
+        throw Error(apiResponse.message || "Error al guardar");
+      }
+
+      // Mark meal as used
+      await api.savedMeals.use(meal.id);
+
+      await api.xp.addXp({
+        action: XpAction.NUTRITION_LOG,
+        xpAmount: 15,
+        description: "Registrar una comida (plantilla guardada)",
+      });
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("nutrition-log"));
+      }
+
+      toast.success(`${meal.name} agregada correctamente`);
+      handleReset();
+      onClose();
+      onAnalysisSaved?.();
+    } catch (error) {
+      console.error("Error adding saved meal:", error);
+      toast.error("Error", error instanceof Error ? error.message : "Error desconocido");
+    }
+  };
 
   const handleMethodSelection = (method: AnalysisMethod) => {
     setAnalysisMethod(method);
@@ -139,6 +214,7 @@ export function FoodAnalyzer({
         ingredients: manualData.ingredients,
         servings: manualData.servings,
         mealType: selectedMealType,
+        ...(contextText.trim() && { context: contextText.trim() }),
       });
 
       console.log("🔍 Resultado de análisis manual con IA:", analysisData);
@@ -190,6 +266,7 @@ export function FoodAnalyzer({
       const analysisData = await api.analyzeFood.analyzeImage({
         image: selectedImage,
         mealType: selectedMealType,
+        ...(contextText.trim() && { context: contextText.trim() }),
       });
 
       const result: AnalysisResult = {
@@ -293,13 +370,26 @@ export function FoodAnalyzer({
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      // return;
-      // Guardar en base de datos
       const apiResponse = await api.nutrition.createAnalysis(data);
 
-      console.log("🔍 API Response:", apiResponse);
       if (!apiResponse.success) {
-        throw Error(apiResponse.message || "Error al guardar la wea");
+        throw Error(apiResponse.message || "Error al guardar");
+      }
+
+      // Save as meal template if requested
+      if (saveAsTemplate && templateName.trim()) {
+        try {
+          await api.savedMeals.create({
+            name: templateName.trim(),
+            mealType: resultToSave.mealType,
+            foods: resultToSave.foods,
+            totalCalories: resultToSave.totalCalories,
+            macronutrients: resultToSave.macronutrients,
+          });
+          toast.success("Comida guardada como plantilla");
+        } catch (err) {
+          console.error("Error saving meal template:", err);
+        }
       }
 
       const expResponse = await api.xp.addXp({
@@ -341,6 +431,9 @@ export function FoodAnalyzer({
       ingredients: "",
       servings: 1,
     });
+    setContextText("");
+    setSaveAsTemplate(false);
+    setTemplateName("");
     setAnalysisResult(null);
     setEditableResult(null);
     setAdjustmentPercentage(0);
@@ -365,7 +458,7 @@ export function FoodAnalyzer({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl sm:max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
@@ -414,6 +507,35 @@ export function FoodAnalyzer({
                   </div>
                 </Button>
               </div>
+
+              {/* Saved meals quick-add */}
+              {savedMeals.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Star className="h-4 w-4 text-amber-500" />
+                    <h4 className="font-medium text-sm">Comidas guardadas</h4>
+                  </div>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {savedMeals.map((meal) => (
+                      <button
+                        key={meal.id}
+                        onClick={() => handleQuickAddSavedMeal(meal)}
+                        className="w-full flex items-center justify-between p-3 bg-secondary/50 hover:bg-secondary rounded-xl transition-colors text-left"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">{meal.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {meal.totalCalories} kcal · P:{meal.macronutrients.protein.toFixed(0)}g C:{meal.macronutrients.carbs.toFixed(0)}g G:{meal.macronutrients.fat.toFixed(0)}g
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground ml-2">
+                          {meal.timesUsed}x
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -497,7 +619,22 @@ export function FoodAnalyzer({
                       </div>
                     </div>
 
-                    <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                    <div>
+                      <Label htmlFor="manualContext">Contexto adicional (opcional)</Label>
+                      <Textarea
+                        id="manualContext"
+                        placeholder="Ej: Es una porcion chica, uso aceite de oliva spray, la carne es magra..."
+                        value={contextText}
+                        onChange={(e) => setContextText(e.target.value)}
+                        rows={2}
+                        className="resize-none"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Agrega detalles extra para que la IA sea mas precisa
+                      </p>
+                    </div>
+
+                    <div className="bg-muted/50 p-3 rounded-lg">
                       <h5 className="font-medium mb-2 text-sm">
                         Ejemplos de descripciones:
                       </h5>
@@ -568,6 +705,21 @@ export function FoodAnalyzer({
                         </option>
                       ))}
                     </select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="imageContext">Contexto adicional (opcional)</Label>
+                    <Textarea
+                      id="imageContext"
+                      placeholder="Ej: Son 2 claras y 1 huevo entero, el pan es integral, el cafe tiene leche descremada..."
+                      value={contextText}
+                      onChange={(e) => setContextText(e.target.value)}
+                      rows={2}
+                      className="resize-none"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Agrega detalles que la IA no pueda ver en la foto para un analisis mas preciso
+                    </p>
                   </div>
                 </div>
               </div>
@@ -949,6 +1101,34 @@ export function FoodAnalyzer({
                 </div>
               </div>
 
+              {/* Save as template option */}
+              <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={saveAsTemplate}
+                    onChange={(e) => setSaveAsTemplate(e.target.checked)}
+                    className="w-4 h-4 rounded"
+                  />
+                  <div className="flex items-center gap-2">
+                    <Bookmark className="h-4 w-4 text-amber-600" />
+                    <span className="text-sm font-medium">Guardar como plantilla</span>
+                  </div>
+                </label>
+                {saveAsTemplate && (
+                  <div className="mt-3">
+                    <Input
+                      placeholder="Nombre de la comida (ej: Desayuno clasico)"
+                      value={templateName}
+                      onChange={(e) => setTemplateName(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Podras agregar esta comida rapidamente en el futuro sin volver a analizarla
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -958,7 +1138,7 @@ export function FoodAnalyzer({
                   Volver a resultados
                 </Button>
                 <Button onClick={handleSave} className="flex-1">
-                  Guardar análisis final
+                  Guardar analisis final
                 </Button>
               </div>
             </div>

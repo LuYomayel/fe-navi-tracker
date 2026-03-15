@@ -214,7 +214,7 @@ Ya puedes empezar a trackear estos hábitos en tu calendario semanal. ¿Te gusta
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl h-[600px] flex flex-col">
+      <DialogContent className="sm:max-w-2xl h-[80vh] sm:h-[600px] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Bot className="h-5 w-5" />
