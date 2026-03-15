@@ -128,8 +128,8 @@ export function StreakWidget({
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {/* Racha de Hábitos */}
-          <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+          {/* Racha de Habitos */}
+          <div className="flex items-center justify-between p-3 bg-blue-500/10 dark:bg-blue-500/15 rounded-xl">
             <div className="flex items-center gap-3">
               <Target className="w-5 h-5 text-blue-500" />
               <div>
@@ -149,8 +149,8 @@ export function StreakWidget({
             </div>
           </div>
 
-          {/* Racha de Nutrición */}
-          <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+          {/* Racha de Nutricion */}
+          <div className="flex items-center justify-between p-3 bg-green-500/10 dark:bg-green-500/15 rounded-xl">
             <div className="flex items-center gap-3">
               <Utensils className="w-5 h-5 text-green-500" />
               <div>
@@ -170,8 +170,8 @@ export function StreakWidget({
             </div>
           </div>
 
-          {/* Racha de Actividad Física */}
-          <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+          {/* Racha de Actividad Fisica */}
+          <div className="flex items-center justify-between p-3 bg-purple-500/10 dark:bg-purple-500/15 rounded-xl">
             <div className="flex items-center gap-3">
               <Activity className="w-5 h-5 text-purple-500" />
               <div>

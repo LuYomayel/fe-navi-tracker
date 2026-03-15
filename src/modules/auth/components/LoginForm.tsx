@@ -13,106 +13,105 @@ export default function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    console.log("🔐 Iniciando proceso de login...");
-
     const success = await login({ email, password });
-
     if (success) {
-      console.log("✅ Login exitoso, redirigiendo...");
       router.push("/");
     }
   };
 
   return (
-    <div className="w-full max-w-md mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white">
-          Iniciar Sesión
-        </h2>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          Accede a tu cuenta de NaviTracker
-        </p>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="w-full max-w-sm">
+        {/* Logo / Brand */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
+            <span className="text-3xl">🧭</span>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight">NaviTracker</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Tu companero de habitos saludables
+          </p>
+        </div>
 
-      <form className="space-y-6" onSubmit={handleSubmit}>
-        <div className="space-y-4">
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        {/* Login Card */}
+        <div className="rounded-2xl bg-card p-6 shadow-sm">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-3">
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium mb-1.5"
+                >
+                  Email
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  className="w-full h-11 px-3.5 rounded-xl bg-secondary border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+                  placeholder="tu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium mb-1.5"
+                >
+                  Contrasena
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  className="w-full h-11 px-3.5 rounded-xl bg-secondary border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+                  placeholder="Tu contrasena"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div className="text-sm text-center text-destructive bg-destructive/10 rounded-xl px-4 py-2.5">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50"
             >
-              Email
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-              placeholder="Dirección de email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium ">
-              Contraseña
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              className="mt-1 appearance-none relative block w-full px-3 py-2 border rounded-md focus:outline-none "
-              placeholder="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  Ingresando...
+                </span>
+              ) : (
+                "Iniciar Sesion"
+              )}
+            </button>
+          </form>
         </div>
 
-        {error && (
-          <div className="text-red-600 text-sm text-center  p-3 rounded-md">
-            {error}
-          </div>
-        )}
-
-        <div>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md "
-          >
-            {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
-          </button>
-        </div>
-      </form>
-
-      <div className="mt-6 text-center">
-        <p className="text-gray-600 dark:text-gray-400">
-          ¿No tienes una cuenta?{" "}
+        {/* Register link */}
+        <p className="text-center text-sm text-muted-foreground mt-6">
+          No tenes cuenta?{" "}
           <a
             href="/auth/register"
-            className="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 font-medium"
+            className="text-primary font-medium hover:underline"
           >
-            Regístrate aquí
+            Registrate
           </a>
         </p>
-      </div>
-
-      <div className="mt-4 text-center">
-        <div className="text-xs  dark:text-gray-400 bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
-          <p>
-            <strong>Usuario de prueba:</strong>
-          </p>
-          <p>Email: test@ejemplo.com</p>
-          <p>Contraseña: 123456</p>
-        </div>
       </div>
     </div>
   );

@@ -4,32 +4,17 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
-  Menu,
-  Apple,
   LogOut,
   Moon,
   Sun,
-  Calendar,
+  LayoutDashboard,
   Target,
+  Apple,
   Heart,
 } from "lucide-react";
 import { useAuthStore } from "../../auth/store";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,19 +31,15 @@ interface AppLayoutProps {
 
 export default function AppLayout({ children }: AppLayoutProps) {
   const [darkMode, setDarkMode] = useState(false);
-  const [sheetOpen, setSheetOpen] = useState(false);
-
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
 
-  // Inicializar tema
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     const isDark =
       savedTheme === "dark" ||
       (!savedTheme &&
         window.matchMedia("(prefers-color-scheme: dark)").matches);
-
     setDarkMode(isDark);
     document.documentElement.classList.toggle("dark", isDark);
   }, []);
@@ -70,29 +51,30 @@ export default function AppLayout({ children }: AppLayoutProps) {
     document.documentElement.classList.toggle("dark", newDarkMode);
   };
 
-  const handleLogout = () => {
-    logout();
-    setSheetOpen(false);
-  };
-
   const menuItems = [
     {
-      icon: Calendar,
-      label: "Dashboard",
+      icon: LayoutDashboard,
+      label: "Inicio",
       path: "/dashboard",
-      active: pathname === "/dashboard",
+      active: pathname === "/dashboard" || pathname === "/",
     },
     {
       icon: Target,
-      label: "Hábitos",
+      label: "Habitos",
       path: "/habits",
       active: pathname === "/habits",
     },
     {
       icon: Apple,
-      label: "Nutrición",
+      label: "Nutricion",
       path: "/nutrition",
       active: pathname === "/nutrition",
+    },
+    {
+      icon: Heart,
+      label: "Navi",
+      path: "/navi",
+      active: pathname === "/navi",
     },
   ];
 
@@ -105,175 +87,127 @@ export default function AppLayout({ children }: AppLayoutProps) {
   };
 
   return (
-    <TooltipProvider>
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="container flex h-14 items-center">
-            {/* Menú móvil */}
-            <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Abrir menú</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[240px] sm:w-[300px]">
-                <SheetHeader>
-                  <SheetTitle>NaviTracker</SheetTitle>
-                  <SheetDescription>
-                    Navega por las diferentes secciones de la aplicación
-                  </SheetDescription>
-                </SheetHeader>
+    <div className="min-h-screen bg-background">
+      {/* iOS-style Header */}
+      <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-xl backdrop-saturate-150 border-b border-border/50">
+        <div className="flex h-12 items-center justify-between px-4 max-w-5xl mx-auto">
+          {/* Logo */}
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <span className="text-lg font-semibold tracking-tight">
+              NaviTracker
+            </span>
+          </Link>
 
-                {/* XP en menú móvil */}
-                <div className="mt-4 mb-4">
-                  <XpGlobalIndicator />
-                </div>
-                <nav className="flex flex-col space-y-2 mt-4">
-                  {menuItems.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <Link
-                        key={item.path}
-                        href={item.path}
-                        onClick={() => setSheetOpen(false)}
-                        className={`flex items-center space-x-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                          item.active
-                            ? "bg-accent text-accent-foreground"
-                            : "hover:bg-accent hover:text-accent-foreground"
-                        }`}
-                      >
-                        <Icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </Link>
-                    );
-                  })}
-                </nav>
-                <div className="mt-6 pt-6 border-t">
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center gap-1">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.path}
+                  href={item.path}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                    item.active
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Right controls */}
+          <div className="flex items-center gap-1">
+            <XpGlobalIndicator compact className="hidden sm:flex" />
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="h-9 w-9 rounded-full"
+            >
+              {darkMode ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Button>
+
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="w-full justify-start text-destructive hover:text-destructive"
-                    onClick={handleLogout}
+                    className="relative h-8 w-8 rounded-full"
                   >
-                    <LogOut className="h-4 w-4 mr-3" />
-                    Cerrar Sesión
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src="" alt={user.name} />
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                        {getInitials(user.name)}
+                      </AvatarFallback>
+                    </Avatar>
                   </Button>
-                </div>
-              </SheetContent>
-            </Sheet>
-
-            {/* Logo */}
-            <div className="mr-4 hidden md:flex">
-              <Link
-                href="/dashboard"
-                className="mr-6 flex items-center space-x-2"
-              >
-                <span className="hidden font-bold sm:inline-block">
-                  NaviTracker
-                </span>
-              </Link>
-            </div>
-
-            {/* Navegación desktop */}
-            <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-              {menuItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.path}
-                    href={item.path}
-                    className={`flex items-center space-x-2 transition-colors hover:text-foreground/80 ${
-                      item.active ? "text-foreground" : "text-foreground/60"
-                    }`}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  className="w-56 rounded-xl"
+                  align="end"
+                  forceMount
+                >
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col gap-1">
+                      <p className="text-sm font-semibold">{user.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={logout}
+                    className="text-destructive focus:text-destructive"
                   >
-                    <Icon className="h-4 w-4" />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-
-            <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-              <div className="w-full flex-1 md:w-auto md:flex-none">
-                {/* Aquí podrías agregar un search input en el futuro */}
-              </div>
-
-              {/* Controles del header */}
-              <nav className="flex items-center space-x-2">
-                {/* Indicador XP Global */}
-                <XpGlobalIndicator compact className="hidden sm:flex" />
-
-                {/* Toggle tema */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={toggleTheme}>
-                      {darkMode ? (
-                        <Sun className="h-[1.2rem] w-[1.2rem]" />
-                      ) : (
-                        <Moon className="h-[1.2rem] w-[1.2rem]" />
-                      )}
-                      <span className="sr-only">Cambiar tema</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{darkMode ? "Modo claro" : "Modo oscuro"}</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                <Link href="/navi">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Heart className="h-4 w-4" />
-                    Ver a Navi
-                  </Button>
-                </Link>
-                {/* Usuario */}
-                {user && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="relative h-8 w-8 rounded-full"
-                      >
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src="" alt={user.name} />
-                          <AvatarFallback>
-                            {getInitials(user.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      className="w-56"
-                      align="end"
-                      forceMount
-                    >
-                      <DropdownMenuLabel className="font-normal">
-                        <div className="flex flex-col space-y-1">
-                          <p className="text-sm font-medium leading-none">
-                            {user.name}
-                          </p>
-                          <p className="text-xs leading-none text-muted-foreground">
-                            {user.email}
-                          </p>
-                        </div>
-                      </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleLogout}>
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>Cerrar sesión</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </nav>
-            </div>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Cerrar sesion
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* Contenido principal */}
-        <main className="flex-1 p-4">{children}</main>
-      </div>
-    </TooltipProvider>
+      {/* Main Content */}
+      <main className="max-w-5xl mx-auto px-4 py-4 pb-24 md:pb-6">
+        {children}
+      </main>
+
+      {/* iOS-style Bottom Tab Bar (mobile only) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl backdrop-saturate-150 border-t border-border/50 pb-safe">
+        <div className="flex items-center justify-around h-16 px-2">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.path}
+                href={item.path}
+                className={`flex flex-col items-center justify-center gap-0.5 min-w-[64px] py-1 transition-colors ${
+                  item.active
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                }`}
+              >
+                <Icon
+                  className={`h-6 w-6 ${item.active ? "stroke-[2.5]" : ""}`}
+                />
+                <span className="text-[10px] font-medium">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+    </div>
   );
 }

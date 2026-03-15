@@ -101,7 +101,7 @@ export function WeightWidget({
         {/* Métricas adicionales */}
         <div className="grid grid-cols-2 gap-3 text-center">
           {latest.bmi && (
-            <div className="p-2 rounded-lg bg-gray-50/50  ">
+            <div className="p-2 rounded-lg bg-muted/50  ">
               <div className="font-medium">{latest.bmi}</div>
               <div className="text-xs text-muted-foreground">BMI</div>
               {classification && (
@@ -111,21 +111,21 @@ export function WeightWidget({
           )}
 
           {latest.bodyFatPercentage && (
-            <div className="p-2 rounded-lg bg-gray-50/50">
+            <div className="p-2 rounded-lg bg-muted/50">
               <div className="font-medium">{latest.bodyFatPercentage}%</div>
               <div className="text-xs text-muted-foreground">Grasa</div>
             </div>
           )}
 
           {latest.score && !latest.bodyFatPercentage && (
-            <div className="p-2 rounded-lg bg-gray-50/50">
+            <div className="p-2 rounded-lg bg-muted/50">
               <div className="font-medium">{latest.score}</div>
               <div className="text-xs text-muted-foreground">Score</div>
             </div>
           )}
 
           {latest.muscleMassPercentage && !latest.bmi && (
-            <div className="p-2 bg-gray-50/50 rounded-lg">
+            <div className="p-2 bg-muted/50 rounded-lg">
               <div className="font-medium">{latest.muscleMassPercentage}%</div>
               <div className="text-xs text-muted-foreground">Músculo</div>
             </div>

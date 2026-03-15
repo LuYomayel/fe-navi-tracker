@@ -7,33 +7,23 @@ import { useAuthStore } from "@/modules/auth/store";
 import { useNaviTrackerStore } from "@/store";
 import { useInitializeStore } from "@/hooks/useInitializeStore";
 
-// Componentes de shadcn/ui
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-
-// Iconos de Lucide
-import {
-  Calendar,
-  TrendingUp,
-  Apple,
-  Activity,
-  Plus,
-  ChevronRight,
-  BarChart3,
-  Clock,
-} from "lucide-react";
-import { getDateKey } from "@/lib/utils";
 import { DailyReflectionWidget } from "@/components/calendar/DailyReflectionWidget";
 import { NaviCompanion } from "@/components/navi/NaviCompanion";
 import { XpDashboard } from "@/components/xp/XpDashboard";
 import { StreakWidget } from "@/components/xp/StreakWidget";
 import { WeightWidget } from "@/components/nutrition/WeightWidget";
+
+import {
+  Calendar,
+  TrendingUp,
+  Apple,
+  Activity,
+  ChevronRight,
+  BarChart3,
+  Clock,
+  Flame,
+} from "lucide-react";
+import { getDateKey } from "@/lib/utils";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -48,28 +38,25 @@ export default function DashboardPage() {
     preferences,
   } = useNaviTrackerStore();
 
-  // Redireccionar si no está autenticado
   useEffect(() => {
     if (isAuthenticated && !user) {
       router.push("/auth/login");
     }
   }, [user, isAuthenticated, router]);
 
-  // Mostrar loading mientras se inicializa
   if (!isAuthenticated || !user || isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">
-            {isLoading ? "Cargando tu panel de control..." : "Cargando..."}
+          <div className="h-8 w-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-sm text-muted-foreground">
+            {isLoading ? "Cargando tu panel..." : "Cargando..."}
           </p>
         </div>
       </div>
     );
   }
 
-  // Estadísticas de hoy
   const today = new Date();
   const todayKey = getDateKey(today);
   const todayNutrition = nutritionAnalyses.filter((n) => n.date === todayKey);
@@ -78,13 +65,11 @@ export default function DashboardPage() {
     0
   );
 
-  // Para actividades, usamos las que fueron creadas hoy (ya que no tienen date específico)
   const todayActivities = activities.filter((a) => {
     const activityDate = new Date(a.createdAt);
     return getDateKey(activityDate) === todayKey;
   });
 
-  // Estadísticas de la semana
   const weekStart = new Date(today);
   weekStart.setDate(weekStart.getDate() - weekStart.getDay());
 
@@ -109,20 +94,72 @@ export default function DashboardPage() {
       : 0;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">¡Hola, {user.name}! 👋</h1>
-        <p className="text-muted-foreground mt-2">
-          Aquí tienes tu resumen de hábitos y progreso de hoy
+    <div className="space-y-6 animate-fade-in">
+      {/* Greeting */}
+      <div className="pt-2">
+        <h1 className="text-2xl font-bold tracking-tight">
+          Hola, {user.name}
+        </h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Tu resumen de hoy
         </p>
       </div>
 
-      {/* Dashboards de XP y Rachas */}
-      <div className="grid gap-6 md:grid-cols-2">
+      {/* Quick Stats Grid */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-2xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 dark:from-blue-500/20 dark:to-blue-600/10 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="h-8 w-8 rounded-full bg-blue-500/15 flex items-center justify-center">
+              <Flame className="h-4 w-4 text-blue-500" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold">{totalCaloriesToday}</div>
+          <div className="text-xs text-muted-foreground">
+            kcal - {todayNutrition.length} comidas
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-gradient-to-br from-green-500/10 to-green-600/5 dark:from-green-500/20 dark:to-green-600/10 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="h-8 w-8 rounded-full bg-green-500/15 flex items-center justify-center">
+              <Activity className="h-4 w-4 text-green-500" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold">{todayActivities.length}</div>
+          <div className="text-xs text-muted-foreground">
+            habitos completados
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-gradient-to-br from-orange-500/10 to-orange-600/5 dark:from-orange-500/20 dark:to-orange-600/10 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="h-8 w-8 rounded-full bg-orange-500/15 flex items-center justify-center">
+              <TrendingUp className="h-4 w-4 text-orange-500" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold">{averageCaloriesWeek}</div>
+          <div className="text-xs text-muted-foreground">
+            kcal/dia promedio
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-gradient-to-br from-purple-500/10 to-purple-600/5 dark:from-purple-500/20 dark:to-purple-600/10 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="h-8 w-8 rounded-full bg-purple-500/15 flex items-center justify-center">
+              <BarChart3 className="h-4 w-4 text-purple-500" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold">{bodyAnalyses.length}</div>
+          <div className="text-xs text-muted-foreground">
+            analisis corporales
+          </div>
+        </div>
+      </div>
+
+      {/* XP & Weight/Streak */}
+      <div className="grid gap-4 md:grid-cols-2">
         <XpDashboard />
-        {/* Widgets de Peso y Rachas */}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
           <WeightWidget
             entries={weightEntries}
             onAddWeight={() => router.push("/nutrition?tab=weight")}
@@ -132,170 +169,63 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Resumen de estadísticas principales */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Calorías Hoy</CardTitle>
-            <Apple className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalCaloriesToday}</div>
-            <p className="text-xs text-muted-foreground">
-              {todayNutrition.length} comidas registradas
-            </p>
-          </CardContent>
-        </Card>
+      {/* Quick Actions */}
+      <div className="grid gap-3 md:grid-cols-2">
+        <Link href="/habits" className="block">
+          <div className="rounded-2xl bg-card p-4 hover:bg-accent/50 active:scale-[0.98] transition-all">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                  <Calendar className="h-5 w-5 text-blue-500" />
+                </div>
+                <div>
+                  <div className="font-semibold text-sm">
+                    Seguimiento de Habitos
+                  </div>
+                  <div className="text-xs text-muted-foreground flex items-center gap-2">
+                    <span>{todayActivities.length} hoy</span>
+                    <span className="text-border">|</span>
+                    <span className="flex items-center gap-0.5">
+                      <Clock className="h-3 w-3" />
+                      {weeklyActivities.length} esta semana
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </div>
+          </div>
+        </Link>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Actividades Hoy
-            </CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{todayActivities.length}</div>
-            <p className="text-xs text-muted-foreground">hábitos completados</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Promedio Semanal
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{averageCaloriesWeek}</div>
-            <p className="text-xs text-muted-foreground">calorías por día</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Análisis Corporales
-            </CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{bodyAnalyses.length}</div>
-            <p className="text-xs text-muted-foreground">registros totales</p>
-          </CardContent>
-        </Card>
+        <Link href="/nutrition" className="block">
+          <div className="rounded-2xl bg-card p-4 hover:bg-accent/50 active:scale-[0.98] transition-all">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+                  <Apple className="h-5 w-5 text-green-500" />
+                </div>
+                <div>
+                  <div className="font-semibold text-sm">
+                    Nutricion y Salud
+                  </div>
+                  <div className="text-xs text-muted-foreground flex items-center gap-2">
+                    <span>{totalCaloriesToday} kcal hoy</span>
+                    <span className="text-border">|</span>
+                    <span className="flex items-center gap-0.5">
+                      <TrendingUp className="h-3 w-3" />
+                      {averageCaloriesWeek} kcal/dia
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </div>
+          </div>
+        </Link>
       </div>
 
-      {/* Secciones principales */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Sección de Hábitos */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Seguimiento de Hábitos
-                </CardTitle>
-                <CardDescription>
-                  Gestiona tus hábitos diarios y mantén la constancia
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-              <div>
-                <p className="font-medium">Actividades de hoy</p>
-                <p className="text-sm text-muted-foreground">
-                  {todayActivities.length} completadas
-                </p>
-              </div>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Clock className="h-4 w-4 mr-1" />
-                Últimos 7 días: {weeklyActivities.length}
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <Button asChild className="flex-1">
-                <Link href="/habits">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Ver Calendario
-                </Link>
-              </Button>
-              <Button variant="outline" size="icon">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Sección de Nutrición */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Apple className="h-5 w-5" />
-                  Nutrición y Salud
-                </CardTitle>
-                <CardDescription>
-                  Analiza tu alimentación y progreso físico
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-              <div>
-                <p className="font-medium">Calorías de hoy</p>
-                <p className="text-sm text-muted-foreground">
-                  {totalCaloriesToday} kcal en {todayNutrition.length} comidas
-                </p>
-              </div>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <TrendingUp className="h-4 w-4 mr-1" />
-                Promedio: {averageCaloriesWeek} kcal/día
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <Button asChild className="flex-1">
-                <Link href="/nutrition">
-                  <Apple className="h-4 w-4 mr-2" />
-                  Ver Análisis
-                </Link>
-              </Button>
-              <Button variant="outline" size="icon">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Widget de Reflexión Diaria */}
+      {/* Daily Reflection */}
       <DailyReflectionWidget />
-
-      {/* Acceso rápido */}
-      <div className="flex flex-wrap gap-2">
-        <Button variant="outline" asChild>
-          <Link href="/habits">
-            <Calendar className="h-4 w-4 mr-2" />
-            Ir a Hábitos
-            <ChevronRight className="h-4 w-4 ml-2" />
-          </Link>
-        </Button>
-        <Button variant="outline" asChild>
-          <Link href="/nutrition">
-            <Apple className="h-4 w-4 mr-2" />
-            Ir a Nutrición
-            <ChevronRight className="h-4 w-4 ml-2" />
-          </Link>
-        </Button>
-      </div>
 
       <NaviCompanion />
     </div>
