@@ -61,7 +61,7 @@ export interface AddXpRequest {
 // Configuraciones de XP por acción
 export const XP_VALUES = {
   HABIT_COMPLETE: 10,
-  NUTRITION_LOG: 5,
+  NUTRITION_LOG: 15,
   DAILY_COMMENT: 15,
 } as const;
 

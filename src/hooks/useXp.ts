@@ -56,11 +56,9 @@ export function useXp() {
       habitName: string,
       date?: string
     ): Promise<LevelUpResponse | null> => {
-      console.log("user", user);
       if (!user) return null;
 
       try {
-        console.log("adding habit xp", habitName, date);
         const response = await api.xp.addHabitXp({ habitName, date });
         const result = response.data as LevelUpResponse;
 
@@ -139,7 +137,7 @@ export function useXp() {
     [user, loadXpStats]
   );
 
-  // Mostrar notificación de XP ganada
+  // Mostrar notificación de XP ganada y disparar eventos de milestone
   const showXpNotification = useCallback(
     (result: LevelUpResponse, actionName: string) => {
       if (result.leveledUp) {
@@ -150,18 +148,36 @@ export function useXp() {
           duration: 5000,
         });
 
+        // Disparar evento de level-up para Navi
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("level-up"));
+        }
+
         // Resetear el estado de level up después de unos segundos
         setTimeout(() => setIsLevelingUp(false), 3000);
       } else {
         const streakText =
           result.streakBonus > 0
-            ? ` (${result.streakBonus} bonus de racha)`
+            ? ` (+${result.streakBonus} bonus de racha)`
             : "";
         toast({
           title: "✨ XP Ganada",
           description: `${actionName}: +${result.xpEarned} XP${streakText}`,
           duration: 3000,
         });
+      }
+
+      // Disparar eventos de milestone de racha
+      if (typeof window !== "undefined") {
+        if (result.streakBonus > 0) {
+          window.dispatchEvent(new Event("streak-bonus"));
+        }
+        if (result.streak === 3) {
+          window.dispatchEvent(new Event("streak-3-days"));
+        }
+        if (result.streak === 7) {
+          window.dispatchEvent(new Event("streak-7-days"));
+        }
       }
 
       if (result.streak > 1) {
