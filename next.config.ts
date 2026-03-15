@@ -13,8 +13,8 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: process.env.NODE_ENV === "production",
   },
 
-  // Configuración de salida condicional
-  output: "standalone",
+  // Configuración de salida: standalone para VPS, omitir para Netlify
+  ...(process.env.NETLIFY ? {} : { output: "standalone" as const }),
 
   // Configuración para builds rápidos en producción
   productionBrowserSourceMaps: false, // ahorra RAM
@@ -31,10 +31,7 @@ const nextConfig: NextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // Turbopack config (Next.js 16 default bundler)
-  turbopack: {},
-
-  // Optimizaciones de webpack (fallback cuando se usa --webpack)
+  // Optimizaciones de webpack
   webpack: (config, { dev, isServer }) => {
     // Optimizaciones de memoria
     config.optimization = {
