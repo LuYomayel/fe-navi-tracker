@@ -381,17 +381,21 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           return;
         }
 
-        const duplicatedActivity: Activity = {
-          ...activityToDuplicate,
-          id: generateId(),
-          name: `${activityToDuplicate.name} (Copia)`,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-
         try {
+          const { id: _id, createdAt: _c, updatedAt: _u, completions: _comp, user: _user, userId: _uid, ...activityData } = activityToDuplicate;
+          const response = await api.activities.create({
+            ...activityData,
+            name: `${activityToDuplicate.name} (Copia)`,
+          });
+
+          if (!response.success) {
+            toast.error("Error", "No se pudo duplicar el hábito");
+            return;
+          }
+
+          const newActivity = response.data as Activity;
           set((state) => ({
-            activities: [...state.activities, duplicatedActivity],
+            activities: [...state.activities, newActivity],
           }));
 
           toast.success(
@@ -399,7 +403,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             `Se ha creado una copia de "${activityToDuplicate.name}"`
           );
         } catch (error) {
-          console.error("❌ Error duplicando actividad:", error);
+          console.error("Error duplicando actividad:", error);
           toast.error(
             "Error",
             "No se pudo duplicar el hábito. Inténtalo de nuevo."
@@ -442,6 +446,11 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
 
       restoreActivity: async (id) => {
         try {
+          const response = await api.activities.restore(id);
+          if (!response.success) {
+            toast.error("Error", response.message);
+            return;
+          }
           set((state) => ({
             activities: state.activities.map((activity) =>
               activity.id === id
@@ -460,7 +469,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             "El hábito se ha restaurado exitosamente"
           );
         } catch (error) {
-          console.error("❌ Error restaurando actividad:", error);
+          console.error("Error restaurando actividad:", error);
           toast.error(
             "Error",
             "No se pudo restaurar el hábito. Inténtalo de nuevo."
@@ -578,7 +587,10 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
 
       // Note actions
       addOrUpdateNote: async (date, content, mood) => {
-        const dateKey = date.toISOString().split("T")[0];
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const dateKey = `${year}-${month}-${day}`;
 
         const note: DailyNote = {
           id: generateId(),
@@ -620,9 +632,25 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
       },
 
       deleteNote: async (date) => {
-        const dateKey = date.toISOString().split("T")[0];
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const dateKey = `${year}-${month}-${day}`;
 
         try {
+          const state = get();
+          const noteToDelete = state.dailyNotes.find(
+            (note) => note.date === dateKey
+          );
+
+          if (noteToDelete?.id) {
+            const response = await api.notes.delete(noteToDelete.id);
+            if (!response.success) {
+              toast.error("Error", "No se pudo eliminar la nota");
+              return;
+            }
+          }
+
           set((state) => ({
             dailyNotes: state.dailyNotes.filter(
               (note) => note.date !== dateKey
@@ -631,7 +659,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
 
           toast.success("Nota eliminada", "La reflexión se ha eliminado");
         } catch (error) {
-          console.error("❌ Error eliminando nota:", error);
+          console.error("Error eliminando nota:", error);
           toast.error(
             "Error",
             "No se pudo eliminar la nota. Inténtalo de nuevo."
@@ -679,22 +707,13 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
         const day = String(date.getDate()).padStart(2, "0");
         const dateKey = `${year}-${month}-${day}`;
 
-        const note: DailyNote = {
-          id: generateId(),
-          date: dateKey,
-          content: customComment,
-          mood: mood,
-          predefinedComments: selectedComments.map((c) => c.id),
-          customComment,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-
         try {
           const noteToSave: any = {
             date: dateKey,
             content: customComment,
             mood: mood,
+            predefinedComments: selectedComments.map((c: any) => c.id),
+            customComment,
           };
           const response = await api.notes.create(noteToSave);
 

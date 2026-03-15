@@ -14,12 +14,12 @@ export interface User {
   streak?: number;
   lastStreakDate?: string;
   // Preferencias del usuario
-  preferences?: UserPreferences;
+  preferences?: UserUIPreferences;
   // Suscripción/Plan
   planExpiresAt?: Date;
 }
 
-export interface UserPreferences {
+export interface UserUIPreferences {
   // Configuración general
   language: "es" | "en";
   darkMode: boolean;

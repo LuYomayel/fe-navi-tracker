@@ -23,7 +23,6 @@ import {
   ActivityLevel,
   BodyAnalysisApiResponse,
   BodyAnalysis,
-  NutritionAnalysis,
 } from "@/types";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";

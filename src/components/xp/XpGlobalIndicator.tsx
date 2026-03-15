@@ -72,16 +72,16 @@ export function XpGlobalIndicator({
           )}
 
           {/* Mostrar rachas específicas si están disponibles */}
-          {(xpStats as any).streaks && (
+          {xpStats.streaks && (
             <div className="flex items-center gap-2 text-xs">
               <span className="text-blue-600">
-                H:{(xpStats as any).streaks.habits.streak}
+                H:{xpStats.streaks.habits.streak}
               </span>
               <span className="text-green-600">
-                N:{(xpStats as any).streaks.nutrition.streak}
+                N:{xpStats.streaks.nutrition.streak}
               </span>
               <span className="text-purple-600">
-                A:{(xpStats as any).streaks.activity.streak}
+                A:{xpStats.streaks.activity.streak}
               </span>
             </div>
           )}

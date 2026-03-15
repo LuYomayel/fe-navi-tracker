@@ -650,6 +650,9 @@ export interface WeightStats {
   averageBMI?: number;
   averageBFR?: number;
   timeframe: "week" | "month" | "year";
+  trend?: "increasing" | "decreasing" | "stable";
+  weightChange?: number;
+  weightChangePercentage?: number;
 }
 
 export interface CreateWeightEntryDto {
@@ -665,6 +668,12 @@ export interface CreateWeightEntryDto {
   source: "manual" | "photo" | "scale";
   aiConfidence?: number;
   notes?: string;
+}
+
+export interface BodyAnalysisTaskResponse {
+  taskId: string;
+  status: string;
+  message: string;
 }
 
 export interface CreateWeightEntryManualDto {

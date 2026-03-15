@@ -47,7 +47,7 @@ export function StreakWidget({
   }
 
   // Usar las nuevas rachas por categoría si están disponibles, sino usar la racha general
-  const streaks: StreakData = (xpStats as any).streaks || {
+  const streaks: StreakData = xpStats.streaks || {
     habits: { streak: xpStats.streak, lastDate: xpStats.lastStreakDate },
     nutrition: { streak: 0, lastDate: null },
     activity: { streak: 0, lastDate: null },

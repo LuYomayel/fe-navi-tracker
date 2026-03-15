@@ -13,11 +13,6 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: process.env.NODE_ENV === "production",
   },
 
-  eslint: {
-    // Ignorar errores de ESLint en build
-    ignoreDuringBuilds: process.env.NODE_ENV === "production",
-  },
-
   // Configuración de salida condicional
   output: "standalone",
 
@@ -36,7 +31,10 @@ const nextConfig: NextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // Optimizaciones de webpack
+  // Turbopack config (Next.js 16 default bundler)
+  turbopack: {},
+
+  // Optimizaciones de webpack (fallback cuando se usa --webpack)
   webpack: (config, { dev, isServer }) => {
     // Optimizaciones de memoria
     config.optimization = {

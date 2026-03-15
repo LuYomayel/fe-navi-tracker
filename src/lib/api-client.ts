@@ -9,7 +9,7 @@ import {
   DailyNutritionBalance,
   PhysicalActivity,
   CreatePhysicalActivityDto,
-  CreateWeightEntryDto,
+
   WeightAnalysis,
   WeightEntry,
   CreateWeightEntryManualDto,
@@ -289,6 +289,7 @@ export const api = {
       apiClient.put("/activities", { id, ...data }),
     delete: (id: string) => apiClient.delete(`/activities?id=${id}`),
     archive: (id: string) => apiClient.put(`/activities/archive/${id}`),
+    restore: (id: string) => apiClient.put(`/activities/restore/${id}`),
   },
 
   // Chat
@@ -433,8 +434,6 @@ export const api = {
 
   // Analyze Food
   analyzeFood: {
-    analyzeRecipe: (data: { recipeLink: string; mealType: MealType }) =>
-      apiClient.post<FoodAnalysisResponse>("/analyze-food/recipe", data),
     analyzeImage: (data: { image: string; mealType: MealType }) =>
       apiClient.post<FoodAnalysisResponse>("/analyze-food/image", data),
     analyzeManualFood: (data: {

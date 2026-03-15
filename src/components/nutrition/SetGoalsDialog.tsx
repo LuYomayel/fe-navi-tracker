@@ -49,7 +49,7 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
   });
 
   // Estado para mostrar el payload que se enviará
-  const [showPayloadPreview, setShowPayloadPreview] = useState(false);
+  const [_showPayloadPreview, _setShowPayloadPreview] = useState(false);
 
   // Calcular objetivos iniciales cuando se abre el modal
   useEffect(() => {

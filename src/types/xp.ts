@@ -10,6 +10,11 @@ export enum XpAction {
   PHYSICAL_ACTIVITY = "physical_activity",
 }
 
+export interface StreakInfo {
+  streak: number;
+  lastDate: string | null;
+}
+
 export interface XpStats {
   level: number;
   xp: number;
@@ -19,6 +24,11 @@ export interface XpStats {
   streak: number;
   lastStreakDate?: string;
   recentLogs: XpLog[];
+  streaks?: {
+    habits: StreakInfo;
+    nutrition: StreakInfo;
+    activity: StreakInfo;
+  };
 }
 
 export interface XpLog {
