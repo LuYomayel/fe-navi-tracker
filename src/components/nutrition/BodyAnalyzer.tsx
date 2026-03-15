@@ -30,17 +30,6 @@ import { toast } from "@/lib/toast-helper";
 import { api } from "@/lib/api-client";
 import { SetGoalsDialog } from "@/components/nutrition/SetGoalsDialog";
 
-// Tipos para la respuesta de tareas
-interface TaskInfo {
-  id: string;
-  status: "processing" | "completed" | "failed";
-  progress: number;
-  createdAt: string;
-  finishedAt: string | null;
-  error: string | null;
-  result?: any;
-}
-
 interface BodyAnalyzerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -155,11 +144,11 @@ export function BodyAnalyzer({
     setIsAnalyzing(true);
     setStep("processing");
     setTaskProgress(0);
-    setTaskStatus("creating");
+    setTaskStatus("processing");
 
     try {
-      // 🚀 Crear la tarea de análisis corporal
-      const taskResponse = await api.bodyAnalysis.create({
+      // 🚀 Llamar al endpoint sincrónico de análisis corporal
+      const response = await api.bodyAnalysis.create({
         image: selectedImages[0],
         currentWeight: formData.weight,
         targetWeight: formData.targetWeight,
@@ -170,90 +159,27 @@ export function BodyAnalyzer({
         goals: [formData.fitnessGoal],
       });
 
-      console.log("✅ Tarea de análisis creada:", taskResponse);
+      console.log("✅ Análisis corporal completado:", response);
 
-      const taskData = taskResponse.data as { taskId: string; status: string };
-      setTaskId(taskData.taskId);
-      setTaskStatus(taskData.status);
+      if (!response.success || !response.data) {
+        throw new Error("El análisis no devolvió resultados");
+      }
 
-      // Iniciar polling para consultar el estado
-      await pollTaskStatus(taskData.taskId);
+      // El endpoint ahora devuelve el resultado directamente (sincrónico)
+      await processAnalysisResult(response.data);
     } catch (error) {
-      console.error("❌ Error creando análisis:", error);
+      console.error("❌ Error en análisis:", error);
       toast.error(
         "Error en análisis",
-        "Error creando el análisis. Por favor, intenta de nuevo."
+        error instanceof Error
+          ? error.message
+          : "Error creando el análisis. Por favor, intenta de nuevo."
       );
       setStep("form");
       setTaskStatus("failed");
     } finally {
       setIsAnalyzing(false);
     }
-  };
-
-  // Función para hacer polling del estado de la tarea
-  const pollTaskStatus = async (taskId: string) => {
-    const maxAttempts = 60; // Máximo 5 minutos (60 * 5 segundos)
-    let attempts = 0;
-
-    const checkStatus = async (): Promise<void> => {
-      try {
-        attempts++;
-
-        const statusResponse = await api.tasks.getJobInfo(taskId);
-        console.log(`🔍 Estado de tarea ${taskId}:`, statusResponse);
-
-        if (!statusResponse.success) {
-          throw new Error("Error consultando estado de la tarea");
-        }
-
-        const jobInfo = statusResponse.data as TaskInfo;
-        setTaskStatus(jobInfo.status);
-        setTaskProgress(jobInfo.progress || 0);
-
-        if (jobInfo.status === "completed") {
-          // Tarea completada, obtener resultado
-          const result = jobInfo.result;
-          if (result) {
-            await processAnalysisResult(result);
-          } else {
-            throw new Error("No se encontró resultado en la tarea completada");
-          }
-          return;
-        }
-
-        if (jobInfo.status === "failed") {
-          throw new Error(
-            jobInfo.error || "La tarea falló sin especificar motivo"
-          );
-        }
-
-        if (jobInfo.status === "processing" && attempts < maxAttempts) {
-          // Continuar polling
-          setTimeout(checkStatus, 5000); // Consultar cada 5 segundos
-          return;
-        }
-
-        if (attempts >= maxAttempts) {
-          throw new Error(
-            "Tiempo de espera agotado. El análisis está tomando demasiado tiempo."
-          );
-        }
-      } catch (error) {
-        console.error("❌ Error en polling:", error);
-        toast.error(
-          "Error en análisis",
-          error instanceof Error
-            ? error.message
-            : "Error desconocido en el análisis"
-        );
-        setStep("form");
-        setTaskStatus("failed");
-      }
-    };
-
-    // Iniciar el polling
-    setTimeout(checkStatus, 2000); // Esperar 2 segundos antes del primer check
   };
 
   // Función para procesar el resultado del análisis

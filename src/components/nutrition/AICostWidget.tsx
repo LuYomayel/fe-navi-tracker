@@ -12,6 +12,8 @@ const SERVICE_LABELS: Record<string, string> = {
   physical_activity: "Actividad fisica",
   weight_photo: "Foto de peso",
   skinfold: "Pliegues cutaneos",
+  "meal-prep-pdf-import": "Meal Prep - Importar PDF",
+  "meal-prep-generate": "Meal Prep - Generar plan",
 };
 
 export function AICostWidget() {

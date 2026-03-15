@@ -554,6 +554,9 @@ export interface CurrentGoals {
 // Tipos XP
 export * from "./xp";
 
+// Tipos Meal Prep
+export * from "./mealPrep";
+
 // Tipos para actividad física
 export interface PhysicalActivity {
   id: string;

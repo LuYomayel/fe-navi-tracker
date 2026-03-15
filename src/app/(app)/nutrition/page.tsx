@@ -21,6 +21,7 @@ import {
   ChevronDown,
   Dumbbell,
   Scale,
+  ChefHat,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,6 +62,9 @@ import { CreatePhysicalActivityDialog } from "@/components/nutrition/CreatePhysi
 import { WeightTracker } from "@/components/nutrition/WeightTracker";
 import { WeightChart } from "@/components/nutrition/WeightChart";
 import { WeightWidget } from "@/components/nutrition/WeightWidget";
+import { MealPrepWidget } from "@/components/nutrition/MealPrepWidget";
+import { MealPrepView } from "@/components/nutrition/MealPrepView";
+import { GenerateMealPrepDialog } from "@/components/nutrition/GenerateMealPrepDialog";
 import { AICostWidget } from "@/components/nutrition/AICostWidget";
 import { useDateHelper } from "@/hooks/useDateHelper";
 
@@ -435,7 +439,7 @@ export default function NutritionPage() {
 
   const [selectedDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState<
-    "overview" | "food" | "body" | "skinfold" | "physical-activity" | "weight"
+    "overview" | "food" | "body" | "skinfold" | "physical-activity" | "weight" | "meal-prep"
   >("overview");
 
   // Establecer tab inicial basado en URL
@@ -450,6 +454,7 @@ export default function NutritionPage() {
         "skinfold",
         "physical-activity",
         "weight",
+        "meal-prep",
       ].includes(tabParam)
     ) {
       setActiveTab(
@@ -460,6 +465,7 @@ export default function NutritionPage() {
           | "skinfold"
           | "physical-activity"
           | "weight"
+          | "meal-prep"
       );
     }
   }, [searchParams]);
@@ -469,6 +475,7 @@ export default function NutritionPage() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showPhysicalActivityDialog, setShowPhysicalActivityDialog] =
     useState(false);
+  const [showGenerateMealPrep, setShowGenerateMealPrep] = useState(false);
   const [editingAnalysis, setEditingAnalysis] =
     useState<NutritionAnalysis | null>(null);
 
@@ -835,6 +842,7 @@ export default function NutritionPage() {
               label: "Actividad",
               icon: Dumbbell,
             },
+            { id: "meal-prep", label: "Meal Prep", icon: ChefHat },
             { id: "weight", label: "Peso", icon: Scale },
             { id: "skinfold", label: "Pliegues", icon: Target },
           ].map((tab) => {
@@ -874,7 +882,11 @@ export default function NutritionPage() {
                 }
               />
             </div>
-            <div className="w-full md:w-1/3">
+            <div className="w-full md:w-1/3 space-y-4">
+              <MealPrepWidget
+                onOpenMealPrep={() => setActiveTab("meal-prep")}
+                onOpenGenerate={() => setShowGenerateMealPrep(true)}
+              />
               <WeightWidget
                 entries={weightEntries}
                 onAddWeight={() => {}}
@@ -1421,6 +1433,13 @@ export default function NutritionPage() {
       )}
       */}
       {/* Physical Activity Tab */}
+      {/* Meal Prep Tab */}
+      {activeTab === "meal-prep" && (
+        <div className="space-y-6">
+          <MealPrepView />
+        </div>
+      )}
+
       {activeTab === "physical-activity" && (
         <div className="space-y-6">
           <PhysicalActivityTracker
@@ -1589,6 +1608,11 @@ export default function NutritionPage() {
           console.log("🔄 Actividad física creada, refrescando datos...");
           getAllPhysicalActivities();
         }}
+      />
+
+      <GenerateMealPrepDialog
+        isOpen={showGenerateMealPrep}
+        onClose={() => setShowGenerateMealPrep(false)}
       />
 
       <NaviCompanion />

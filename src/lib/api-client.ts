@@ -15,6 +15,15 @@ import {
   WeightEntry,
   CreateWeightEntryManualDto,
   WeightStats,
+  NutritionistPlan,
+  MealPrep,
+  ImportNutritionistPlanDto,
+  UpdateNutritionistPlanDto,
+  GenerateMealPrepDto,
+  CreateMealPrepDto,
+  UpdateMealPrepDto,
+  UpdateSlotDto,
+  MarkSlotEatenDto,
 } from "@/types";
 
 // Configuración de la API
@@ -276,7 +285,7 @@ export const api = {
     create: (data: Omit<DailyNote, "id" | "createdAt" | "updatedAt">) =>
       apiClient.post("/notes", data),
     update: (id: string, data: Partial<DailyNote>) =>
-      apiClient.put(`/notes/${id}`, data),
+      apiClient.put("/notes", { id, ...data }),
     delete: (id: string) => apiClient.delete(`/notes?id=${id}`),
   },
 
@@ -469,12 +478,12 @@ export const api = {
     }) => apiClient.post("/body-analysis/skinfold", data),
   },
 
-  // Tasks - Para consultar el estado de trabajos en cola
-  tasks: {
-    getStatus: (taskId: string) => apiClient.get(`/tasks/${taskId}/status`),
-    getResult: (taskId: string) => apiClient.get(`/tasks/${taskId}/result`),
-    getJobInfo: (taskId: string) => apiClient.get(`/tasks/${taskId}`),
-  },
+  // Tasks - Deprecado (ya no usa cola de tareas, las llamadas son sincrónicas)
+  // tasks: {
+  //   getStatus: (taskId: string) => apiClient.get(`/tasks/${taskId}/status`),
+  //   getResult: (taskId: string) => apiClient.get(`/tasks/${taskId}/result`),
+  //   getJobInfo: (taskId: string) => apiClient.get(`/tasks/${taskId}`),
+  // },
 
   // XP System
   xp: {
@@ -520,6 +529,37 @@ export const api = {
   // AI Cost Tracking
   aiCost: {
     getStats: () => apiClient.get<AICostStats>("/ai-cost/stats"),
+  },
+
+  // Meal Prep
+  mealPrep: {
+    // Nutritionist Plans
+    importPlan: (data: ImportNutritionistPlanDto) =>
+      apiClient.post<NutritionistPlan>("/meal-prep/nutritionist-plan/import", data as any),
+    getAllPlans: () =>
+      apiClient.get<NutritionistPlan[]>("/meal-prep/nutritionist-plan"),
+    getActivePlan: () =>
+      apiClient.get<NutritionistPlan | null>("/meal-prep/nutritionist-plan/active"),
+    updatePlan: (id: string, data: UpdateNutritionistPlanDto) =>
+      apiClient.put<NutritionistPlan>(`/meal-prep/nutritionist-plan/${id}`, data as any),
+    deletePlan: (id: string) =>
+      apiClient.delete(`/meal-prep/nutritionist-plan/${id}`),
+
+    // Meal Preps
+    getAll: () => apiClient.get<MealPrep[]>("/meal-prep"),
+    getActive: () => apiClient.get<MealPrep | null>("/meal-prep/active"),
+    getById: (id: string) => apiClient.get<MealPrep>(`/meal-prep/${id}`),
+    generate: (data: GenerateMealPrepDto) =>
+      apiClient.post<MealPrep>("/meal-prep/generate", data as any),
+    create: (data: CreateMealPrepDto) =>
+      apiClient.post<MealPrep>("/meal-prep", data as any),
+    update: (id: string, data: UpdateMealPrepDto) =>
+      apiClient.put<MealPrep>(`/meal-prep/${id}`, data as any),
+    updateSlot: (id: string, data: UpdateSlotDto) =>
+      apiClient.put<MealPrep>(`/meal-prep/${id}/slot`, data as any),
+    eatSlot: (id: string, data: MarkSlotEatenDto) =>
+      apiClient.post(`/meal-prep/${id}/eat`, data as any),
+    delete: (id: string) => apiClient.delete(`/meal-prep/${id}`),
   },
 };
 

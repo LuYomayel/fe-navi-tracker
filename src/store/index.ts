@@ -592,34 +592,50 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
         const day = String(date.getDate()).padStart(2, "0");
         const dateKey = `${year}-${month}-${day}`;
 
-        const note: DailyNote = {
-          id: generateId(),
-          date: dateKey,
-          content,
-          mood: mood ? parseInt(mood) : undefined,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-
         try {
-          set((state) => {
-            const existingIndex = state.dailyNotes.findIndex(
-              (n) => n.date === dateKey
-            );
+          const state = get();
+          const existingNote = state.dailyNotes.find(
+            (n) => n.date === dateKey
+          );
 
-            if (existingIndex >= 0) {
-              const updatedNotes = [...state.dailyNotes];
-              updatedNotes[existingIndex] = {
-                ...updatedNotes[existingIndex],
-                content,
-                mood: mood ? parseInt(mood) : undefined,
-                updatedAt: new Date(),
-              };
-              return { dailyNotes: updatedNotes };
-            } else {
-              return { dailyNotes: [...state.dailyNotes, note] };
+          if (existingNote?.id) {
+            // Update existing note via API
+            const response = await api.notes.update(existingNote.id, {
+              content,
+              mood: mood ? parseInt(mood) : undefined,
+            });
+
+            if (!response.success) {
+              toast.error("Error", "No se pudo actualizar la nota");
+              return;
             }
-          });
+
+            const updatedNote = response.data as DailyNote;
+            set((state) => ({
+              dailyNotes: state.dailyNotes.map((n) =>
+                n.date === dateKey ? { ...n, ...updatedNote } : n
+              ),
+            }));
+          } else {
+            // Create new note via API
+            const noteToSave = {
+              date: dateKey,
+              content,
+              mood: mood ? parseInt(mood) : undefined,
+            };
+
+            const response = await api.notes.create(noteToSave);
+
+            if (!response.success) {
+              toast.error("Error", "No se pudo guardar la nota");
+              return;
+            }
+
+            const newNote = response.data as DailyNote;
+            set((state) => ({
+              dailyNotes: [...state.dailyNotes, newNote],
+            }));
+          }
 
           toast.success("Nota guardada", "Tu reflexión diaria se ha guardado");
         } catch (error) {
