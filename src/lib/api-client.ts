@@ -476,6 +476,8 @@ export const api = {
         gender: string;
       };
     }) => apiClient.post("/body-analysis/skinfold", data),
+    analyzePdf: (data: { images: string[] }) =>
+      apiClient.post("/skin-fold/analyze-pdf", data),
   },
 
   // Tasks - Deprecado (ya no usa cola de tareas, las llamadas son sincrónicas)
