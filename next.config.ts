@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   // Optimizaciones de compilación
@@ -33,6 +34,15 @@ const nextConfig: NextConfig = {
 
   // Optimizaciones de webpack
   webpack: (config, { dev, isServer }) => {
+    // Asegurar que el alias @ resuelve a src/ (fix para Netlify)
+    config.resolve = {
+      ...config.resolve,
+      alias: {
+        ...(config.resolve?.alias || {}),
+        "@": path.resolve(__dirname, "src"),
+      },
+    };
+
     // Optimizaciones de memoria
     config.optimization = {
       ...config.optimization,
