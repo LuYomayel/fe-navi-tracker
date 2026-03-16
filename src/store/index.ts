@@ -924,15 +924,11 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
       // Skin fold actions
       addSkinFoldRecord: async (record) => {
         try {
-          const newRecord: SkinFoldRecord = {
-            ...record,
-            id: generateId(),
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
+          const response = await api.skinFold.createRecord(record as SkinFoldRecord);
+          const savedRecord = response.data as SkinFoldRecord;
 
           set((state) => ({
-            skinFoldRecords: [...state.skinFoldRecords, newRecord],
+            skinFoldRecords: [...state.skinFoldRecords, savedRecord],
           }));
 
           toast.success(
@@ -940,7 +936,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             "Se han registrado tus mediciones"
           );
         } catch (error) {
-          console.error("❌ Error guardando pliegues cutáneos:", error);
+          console.error("Error guardando pliegues cutáneos:", error);
           toast.error(
             "Error",
             "No se pudieron guardar los pliegues. Inténtalo de nuevo."
@@ -950,17 +946,18 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
 
       updateSkinFoldRecord: async (id, updates) => {
         try {
+          const response = await api.skinFold.updateRecord(id, updates as SkinFoldRecord);
+          const updatedRecord = response.data as SkinFoldRecord;
+
           set((state) => ({
             skinFoldRecords: state.skinFoldRecords.map((record) =>
-              record.id === id
-                ? { ...record, ...updates, updatedAt: new Date().toISOString() }
-                : record
+              record.id === id ? updatedRecord : record
             ),
           }));
 
           toast.success("Pliegues actualizados", "Los cambios se han guardado");
         } catch (error) {
-          console.error("❌ Error actualizando pliegues cutáneos:", error);
+          console.error("Error actualizando pliegues cutáneos:", error);
           toast.error(
             "Error",
             "No se pudieron actualizar los pliegues. Inténtalo de nuevo."
@@ -970,6 +967,8 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
 
       deleteSkinFoldRecord: async (id) => {
         try {
+          await api.skinFold.deleteRecord(id);
+
           set((state) => ({
             skinFoldRecords: state.skinFoldRecords.filter(
               (record) => record.id !== id
@@ -981,7 +980,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             "El registro de pliegues se ha eliminado"
           );
         } catch (error) {
-          console.error("❌ Error eliminando pliegues cutáneos:", error);
+          console.error("Error eliminando pliegues cutáneos:", error);
           toast.error(
             "Error",
             "No se pudo eliminar el registro. Inténtalo de nuevo."
