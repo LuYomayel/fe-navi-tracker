@@ -827,6 +827,8 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
 
       deleteNutritionAnalysis: async (id) => {
         try {
+          await api.nutrition.deleteAnalysis(id);
+
           set((state) => ({
             nutritionAnalyses: state.nutritionAnalyses.filter(
               (analysis) => analysis.id !== id
@@ -838,7 +840,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             "El registro nutricional se ha eliminado"
           );
         } catch (error) {
-          console.error("❌ Error eliminando análisis nutricional:", error);
+          console.error("Error eliminando análisis nutricional:", error);
           toast.error(
             "Error",
             "No se pudo eliminar el análisis. Inténtalo de nuevo."
@@ -848,17 +850,20 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
 
       updateNutritionAnalysis: async (id, updates) => {
         try {
+          const response = await api.nutrition.updateAnalysis(id, updates);
+          const updatedAnalysis = response.data;
+
           set((state) => ({
             nutritionAnalyses: state.nutritionAnalyses.map((analysis) =>
               analysis.id === id
-                ? { ...analysis, ...updates, updatedAt: new Date() }
+                ? { ...analysis, ...updatedAnalysis }
                 : analysis
             ),
           }));
 
           toast.success("Análisis actualizado", "Los cambios se han guardado");
         } catch (error) {
-          console.error("❌ Error actualizando análisis nutricional:", error);
+          console.error("Error actualizando análisis nutricional:", error);
           toast.error(
             "Error",
             "No se pudo actualizar el análisis. Inténtalo de nuevo."
@@ -871,17 +876,11 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
         try {
           set({ isLoading: true });
 
-          // 🚀 Crear el análisis directamente en el store (modo offline)
-          // El API requiere imagen, pero nosotros guardamos el análisis procesado
-          const newAnalysis: BodyAnalysis = {
-            id: generateId(),
-            ...analysis,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
+          const response = await api.bodyAnalysis.saveAnalysis(analysis);
+          const savedAnalysis = response.data as BodyAnalysis;
 
           set((state) => ({
-            bodyAnalyses: [...state.bodyAnalyses, newAnalysis],
+            bodyAnalyses: [...state.bodyAnalyses, savedAnalysis],
             isLoading: false,
           }));
 
@@ -890,7 +889,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             "Se ha registrado tu análisis exitosamente"
           );
         } catch (error) {
-          console.error("❌ Error guardando análisis corporal:", error);
+          console.error("Error guardando análisis corporal:", error);
           set({ isLoading: false });
           toast.error(
             "Error",
@@ -991,6 +990,8 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
       // Chat actions
       addChatMessage: async (role, content) => {
         try {
+          await api.chat.sendMessage({ role, content });
+
           const message = {
             id: generateId(),
             role,
@@ -1001,15 +1002,8 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           set((state) => ({
             chatHistory: [...state.chatHistory, message],
           }));
-
-          if (role === "user") {
-            toast.success(
-              "Mensaje enviado",
-              "Tu consulta se ha enviado al asistente"
-            );
-          }
         } catch (error) {
-          console.error("❌ Error enviando mensaje:", error);
+          console.error("Error enviando mensaje:", error);
           toast.error(
             "Error",
             "No se pudo enviar el mensaje. Inténtalo de nuevo."
@@ -1019,13 +1013,14 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
 
       clearChatHistory: async () => {
         try {
+          await api.chat.clearMessages();
           set({ chatHistory: [] });
           toast.success(
             "Historial limpiado",
             "Se ha eliminado el historial del chat"
           );
         } catch (error) {
-          console.error("❌ Error limpiando historial:", error);
+          console.error("Error limpiando historial:", error);
           toast.error(
             "Error",
             "No se pudo limpiar el historial. Inténtalo de nuevo."
@@ -1248,35 +1243,17 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
         }
       },
 
-      // Weight actions
+      // Weight actions - entry already comes from API (WeightTracker calls the endpoint)
       addWeightEntry: async (entry: CreateWeightEntryDto) => {
         try {
-          set({ isLoading: true });
-
-          // Por ahora creamos un mock entry
-          const newEntry: WeightEntry = {
-            id: generateId(),
-            userId: "current-user",
-            ...entry,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-
           set((state) => ({
-            weightEntries: [newEntry, ...state.weightEntries].sort(
+            weightEntries: [entry as unknown as WeightEntry, ...state.weightEntries].sort(
               (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
             ),
           }));
-
-          toast.success(
-            "Peso registrado",
-            "Tu peso se ha guardado correctamente"
-          );
         } catch (error) {
-          console.error("❌ Error agregando peso:", error);
+          console.error("Error agregando peso al state:", error);
           toast.error("Error", "No se pudo registrar el peso");
-        } finally {
-          set({ isLoading: false });
         }
       },
 
