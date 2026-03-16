@@ -143,14 +143,14 @@ export function EditMealPrepSlotDialog({
 
   // ─── Recalc totals from foods ──────────────────────
   const recalcFromFoods = (updatedFoods: DetectedFood[]) => {
-    const totCal = updatedFoods.reduce((s, f) => s + (f.calories || 0), 0);
+    const totCal = Math.round(updatedFoods.reduce((s, f) => s + (f.calories || 0), 0));
     const totMacros: Macronutrients = {
-      protein: updatedFoods.reduce((s, f) => s + (f.macronutrients?.protein || 0), 0),
-      carbs: updatedFoods.reduce((s, f) => s + (f.macronutrients?.carbs || 0), 0),
-      fat: updatedFoods.reduce((s, f) => s + (f.macronutrients?.fat || 0), 0),
-      fiber: updatedFoods.reduce((s, f) => s + (f.macronutrients?.fiber || 0), 0),
-      sugar: updatedFoods.reduce((s, f) => s + (f.macronutrients?.sugar || 0), 0),
-      sodium: updatedFoods.reduce((s, f) => s + (f.macronutrients?.sodium || 0), 0),
+      protein: Math.round(updatedFoods.reduce((s, f) => s + (f.macronutrients?.protein || 0), 0) * 10) / 10,
+      carbs: Math.round(updatedFoods.reduce((s, f) => s + (f.macronutrients?.carbs || 0), 0) * 10) / 10,
+      fat: Math.round(updatedFoods.reduce((s, f) => s + (f.macronutrients?.fat || 0), 0) * 10) / 10,
+      fiber: Math.round(updatedFoods.reduce((s, f) => s + (f.macronutrients?.fiber || 0), 0) * 10) / 10,
+      sugar: Math.round(updatedFoods.reduce((s, f) => s + (f.macronutrients?.sugar || 0), 0) * 10) / 10,
+      sodium: Math.round(updatedFoods.reduce((s, f) => s + (f.macronutrients?.sodium || 0), 0)),
     };
     setTotalCalories(totCal);
     setMacros(totMacros);
@@ -640,11 +640,11 @@ export function EditMealPrepSlotDialog({
                   ))}
                 </div>
                 <div className="flex gap-2 text-xs font-medium pt-1 border-t border-green-200 dark:border-green-800">
-                  <span>{analyzedResult.totalCalories} kcal</span>
+                  <span>{Math.round(analyzedResult.totalCalories)} kcal</span>
                   <span className="text-muted-foreground">
-                    P:{analyzedResult.macronutrients.protein}g
-                    C:{analyzedResult.macronutrients.carbs}g
-                    G:{analyzedResult.macronutrients.fat}g
+                    P:{Math.round(analyzedResult.macronutrients.protein)}g{" "}
+                    C:{Math.round(analyzedResult.macronutrients.carbs)}g{" "}
+                    G:{Math.round(analyzedResult.macronutrients.fat)}g
                   </span>
                 </div>
               </div>
