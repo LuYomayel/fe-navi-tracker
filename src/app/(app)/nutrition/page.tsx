@@ -40,11 +40,11 @@ import {
   calculateNutritionGoalsFromBodyAnalysis as _calculateNutritionGoalsFromBodyAnalysis,
 } from "@/lib/utils";
 import {
-  sumOfSkinfolds as _sumOfSkinfolds,
+  sumOfSkinfolds,
   estimateBodyFatJacksonPollock as _estimateBodyFatJacksonPollock,
   compareSkinFoldRecords as _compareSkinFoldRecords,
 } from "@/lib/anthropometry";
-import { SkinFoldSiteNames as _SkinFoldSiteNames } from "@/types/skinFold";
+import { SkinFoldSiteNames } from "@/types/skinFold";
 import {
   MealType,
   NutritionAnalysis,
@@ -479,6 +479,8 @@ export default function NutritionPage() {
   const [showGenerateMealPrep, setShowGenerateMealPrep] = useState(false);
   const [editingAnalysis, setEditingAnalysis] =
     useState<NutritionAnalysis | null>(null);
+  const [editingSkinFold, setEditingSkinFold] =
+    useState<_SkinFoldRecord | null>(null);
 
   // Filtros para análisis nutricionales
   const [foodFilters, setFoodFilters] = useState({
@@ -1479,62 +1481,139 @@ export default function NutritionPage() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-medium">Pliegues Cutáneos</h3>
-              <p className="">Historial de mediciones de pliegues cutáneos</p>
+              <p className="text-sm text-muted-foreground">Historial de mediciones de pliegues cutáneos</p>
             </div>
             <Button
-              onClick={() => setShowSkinFoldDialog(true)}
+              onClick={() => {
+                setEditingSkinFold(null);
+                setShowSkinFoldDialog(true);
+              }}
               className="flex items-center gap-2"
+              size="sm"
             >
               <Target className="h-4 w-4" />
-              Nueva medición
+              <span className="hidden sm:inline">Nueva medición</span>
+              <span className="sm:hidden">Nueva</span>
             </Button>
           </div>
 
           {skinFoldRecords.length > 0 ? (
             <div className="space-y-4">
-              {skinFoldRecords.map((record) => (
-                <div
-                  key={record.id}
-                  className="rounded-lg shadow-sm border p-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">
-                        Medición{" "}
-                        {record.createdAt
-                          ? new Date(record.createdAt).toLocaleDateString(
-                              "es-ES"
-                            )
-                          : "Fecha no disponible"}
-                      </div>
-                      <div className="text-sm ">
-                        {/* Suma: {sumOfSkinfolds(record.measurements)}mm */}
-                        Medición registrada
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => deleteSkinFoldRecord(record.id)}
-                      className="text-destructive hover:bg-destructive/10"
+              {[...skinFoldRecords]
+                .sort((a, b) => {
+                  const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                  const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                  return dateB - dateA;
+                })
+                .map((record) => {
+                  const totalSum = sumOfSkinfolds(record);
+                  const measuredSites = Object.entries(record.values || {}).filter(
+                    ([, v]) => typeof v === "number" && v > 0
+                  );
+
+                  return (
+                    <div
+                      key={record.id}
+                      className="rounded-xl border bg-card p-4 space-y-3"
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                      {/* Header */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">
+                            {record.date
+                              ? new Date(record.date + "T12:00:00").toLocaleDateString("es-ES", {
+                                  day: "numeric",
+                                  month: "long",
+                                  year: "numeric",
+                                })
+                              : record.createdAt
+                              ? new Date(record.createdAt).toLocaleDateString("es-ES", {
+                                  day: "numeric",
+                                  month: "long",
+                                  year: "numeric",
+                                })
+                              : "Fecha no disponible"}
+                          </div>
+                          <div className="text-sm text-muted-foreground flex items-center gap-2">
+                            <span>Suma: {totalSum}mm</span>
+                            <span>·</span>
+                            <span>{measuredSites.length} sitios</span>
+                            {record.technician && (
+                              <>
+                                <span>·</span>
+                                <span>{record.technician}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => {
+                              setEditingSkinFold(record);
+                              setShowSkinFoldDialog(true);
+                            }}
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                            onClick={() => {
+                              if (confirm("¿Eliminar esta medición?")) {
+                                deleteSkinFoldRecord(record.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Measurement grid */}
+                      {measuredSites.length > 0 && (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {measuredSites.map(([site, value]) => (
+                            <div
+                              key={site}
+                              className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2"
+                            >
+                              <span className="text-xs text-muted-foreground">
+                                {SkinFoldSiteNames[site as keyof typeof SkinFoldSiteNames] || site}
+                              </span>
+                              <span className="text-sm font-medium">{value}mm</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Notes */}
+                      {record.notes && (
+                        <p className="text-xs text-muted-foreground border-t border-border/50 pt-2">
+                          {record.notes}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
             </div>
           ) : (
             <div className="text-center py-12">
               <Target className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-medium  mb-2">
+              <h3 className="text-lg font-medium mb-2">
                 No hay mediciones de pliegues
               </h3>
-              <p className=" mb-4">
+              <p className="text-sm text-muted-foreground mb-4">
                 Registra tu primera medición de pliegues cutáneos
               </p>
               <Button
-                onClick={() => setShowSkinFoldDialog(true)}
+                onClick={() => {
+                  setEditingSkinFold(null);
+                  setShowSkinFoldDialog(true);
+                }}
                 className="flex items-center gap-2"
               >
                 <Target className="h-4 w-4" />
@@ -1571,11 +1650,15 @@ export default function NutritionPage() {
 
       <SkinFoldDialog
         isOpen={showSkinFoldDialog}
-        onClose={() => setShowSkinFoldDialog(false)}
+        onClose={() => {
+          setShowSkinFoldDialog(false);
+          setEditingSkinFold(null);
+        }}
+        editingRecord={editingSkinFold || undefined}
         onRecordSaved={() => {
           console.log("🔄 Registro de pliegues guardado, refrescando datos...");
           getAllSkinFoldRecords();
-          // Los datos se actualizan automáticamente por el store de Zustand
+          setEditingSkinFold(null);
           toast.success("Datos actualizados");
         }}
       />
