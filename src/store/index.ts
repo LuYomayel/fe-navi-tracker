@@ -199,6 +199,7 @@ interface NaviTrackerState {
   refreshNutritionData: () => Promise<void>;
   refreshPhysicalActivities: () => Promise<void>;
   refreshWeightEntries: () => Promise<void>;
+  loadNutritionGoals: () => Promise<void>;
 }
 
 export const useNaviTrackerStore = create<NaviTrackerState>()(
@@ -1101,6 +1102,9 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             isLoading: false,
           });
 
+          // Load nutrition goals from backend (non-blocking)
+          get().loadNutritionGoals().catch(() => {});
+
           toast.success("Datos cargados", "Tu información se ha sincronizado");
         } catch (error) {
           console.error("❌ Error inicializando desde API:", error);
@@ -1242,6 +1246,32 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           console.log("✅ Actividades físicas refrescadas");
         } catch (error) {
           console.error("❌ Error refrescando actividades físicas:", error);
+        }
+      },
+
+      loadNutritionGoals: async () => {
+        try {
+          const response = await api.preferences.getCurrentGoals();
+          if (response.success && response.data) {
+            const goals = response.data as {
+              dailyCalorieGoal: number;
+              proteinGoal: number;
+              carbsGoal: number;
+              fatGoal: number;
+            };
+            set((state) => ({
+              preferences: {
+                ...state.preferences,
+                dailyCalorieGoal: goals.dailyCalorieGoal,
+                proteinGoal: goals.proteinGoal,
+                carbsGoal: goals.carbsGoal,
+                fatGoal: goals.fatGoal,
+              },
+            }));
+            console.log("✅ Objetivos nutricionales cargados desde API:", goals);
+          }
+        } catch (error) {
+          console.error("❌ Error cargando objetivos nutricionales:", error);
         }
       },
 

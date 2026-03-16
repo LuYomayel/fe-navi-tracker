@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
+import { useNaviTrackerStore } from "@/store";
 import {
   MealPrep,
   NutritionistPlan,
@@ -88,7 +89,15 @@ export function useMealPrep() {
       const res = await api.mealPrep.importPlan(data);
       if (res.success) {
         setActivePlan(res.data);
-        toast.success("Plan importado", "El plan del nutricionista se importo correctamente");
+
+        // Refresh nutrition goals — the backend auto-extracts them from the plan
+        try {
+          await useNaviTrackerStore.getState().loadNutritionGoals();
+        } catch {
+          // Best-effort
+        }
+
+        toast.success("Plan importado", "El plan del nutricionista se importó y los objetivos nutricionales fueron actualizados");
         return res.data;
       }
     } catch (error) {
@@ -166,6 +175,13 @@ export function useMealPrep() {
           await api.xp.addNutritionXp({ mealType, date });
         } catch {
           // XP is best-effort
+        }
+
+        // Refresh nutrition data so the daily dashboard updates
+        try {
+          await useNaviTrackerStore.getState().refreshNutritionData();
+        } catch {
+          // Best-effort refresh
         }
 
         toast.success("+15 XP", "Comida registrada en tu balance diario");
