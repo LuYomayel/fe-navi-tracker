@@ -12,6 +12,9 @@ import { NaviCompanion } from "@/components/navi/NaviCompanion";
 import { XpDashboard } from "@/components/xp/XpDashboard";
 import { StreakWidget } from "@/components/xp/StreakWidget";
 import { WeightWidget } from "@/components/nutrition/WeightWidget";
+import TasksWidget from "@/components/tasks/TasksWidget";
+import AgendaWidget from "@/components/agenda/AgendaWidget";
+import WinStreakWidget from "@/components/calendar/WinStreakWidget";
 
 import {
   Calendar,
@@ -222,6 +225,13 @@ export default function DashboardPage() {
             </div>
           </div>
         </Link>
+      </div>
+
+      {/* Tasks, Agenda & Win Streak */}
+      <div className="grid gap-3 sm:gap-4 md:grid-cols-3">
+        <TasksWidget />
+        <AgendaWidget />
+        <WinStreakWidget />
       </div>
 
       {/* Daily Reflection */}

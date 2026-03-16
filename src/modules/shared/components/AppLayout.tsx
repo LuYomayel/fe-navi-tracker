@@ -11,6 +11,9 @@ import {
   Target,
   Apple,
   Heart,
+  CheckSquare,
+  CalendarClock,
+  Calendar,
 } from "lucide-react";
 import { useAuthStore } from "../../auth/store";
 import { Button } from "@/components/ui/button";
@@ -69,6 +72,24 @@ export default function AppLayout({ children }: AppLayoutProps) {
       label: "Nutricion",
       path: "/nutrition",
       active: pathname === "/nutrition",
+    },
+    {
+      icon: CheckSquare,
+      label: "Tareas",
+      path: "/tasks",
+      active: pathname === "/tasks",
+    },
+    {
+      icon: CalendarClock,
+      label: "Agenda",
+      path: "/agenda",
+      active: pathname === "/agenda",
+    },
+    {
+      icon: Calendar,
+      label: "Calendario",
+      path: "/calendar",
+      active: pathname === "/calendar",
     },
     {
       icon: Heart,

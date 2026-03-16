@@ -712,6 +712,108 @@ export interface SavedMeal {
   updatedAt: Date;
 }
 
+// ==========================================
+// TASKS
+// ==========================================
+export type TaskPriority = "low" | "medium" | "high" | "urgent";
+export type TaskStatus = "pending" | "in_progress" | "completed";
+export type TaskCategory =
+  | "work"
+  | "personal"
+  | "health"
+  | "finance"
+  | "study"
+  | "other";
+
+export interface Task {
+  id: string;
+  userId: string;
+  title: string;
+  description?: string;
+  dueDate?: string;
+  dueTime?: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  completed: boolean;
+  completedAt?: string;
+  category?: TaskCategory;
+  tags?: string[];
+  order: number;
+  isRecurring: boolean;
+  recurrenceRule?: {
+    frequency: "daily" | "weekly" | "monthly";
+    days?: boolean[];
+    endDate?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ==========================================
+// CALENDAR EVENTS
+// ==========================================
+export interface CalendarEvent {
+  id: string;
+  userId: string;
+  googleEventId?: string;
+  title: string;
+  description?: string;
+  location?: string;
+  startTime: string;
+  endTime: string;
+  allDay: boolean;
+  color?: string;
+  source: "manual" | "google";
+  syncedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GoogleCalendarStatus {
+  connected: boolean;
+  syncEnabled: boolean;
+  lastSyncAt?: string;
+  calendarId?: string;
+}
+
+// ==========================================
+// DAY SCORE
+// ==========================================
+export type DayStatus = "won" | "partial" | "lost" | "no_data" | "future";
+
+export interface DayScore {
+  id?: string;
+  date: string;
+  totalItems: number;
+  completedItems: number;
+  percentage: number;
+  status: DayStatus;
+  habitsTotal: number;
+  habitsCompleted: number;
+  tasksTotal: number;
+  tasksCompleted: number;
+  nutritionLogged: boolean;
+  exerciseLogged: boolean;
+  reflectionLogged: boolean;
+}
+
+export interface MonthlyStats {
+  month: string;
+  totalDays: number;
+  won: number;
+  partial: number;
+  lost: number;
+  avgPercentage: number;
+  bestDay?: DayScore;
+  worstDay?: DayScore;
+}
+
+export interface WinStreak {
+  currentStreak: number;
+  bestStreak: number;
+  lastWonDate?: string;
+}
+
 // AI Cost tracking
 export interface AICostStats {
   totalCost: number;

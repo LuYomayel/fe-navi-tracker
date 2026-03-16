@@ -24,6 +24,12 @@ import {
   UpdateMealPrepDto,
   UpdateSlotDto,
   MarkSlotEatenDto,
+  Task,
+  CalendarEvent,
+  GoogleCalendarStatus,
+  DayScore,
+  MonthlyStats,
+  WinStreak,
 } from "@/types";
 
 // Configuración de la API
@@ -560,6 +566,75 @@ export const api = {
     eatSlot: (id: string, data: MarkSlotEatenDto) =>
       apiClient.post(`/meal-prep/${id}/eat`, data as any),
     delete: (id: string) => apiClient.delete(`/meal-prep/${id}`),
+  },
+
+  // TASKS
+  tasks: {
+    getAll: (params?: {
+      date?: string;
+      status?: string;
+      category?: string;
+      from?: string;
+      to?: string;
+    }) => {
+      const query = params
+        ? new URLSearchParams(
+            Object.entries(params).filter(([, v]) => v) as [
+              string,
+              string,
+            ][],
+          ).toString()
+        : "";
+      return apiClient.get<Task[]>(`/tasks${query ? `?${query}` : ""}`);
+    },
+    getById: (id: string) => apiClient.get<Task>(`/tasks/${id}`),
+    create: (data: Partial<Task>) => apiClient.post<Task>("/tasks", data),
+    update: (id: string, data: Partial<Task>) =>
+      apiClient.put<Task>(`/tasks/${id}`, data),
+    delete: (id: string) => apiClient.delete(`/tasks/${id}`),
+    toggle: (id: string) => apiClient.post<Task>(`/tasks/${id}/toggle`),
+    reorder: (taskIds: string[]) =>
+      apiClient.put("/tasks/reorder", { taskIds }),
+  },
+
+  // CALENDAR
+  calendar: {
+    getEvents: (from: string, to: string) =>
+      apiClient.get<CalendarEvent[]>(
+        `/calendar/events?from=${from}&to=${to}`,
+      ),
+    createEvent: (data: Partial<CalendarEvent>) =>
+      apiClient.post<CalendarEvent>("/calendar/events", data),
+    updateEvent: (id: string, data: Partial<CalendarEvent>) =>
+      apiClient.put<CalendarEvent>(`/calendar/events/${id}`, data),
+    deleteEvent: (id: string) =>
+      apiClient.delete(`/calendar/events/${id}`),
+    google: {
+      getAuthUrl: () =>
+        apiClient.get<{ url: string }>("/calendar/google/auth-url"),
+      callback: (code: string) =>
+        apiClient.post("/calendar/google/callback", { code }),
+      sync: () => apiClient.post("/calendar/google/sync"),
+      disconnect: () => apiClient.delete("/calendar/google/disconnect"),
+      getStatus: () =>
+        apiClient.get<GoogleCalendarStatus>("/calendar/google/status"),
+    },
+  },
+
+  // DAY SCORE
+  dayScore: {
+    getByDate: (date: string) =>
+      apiClient.get<DayScore>(`/day-score/${date}`),
+    getRange: (from: string, to: string) =>
+      apiClient.get<DayScore[]>(`/day-score/range/${from}/${to}`),
+    recalculate: (date: string) =>
+      apiClient.post<DayScore>(`/day-score/${date}/recalculate`),
+    getMonthlyStats: (month: string) =>
+      apiClient.get<MonthlyStats>(
+        `/day-score/stats/monthly?month=${month}`,
+      ),
+    getWinStreak: () =>
+      apiClient.get<WinStreak>("/day-score/stats/streak"),
   },
 };
 
