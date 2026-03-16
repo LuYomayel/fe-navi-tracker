@@ -24,6 +24,16 @@ import {
   UpdateMealPrepDto,
   UpdateSlotDto,
   MarkSlotEatenDto,
+  Task,
+  CalendarEvent,
+  GoogleCalendarStatus,
+  DayScore,
+  MonthlyStats,
+  WinStreak,
+  HydrationLog,
+  HydrationGoal,
+  ShoppingList,
+  ShoppingItem,
 } from "@/types";
 import { ApiError, statusToErrorCode } from "@/lib/api-error";
 
@@ -595,6 +605,136 @@ export const api = {
     eatSlot: (id: string, data: MarkSlotEatenDto) =>
       apiClient.post(`/meal-prep/${id}/eat`, data as any),
     delete: (id: string) => apiClient.delete(`/meal-prep/${id}`),
+  },
+
+  // TASKS
+  tasks: {
+    getAll: (params?: {
+      date?: string;
+      status?: string;
+      category?: string;
+      from?: string;
+      to?: string;
+    }) => {
+      const query = params
+        ? new URLSearchParams(
+            Object.entries(params).filter(([, v]) => v) as [
+              string,
+              string,
+            ][],
+          ).toString()
+        : "";
+      return apiClient.get<Task[]>(`/tasks${query ? `?${query}` : ""}`);
+    },
+    getById: (id: string) => apiClient.get<Task>(`/tasks/${id}`),
+    create: (data: Partial<Task>) => apiClient.post<Task>("/tasks", data),
+    update: (id: string, data: Partial<Task>) =>
+      apiClient.put<Task>(`/tasks/${id}`, data),
+    delete: (id: string) => apiClient.delete(`/tasks/${id}`),
+    toggle: (id: string) => apiClient.post<Task>(`/tasks/${id}/toggle`),
+    reorder: (taskIds: string[]) =>
+      apiClient.put("/tasks/reorder", { taskIds }),
+  },
+
+  // CALENDAR
+  calendar: {
+    getEvents: (from: string, to: string) =>
+      apiClient.get<CalendarEvent[]>(
+        `/calendar/events?from=${from}&to=${to}`,
+      ),
+    createEvent: (data: Partial<CalendarEvent>) =>
+      apiClient.post<CalendarEvent>("/calendar/events", data),
+    updateEvent: (id: string, data: Partial<CalendarEvent>) =>
+      apiClient.put<CalendarEvent>(`/calendar/events/${id}`, data),
+    deleteEvent: (id: string) =>
+      apiClient.delete(`/calendar/events/${id}`),
+    google: {
+      getAuthUrl: () =>
+        apiClient.get<{ url: string }>("/calendar/google/auth-url"),
+      callback: (code: string) =>
+        apiClient.post("/calendar/google/callback", { code }),
+      sync: () => apiClient.post("/calendar/google/sync"),
+      disconnect: () => apiClient.delete("/calendar/google/disconnect"),
+      getStatus: () =>
+        apiClient.get<GoogleCalendarStatus>("/calendar/google/status"),
+    },
+  },
+
+  // DAY SCORE
+  dayScore: {
+    getByDate: (date: string) =>
+      apiClient.get<DayScore>(`/day-score/${date}`),
+    getRange: (from: string, to: string) =>
+      apiClient.get<DayScore[]>(`/day-score/range/${from}/${to}`),
+    recalculate: (date: string) =>
+      apiClient.post<DayScore>(`/day-score/${date}/recalculate`),
+    getMonthlyStats: (month: string) =>
+      apiClient.get<MonthlyStats>(
+        `/day-score/stats/monthly?month=${month}`,
+      ),
+    getWinStreak: () =>
+      apiClient.get<WinStreak>("/day-score/stats/streak"),
+  },
+
+  // HYDRATION
+  hydration: {
+    getByDate: (date?: string) =>
+      apiClient.get<HydrationLog>(
+        `/hydration${date ? `?date=${date}` : ""}`,
+      ),
+    getRange: (from: string, to: string) =>
+      apiClient.get<HydrationLog[]>(
+        `/hydration/range?from=${from}&to=${to}`,
+      ),
+    adjust: (data: { date: string; delta: number }) =>
+      apiClient.post<HydrationLog>("/hydration/adjust", data),
+    set: (data: { date: string; glasses: number }) =>
+      apiClient.put<HydrationLog>("/hydration", data),
+    getGoal: () => apiClient.get<HydrationGoal>("/hydration/goal"),
+    setGoal: (data: HydrationGoal) =>
+      apiClient.put<void>("/hydration/goal", data),
+  },
+
+  // SHOPPING LIST
+  shoppingList: {
+    getAll: () => apiClient.get<ShoppingList[]>("/shopping-list"),
+    getById: (id: string) =>
+      apiClient.get<ShoppingList>(`/shopping-list/${id}`),
+    create: (data: { name: string; notes?: string }) =>
+      apiClient.post<ShoppingList>("/shopping-list", data),
+    generate: (data: { mealPrepId?: string; name?: string }) =>
+      apiClient.post<ShoppingList>("/shopping-list/generate", data),
+    update: (
+      id: string,
+      data: Partial<{ name: string; status: string; notes: string }>,
+    ) => apiClient.put<ShoppingList>(`/shopping-list/${id}`, data),
+    delete: (id: string) => apiClient.delete(`/shopping-list/${id}`),
+    addItem: (listId: string, data: Partial<ShoppingItem>) =>
+      apiClient.post<ShoppingItem>(
+        `/shopping-list/${listId}/items`,
+        data as any,
+      ),
+    updateItem: (
+      listId: string,
+      itemId: string,
+      data: Partial<ShoppingItem>,
+    ) =>
+      apiClient.put<ShoppingItem>(
+        `/shopping-list/${listId}/items/${itemId}`,
+        data as any,
+      ),
+    deleteItem: (listId: string, itemId: string) =>
+      apiClient.delete(`/shopping-list/${listId}/items/${itemId}`),
+    bulkCheck: (
+      listId: string,
+      data: { itemIds: string[]; checked: boolean },
+    ) =>
+      apiClient.post<ShoppingItem[]>(
+        `/shopping-list/${listId}/items/bulk-check`,
+        data,
+      ),
+    uncheckAll: (listId: string) =>
+      apiClient.post(`/shopping-list/${listId}/uncheck-all`),
   },
 };
 

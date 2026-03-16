@@ -11,6 +11,13 @@ import {
   Target,
   Apple,
   Heart,
+  CheckSquare,
+  CalendarClock,
+  Calendar,
+  Droplets,
+  ShoppingCart,
+  MoreHorizontal,
+  X,
 } from "lucide-react";
 import { useAuthStore } from "../../auth/store";
 import { Button } from "@/components/ui/button";
@@ -31,8 +38,14 @@ interface AppLayoutProps {
 
 export default function AppLayout({ children }: AppLayoutProps) {
   const [darkMode, setDarkMode] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
+
+  // Close "Más" menu on navigation
+  useEffect(() => {
+    setMoreOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -71,12 +84,47 @@ export default function AppLayout({ children }: AppLayoutProps) {
       active: pathname === "/nutrition",
     },
     {
+      icon: CheckSquare,
+      label: "Tareas",
+      path: "/tasks",
+      active: pathname === "/tasks",
+    },
+    {
+      icon: CalendarClock,
+      label: "Agenda",
+      path: "/agenda",
+      active: pathname === "/agenda",
+    },
+    {
+      icon: Calendar,
+      label: "Calendario",
+      path: "/calendar",
+      active: pathname === "/calendar",
+    },
+    {
+      icon: Droplets,
+      label: "Agua",
+      path: "/hydration",
+      active: pathname === "/hydration",
+    },
+    {
+      icon: ShoppingCart,
+      label: "Compras",
+      path: "/shopping",
+      active: pathname === "/shopping",
+    },
+    {
       icon: Heart,
       label: "Navi",
       path: "/navi",
       active: pathname === "/navi",
     },
   ];
+
+  // Mobile: 4 primary tabs + "Más" menu for the rest
+  const mobileTabItems = menuItems.slice(0, 4); // Inicio, Habitos, Nutricion, Tareas
+  const mobileMoreItems = menuItems.slice(4);    // Agenda, Calendario, Agua, Compras, Navi
+  const isMoreActive = mobileMoreItems.some((item) => item.active);
 
   const getInitials = (name: string) => {
     return name
@@ -187,7 +235,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       {/* iOS-style Bottom Tab Bar (mobile only) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl backdrop-saturate-150 border-t border-border/50 pb-safe">
         <div className="flex items-center justify-around h-14 px-1">
-          {menuItems.map((item) => {
+          {mobileTabItems.map((item) => {
             const Icon = item.icon;
             return (
               <Link
@@ -206,7 +254,53 @@ export default function AppLayout({ children }: AppLayoutProps) {
               </Link>
             );
           })}
+          {/* "Más" button */}
+          <button
+            onClick={() => setMoreOpen(!moreOpen)}
+            className={`flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 py-1 transition-colors ${
+              isMoreActive || moreOpen
+                ? "text-primary"
+                : "text-muted-foreground"
+            }`}
+          >
+            {moreOpen ? (
+              <X className="h-5 w-5 sm:h-6 sm:w-6 stroke-[2.5]" />
+            ) : (
+              <MoreHorizontal
+                className={`h-5 w-5 sm:h-6 sm:w-6 ${isMoreActive ? "stroke-[2.5]" : ""}`}
+              />
+            )}
+            <span className="text-[10px] font-medium">Mas</span>
+          </button>
         </div>
+
+        {/* "Más" expandable menu */}
+        {moreOpen && (
+          <div className="absolute bottom-full left-0 right-0 bg-background/95 backdrop-blur-xl border-t border-border/50 animate-in slide-in-from-bottom-2 duration-200">
+            <div className="grid grid-cols-5 gap-1 p-3 max-w-md mx-auto">
+              {mobileMoreItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.path}
+                    href={item.path}
+                    onClick={() => setMoreOpen(false)}
+                    className={`flex flex-col items-center justify-center gap-1 py-3 rounded-xl transition-colors ${
+                      item.active
+                        ? "text-primary bg-primary/10"
+                        : "text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <Icon
+                      className={`h-6 w-6 ${item.active ? "stroke-[2.5]" : ""}`}
+                    />
+                    <span className="text-[11px] font-medium">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </nav>
     </div>
   );
