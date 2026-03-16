@@ -35,12 +35,13 @@ import {
   ShoppingList,
   ShoppingItem,
 } from "@/types";
+import { ApiError, statusToErrorCode } from "@/lib/api-error";
 
 // Configuración de la API
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "https://api-navi-tracker.luciano-yomayel.com";
-console.log("API_BASE_URL", API_BASE_URL);
+
 // Función helper para obtener el token desde el store
 function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -51,10 +52,75 @@ function getAuthToken(): string | null {
 
     const parsed = JSON.parse(authStorage);
     return parsed?.state?.tokens?.accessToken || null;
-  } catch (error) {
-    console.warn("Error al obtener token:", error);
+  } catch {
     return null;
   }
+}
+
+/**
+ * Parse the backend error response and throw a typed ApiError.
+ *
+ * Backend shapes:
+ *  - HttpExceptionFilter: { success: false, data: null, message: string, errors?: string[] }
+ *  - Soft error (200):    { success: false, error: string }
+ */
+async function throwApiError(response: Response): Promise<never> {
+  const status = response.status;
+  let body: Record<string, unknown> = {};
+
+  try {
+    body = await response.json();
+  } catch {
+    // Could not parse JSON — use status text
+    throw new ApiError({
+      message: response.statusText || `Error HTTP ${status}`,
+      code: statusToErrorCode(status),
+      status,
+    });
+  }
+
+  // Backend HttpExceptionFilter format: { success, data, message, errors? }
+  const message =
+    (body.message as string) ||
+    (body.error as string) ||
+    `Error HTTP ${status}`;
+  const errors = Array.isArray(body.errors) ? (body.errors as string[]) : [];
+  const code = statusToErrorCode(status);
+
+  throw new ApiError({
+    message,
+    code,
+    status,
+    validationErrors: errors,
+    rawBody: body,
+  });
+}
+
+/**
+ * Check for soft errors: HTTP 200 with { success: false, error: "..." }
+ * Many backend controllers return this shape instead of throwing.
+ */
+function checkSoftError<T>(data: T, status: number): T {
+  if (
+    data &&
+    typeof data === "object" &&
+    "success" in data &&
+    (data as Record<string, unknown>).success === false
+  ) {
+    const raw = data as Record<string, unknown>;
+    const message =
+      (raw.error as string) ||
+      (raw.message as string) ||
+      "Error desconocido del servidor";
+
+    throw new ApiError({
+      message,
+      code: "SOFT_ERROR",
+      status,
+      rawBody: raw,
+    });
+  }
+  return data;
 }
 
 // Función helper para hacer peticiones HTTP
@@ -67,108 +133,77 @@ async function fetchAPI<T = unknown>(
   // Obtener token automáticamente
   const token = getAuthToken();
 
-  // Construir headers base - SIEMPRE definidos
-  const baseHeaders = {
-    "Content-Type": "application/json",
-    ...(token && { Authorization: `Bearer ${token}` }),
-  };
-
-  // Combinar con headers adicionales
-  const finalHeaders = {
-    ...baseHeaders,
-    ...options.headers,
-  };
-
   const config: RequestInit = {
     ...options,
-    headers: finalHeaders,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && { Authorization: `Bearer ${token}` }),
+      ...options.headers,
+    },
   };
 
-  try {
-    const response = await fetch(url, config);
-    // Si el token ha expirado, intentar refrescar
-    if (response.status === 401 && token) {
-      const refreshSuccess = await refreshAuthToken();
+  let response: Response;
 
-      if (refreshSuccess) {
-        // Reintentar la petición con el nuevo token
-        const newToken = getAuthToken();
-        if (newToken && newToken !== token) {
-          // Reconstruir headers completamente para el reintento
-          const retryHeaders = {
+  try {
+    response = await fetch(url, config);
+  } catch (networkError) {
+    // fetch() itself failed — network error, DNS failure, offline, etc.
+    throw new ApiError({
+      message:
+        networkError instanceof Error
+          ? networkError.message
+          : "Error de conexión",
+      code: "NETWORK_ERROR",
+      status: 0,
+    });
+  }
+
+  // --- 401: attempt token refresh once ---
+  if (response.status === 401 && token) {
+    const refreshSuccess = await refreshAuthToken();
+
+    if (refreshSuccess) {
+      const newToken = getAuthToken();
+      if (newToken && newToken !== token) {
+        const retryConfig: RequestInit = {
+          ...options,
+          headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${newToken}`,
-            ...options.headers, // Preservar headers originales
-          };
+            ...options.headers,
+          },
+        };
 
-          const newConfig: RequestInit = {
-            ...options,
-            headers: retryHeaders,
-          };
+        const retryResponse = await fetch(url, retryConfig);
 
-          const retryResponse = await fetch(url, newConfig);
-
-          if (!retryResponse.ok) {
-            console.error(
-              `❌ Error en reintento: ${retryResponse.status} ${retryResponse.statusText}`
-            );
-
-            // Capturar el texto del error para debugging
-            try {
-              const errorText = await retryResponse.text();
-              console.error(`📄 Error body:`, errorText);
-            } catch (e) {
-              console.error(`❌ No se pudo leer el error body:`, e);
-            }
-
-            throw new Error(`HTTP error! status: ${retryResponse.status}`);
-          }
-
-          return await retryResponse.json();
+        if (!retryResponse.ok) {
+          await throwApiError(retryResponse);
         }
+
+        const retryData = await retryResponse.json();
+        return checkSoftError<T>(retryData, retryResponse.status);
       }
     }
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        // Token inválido o expirado definitivamente
-        console.warn("🚪 Sesión expirada, redirigiendo al login...");
-        clearAuthAndRedirect();
-        throw new Error("Sesión expirada");
-      }
-
-      // Leer el JSON de error formateado por HttpExceptionFilter
-      try {
-        const errorData = await response.json();
-        //console.error(`❌ Error HTTP ${response.status}:`, errorData);
-
-        // Si el backend devuelve el formato estructurado, usar ese mensaje
-        if (errorData && !errorData.success && errorData.message) {
-          const errorMessage =
-            Array.isArray(errorData.errors) && errorData.errors.length > 0
-              ? errorData.errors.join(", ")
-              : errorData.message;
-          console.log("errorMessage", errorMessage);
-          throw new Error(errorMessage);
-        }
-
-        // Fallback al formato anterior
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
-        );
-      } catch (_jsonError) {
-        // Si no se puede parsear el JSON, usar el formato anterior
-        console.log((_jsonError as Error).message);
-        throw new Error((_jsonError as Error).message);
-      }
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error(`❌ Error en petición a ${url}:`, error);
-    throw error;
+    // Refresh failed or no new token — clear auth and redirect
+    clearAuthAndRedirect();
+    throw new ApiError({
+      message: "Sesión expirada",
+      code: "UNAUTHORIZED",
+      status: 401,
+    });
   }
+
+  // --- Non-OK responses ---
+  if (!response.ok) {
+    await throwApiError(response);
+  }
+
+  // --- Parse successful response ---
+  const data = await response.json();
+
+  // Detect soft errors (200 OK with success: false)
+  return checkSoftError<T>(data, response.status);
 }
 
 // Función para refrescar el token
