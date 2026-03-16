@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -105,6 +105,42 @@ export function SkinFoldDialog({
       values: editingRecord?.values || {},
     };
   });
+
+  // Sync form data when editingRecord changes (e.g., opening dialog in edit mode)
+  useEffect(() => {
+    if (isOpen) {
+      const today = new Date().toISOString().split("T")[0];
+      if (editingRecord) {
+        // Parse notes: if it's a JSON string from PDF analysis, extract only userNotes
+        let userNotes = editingRecord.notes || "";
+        try {
+          const parsed = JSON.parse(userNotes);
+          if (parsed && typeof parsed === "object" && "userNotes" in parsed) {
+            userNotes = parsed.userNotes || "";
+          }
+        } catch {
+          // Not JSON, use as-is
+        }
+        setFormData({
+          date: editingRecord.date || today,
+          technician: editingRecord.technician || "",
+          notes: userNotes,
+          values: editingRecord.values || {},
+        });
+      } else {
+        setFormData({
+          date: today,
+          technician: "",
+          notes: "",
+          values: {},
+        });
+      }
+      setAiConfidence(null);
+      setPdfFile(null);
+      setFullAnalysis(null);
+      setShowFullAnalysis(false);
+    }
+  }, [isOpen, editingRecord]);
 
   const pdfInputRef = useRef<HTMLInputElement>(null);
 

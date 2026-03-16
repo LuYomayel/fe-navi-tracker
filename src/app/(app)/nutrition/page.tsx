@@ -1590,12 +1590,55 @@ export default function NutritionPage() {
                         </div>
                       )}
 
-                      {/* Notes */}
-                      {record.notes && (
-                        <p className="text-xs text-muted-foreground border-t border-border/50 pt-2">
-                          {record.notes}
-                        </p>
-                      )}
+                      {/* Notes - parse JSON if from PDF analysis */}
+                      {record.notes && (() => {
+                        let displayNotes = record.notes;
+                        let analysisData: any = null;
+                        try {
+                          const parsed = JSON.parse(record.notes);
+                          if (parsed && typeof parsed === "object") {
+                            analysisData = parsed;
+                            displayNotes = parsed.userNotes || "";
+                          }
+                        } catch {
+                          // Not JSON, show as-is
+                        }
+                        return (
+                          <div className="border-t border-border/50 pt-2 space-y-2">
+                            {/* Body composition from PDF analysis */}
+                            {analysisData?.bodyComposition && (
+                              <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+                                {Object.entries(analysisData.bodyComposition as Record<string, { percentage: number | null; kg: number | null }>).map(([key, val]) => (
+                                  <div key={key} className="rounded bg-muted/50 px-2 py-1 text-center">
+                                    <div className="text-[10px] text-muted-foreground capitalize">{key}</div>
+                                    <div className="text-xs font-medium">
+                                      {val?.percentage != null ? `${val.percentage}%` : "—"}
+                                    </div>
+                                    {val?.kg != null && (
+                                      <div className="text-[10px] text-muted-foreground">{val.kg}kg</div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {/* Somatotype */}
+                            {analysisData?.somatotype && (
+                              <div className="flex gap-3 text-xs">
+                                <span className="text-muted-foreground">Somatotipo:</span>
+                                <span className="font-medium">
+                                  Endo: {analysisData.somatotype.endomorphy} ·
+                                  Meso: {analysisData.somatotype.mesomorphy} ·
+                                  Ecto: {analysisData.somatotype.ectomorphy}
+                                </span>
+                              </div>
+                            )}
+                            {/* User notes */}
+                            {displayNotes && (
+                              <p className="text-xs text-muted-foreground">{displayNotes}</p>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   );
                 })}
