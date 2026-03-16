@@ -271,7 +271,7 @@ export function SkinFoldDialog({
         ...formData,
         notes: notesContent,
         aiConfidence: aiConfidence || undefined,
-        ...(pdfFile && { pdfUrl: pdfFile.data, pdfFilename: pdfFile.filename }),
+        ...(pdfFile && { pdfFilename: pdfFile.filename }),
       };
 
       if (editingRecord) {
