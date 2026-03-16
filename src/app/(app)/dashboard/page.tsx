@@ -16,6 +16,7 @@ import TasksWidget from "@/components/tasks/TasksWidget";
 import AgendaWidget from "@/components/agenda/AgendaWidget";
 import WinStreakWidget from "@/components/calendar/WinStreakWidget";
 import DayProgressWidget from "@/components/calendar/DayProgressWidget";
+import HydrationWidget from "@/components/hydration/HydrationWidget";
 
 import {
   Calendar,
@@ -231,8 +232,9 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* Tasks, Agenda & Win Streak */}
-      <div className="grid gap-3 sm:gap-4 md:grid-cols-3">
+      {/* Hydration & Tasks, Agenda & Win Streak */}
+      <div className="grid gap-3 sm:gap-4 md:grid-cols-4">
+        <HydrationWidget />
         <TasksWidget />
         <AgendaWidget />
         <WinStreakWidget />

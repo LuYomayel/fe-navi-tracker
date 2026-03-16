@@ -795,6 +795,7 @@ export interface DayScore {
   nutritionLogged: boolean;
   exerciseLogged: boolean;
   reflectionLogged: boolean;
+  hydrationLogged?: boolean;
 }
 
 export interface MonthlyStats {
@@ -812,6 +813,66 @@ export interface WinStreak {
   currentStreak: number;
   bestStreak: number;
   lastWonDate?: string;
+}
+
+// ==========================================
+// HYDRATION
+// ==========================================
+export interface HydrationLog {
+  id?: string;
+  userId: string;
+  date: string;
+  glassesConsumed: number;
+  mlConsumed: number;
+  goalReachedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface HydrationGoal {
+  goalGlasses: number;
+  mlPerGlass: number;
+}
+
+// ==========================================
+// SHOPPING LIST
+// ==========================================
+export type ShoppingCategory =
+  | "produce"
+  | "protein"
+  | "dairy"
+  | "grains"
+  | "pantry"
+  | "frozen"
+  | "other";
+
+export interface ShoppingList {
+  id: string;
+  userId: string;
+  name: string;
+  source: "manual" | "ai_generated" | "meal_prep";
+  mealPrepId?: string;
+  status: "active" | "archived";
+  notes?: string;
+  aiCostUsd?: number;
+  items?: ShoppingItem[];
+  _count?: { items: number };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ShoppingItem {
+  id: string;
+  shoppingListId: string;
+  name: string;
+  quantity?: string;
+  category: ShoppingCategory;
+  checked: boolean;
+  checkedAt?: string;
+  notes?: string;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // AI Cost tracking

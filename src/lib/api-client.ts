@@ -30,6 +30,10 @@ import {
   DayScore,
   MonthlyStats,
   WinStreak,
+  HydrationLog,
+  HydrationGoal,
+  ShoppingList,
+  ShoppingItem,
 } from "@/types";
 
 // Configuración de la API
@@ -635,6 +639,67 @@ export const api = {
       ),
     getWinStreak: () =>
       apiClient.get<WinStreak>("/day-score/stats/streak"),
+  },
+
+  // HYDRATION
+  hydration: {
+    getByDate: (date?: string) =>
+      apiClient.get<HydrationLog>(
+        `/hydration${date ? `?date=${date}` : ""}`,
+      ),
+    getRange: (from: string, to: string) =>
+      apiClient.get<HydrationLog[]>(
+        `/hydration/range?from=${from}&to=${to}`,
+      ),
+    adjust: (data: { date: string; delta: number }) =>
+      apiClient.post<HydrationLog>("/hydration/adjust", data),
+    set: (data: { date: string; glasses: number }) =>
+      apiClient.put<HydrationLog>("/hydration", data),
+    getGoal: () => apiClient.get<HydrationGoal>("/hydration/goal"),
+    setGoal: (data: HydrationGoal) =>
+      apiClient.put<void>("/hydration/goal", data),
+  },
+
+  // SHOPPING LIST
+  shoppingList: {
+    getAll: () => apiClient.get<ShoppingList[]>("/shopping-list"),
+    getById: (id: string) =>
+      apiClient.get<ShoppingList>(`/shopping-list/${id}`),
+    create: (data: { name: string; notes?: string }) =>
+      apiClient.post<ShoppingList>("/shopping-list", data),
+    generate: (data: { mealPrepId?: string; name?: string }) =>
+      apiClient.post<ShoppingList>("/shopping-list/generate", data),
+    update: (
+      id: string,
+      data: Partial<{ name: string; status: string; notes: string }>,
+    ) => apiClient.put<ShoppingList>(`/shopping-list/${id}`, data),
+    delete: (id: string) => apiClient.delete(`/shopping-list/${id}`),
+    addItem: (listId: string, data: Partial<ShoppingItem>) =>
+      apiClient.post<ShoppingItem>(
+        `/shopping-list/${listId}/items`,
+        data as any,
+      ),
+    updateItem: (
+      listId: string,
+      itemId: string,
+      data: Partial<ShoppingItem>,
+    ) =>
+      apiClient.put<ShoppingItem>(
+        `/shopping-list/${listId}/items/${itemId}`,
+        data as any,
+      ),
+    deleteItem: (listId: string, itemId: string) =>
+      apiClient.delete(`/shopping-list/${listId}/items/${itemId}`),
+    bulkCheck: (
+      listId: string,
+      data: { itemIds: string[]; checked: boolean },
+    ) =>
+      apiClient.post<ShoppingItem[]>(
+        `/shopping-list/${listId}/items/bulk-check`,
+        data,
+      ),
+    uncheckAll: (listId: string) =>
+      apiClient.post(`/shopping-list/${listId}/uncheck-all`),
   },
 };
 

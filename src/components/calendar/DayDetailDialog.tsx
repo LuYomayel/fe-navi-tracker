@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, Utensils, Dumbbell, BookOpen, Target, RefreshCw } from "lucide-react";
+import { CheckCircle2, XCircle, Utensils, Dumbbell, BookOpen, Target, RefreshCw, Droplets } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
@@ -140,6 +140,19 @@ export default function DayDetailDialog({ score, onClose }: DayDetailDialogProps
               <span>Reflexion</span>
             </div>
             {score.reflectionLogged ? (
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+            ) : (
+              <XCircle className="h-4 w-4 text-red-400" />
+            )}
+          </div>
+
+          {/* Hydration */}
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <Droplets className="h-4 w-4 text-blue-400" />
+              <span>Hidratacion</span>
+            </div>
+            {score.hydrationLogged ? (
               <CheckCircle2 className="h-4 w-4 text-green-500" />
             ) : (
               <XCircle className="h-4 w-4 text-red-400" />
