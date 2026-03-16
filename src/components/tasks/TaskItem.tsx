@@ -10,7 +10,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreVertical, Pencil, Trash2, Clock } from "lucide-react";
+import { MoreVertical, Pencil, Trash2, Clock, GripVertical } from "lucide-react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 const priorityColors: Record<string, string> = {
   urgent: "bg-red-500 text-white",
@@ -48,14 +50,40 @@ export default function TaskItem({
   onEdit,
   onDelete,
 }: TaskItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
   return (
     <div
-      className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
-        task.completed
-          ? "bg-muted/30 border-muted"
-          : "bg-card border-border hover:border-primary/30"
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-start gap-2 p-3 rounded-lg border transition-all ${
+        isDragging
+          ? "opacity-50 shadow-lg z-50"
+          : task.completed
+            ? "bg-muted/30 border-muted"
+            : "bg-card border-border hover:border-primary/30"
       }`}
     >
+      <button
+        {...attributes}
+        {...listeners}
+        className="mt-1 cursor-grab active:cursor-grabbing touch-none text-muted-foreground hover:text-foreground"
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+
       <Checkbox
         checked={task.completed}
         onCheckedChange={() => onToggle(task.id)}

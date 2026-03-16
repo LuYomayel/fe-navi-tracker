@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useNaviTrackerStore } from "@/store";
 import { Task } from "@/types";
 import TaskItem from "./TaskItem";
@@ -8,11 +8,26 @@ import AddTaskDialog from "./AddTaskDialog";
 import { Button } from "@/components/ui/button";
 import { Plus, Filter } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
 
 type FilterType = "today" | "week" | "all" | "overdue";
 
 export default function TaskList() {
-  const { tasks, createTask, updateTask, deleteTask, toggleTask } =
+  const { tasks, createTask, updateTask, deleteTask, toggleTask, reorderTasks } =
     useNaviTrackerStore();
   const [filter, setFilter] = useState<FilterType>("today");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -57,15 +72,16 @@ export default function TaskList() {
       result = result.filter((t) => t.completed);
     }
 
-    // Sort: incomplete first, then by priority, then by date
-    const priorityOrder: Record<string, number> = {
-      urgent: 0,
-      high: 1,
-      medium: 2,
-      low: 3,
-    };
+    // Sort by order field (from drag & drop), then fallback to priority
     result.sort((a, b) => {
       if (a.completed !== b.completed) return a.completed ? 1 : -1;
+      if (a.order !== b.order) return a.order - b.order;
+      const priorityOrder: Record<string, number> = {
+        urgent: 0,
+        high: 1,
+        medium: 2,
+        low: 3,
+      };
       const pA = priorityOrder[a.priority] ?? 2;
       const pB = priorityOrder[b.priority] ?? 2;
       if (pA !== pB) return pA - pB;
@@ -93,6 +109,34 @@ export default function TaskList() {
     }
     setEditingTask(null);
   };
+
+  // Drag & drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const oldIndex = filteredTasks.findIndex((t) => t.id === active.id);
+      const newIndex = filteredTasks.findIndex((t) => t.id === over.id);
+
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      const reordered = arrayMove(filteredTasks, oldIndex, newIndex);
+      reorderTasks(reordered.map((t) => t.id));
+    },
+    [filteredTasks, reorderTasks]
+  );
+
+  const taskIds = useMemo(() => filteredTasks.map((t) => t.id), [filteredTasks]);
 
   const filters: { key: FilterType; label: string }[] = [
     { key: "today", label: "Hoy" },
@@ -178,7 +222,7 @@ export default function TaskList() {
         </div>
       )}
 
-      {/* Task list */}
+      {/* Task list with drag & drop */}
       <div className="space-y-2">
         {filteredTasks.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
@@ -201,18 +245,29 @@ export default function TaskList() {
             </Button>
           </div>
         ) : (
-          filteredTasks.map((task) => (
-            <TaskItem
-              key={task.id}
-              task={task}
-              onToggle={toggleTask}
-              onEdit={(t) => {
-                setEditingTask(t);
-                setShowAddDialog(true);
-              }}
-              onDelete={deleteTask}
-            />
-          ))
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={taskIds}
+              strategy={verticalListSortingStrategy}
+            >
+              {filteredTasks.map((task) => (
+                <TaskItem
+                  key={task.id}
+                  task={task}
+                  onToggle={toggleTask}
+                  onEdit={(t) => {
+                    setEditingTask(t);
+                    setShowAddDialog(true);
+                  }}
+                  onDelete={deleteTask}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         )}
       </div>
 

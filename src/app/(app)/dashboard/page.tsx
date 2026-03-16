@@ -15,6 +15,7 @@ import { WeightWidget } from "@/components/nutrition/WeightWidget";
 import TasksWidget from "@/components/tasks/TasksWidget";
 import AgendaWidget from "@/components/agenda/AgendaWidget";
 import WinStreakWidget from "@/components/calendar/WinStreakWidget";
+import DayProgressWidget from "@/components/calendar/DayProgressWidget";
 
 import {
   Calendar,
@@ -158,6 +159,9 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Day Progress */}
+      <DayProgressWidget />
 
       {/* XP & Weight/Streak */}
       <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
