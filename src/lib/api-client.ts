@@ -307,6 +307,7 @@ export const api = {
     getMessages: () => apiClient.get("/chat"),
     sendMessage: (data: Record<string, unknown>) =>
       apiClient.post("/chat", data),
+    clearMessages: () => apiClient.delete("/chat"),
   },
 
   // Nutrición
@@ -467,15 +468,6 @@ export const api = {
     updateRecord: (id: string, data: SkinFoldRecord) =>
       apiClient.put(`/skin-fold/${id}`, data),
     deleteRecord: (id: string) => apiClient.delete(`/skin-fold?id=${id}`),
-    analyzeSkinFold: (data: {
-      imageBase64: string;
-      user: {
-        age: number;
-        height: number;
-        weight: number;
-        gender: string;
-      };
-    }) => apiClient.post("/body-analysis/skinfold", data),
     analyzePdf: (data: { images: string[] }) =>
       apiClient.post("/skin-fold/analyze-pdf", data),
   },
@@ -490,6 +482,12 @@ export const api = {
   // XP System
   xp: {
     getStats: () => apiClient.get("/xp/stats"),
+    getStreaks: () =>
+      apiClient.get<{
+        habits: { streak: number; lastDate: string | null };
+        nutrition: { streak: number; lastDate: string | null };
+        activity: { streak: number; lastDate: string | null };
+      }>("/xp/streaks"),
     addXp: (data: {
       action: XpAction;
       xpAmount: number;

@@ -2,13 +2,21 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api-client";
-import { XpStats, LevelUpResponse } from "@/types/xp";
+import { XpStats, LevelUpResponse, StreakInfo } from "@/types/xp";
 import { useAuthStore } from "@/modules/auth/store";
 import { toast } from "@/hooks/use-toast";
 
+export interface Streaks {
+  habits: StreakInfo;
+  nutrition: StreakInfo;
+  activity: StreakInfo;
+}
+
 export function useXp() {
   const [xpStats, setXpStats] = useState<XpStats | null>(null);
+  const [streaks, setStreaks] = useState<Streaks | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingStreaks, setIsLoadingStreaks] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLevelingUp, setIsLevelingUp] = useState(false);
 
@@ -28,6 +36,10 @@ export function useXp() {
       }
       const stats = response.data as XpStats;
       setXpStats(stats);
+      // Actualizar streaks si vienen en los stats
+      if (stats.streaks) {
+        setStreaks(stats.streaks);
+      }
       // Actualizar usuario en el store con los datos de XP (solo si han cambiado)
       if (
         user.level !== stats.level ||
@@ -49,6 +61,25 @@ export function useXp() {
       setIsLoading(false);
     }
   }, [user?.id, updateUser]); // Solo depender del ID del usuario, no del objeto completo
+
+  // Cargar rachas desde el endpoint dedicado
+  const loadStreaks = useCallback(async () => {
+    if (!user) return;
+
+    setIsLoadingStreaks(true);
+
+    try {
+      const response = await api.xp.getStreaks();
+      if (!response.success) {
+        throw new Error("Error al cargar rachas");
+      }
+      setStreaks(response.data);
+    } catch (error) {
+      console.error("Error cargando rachas:", error);
+    } finally {
+      setIsLoadingStreaks(false);
+    }
+  }, [user?.id]);
 
   // Agregar XP por completar hábito
   const addHabitXp = useCallback(
@@ -233,10 +264,13 @@ export function useXp() {
 
   return {
     xpStats,
+    streaks,
     isLoading,
+    isLoadingStreaks,
     error,
     isLevelingUp,
     loadXpStats,
+    loadStreaks,
     addHabitXp,
     addNutritionXp,
     addDailyCommentXp,

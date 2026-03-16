@@ -78,11 +78,11 @@ export function SkinFoldDialog({
   editingRecord,
   onRecordSaved,
 }: SkinFoldDialogProps) {
-  const { addSkinFoldRecord, updateSkinFoldRecord, preferences } =
+  const { addSkinFoldRecord, updateSkinFoldRecord } =
     useNaviTrackerStore();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"ai" | "manual" | "pdf">("manual");
+  const [activeTab, setActiveTab] = useState<"manual" | "pdf">("manual");
   const [aiConfidence, setAiConfidence] = useState<number | null>(null);
   const [pdfFile, setPdfFile] = useState<{ data: string; filename: string } | null>(null);
   const [pdfPageCount, setPdfPageCount] = useState<number>(0);
@@ -106,7 +106,6 @@ export function SkinFoldDialog({
     };
   });
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
 
   const extractImagesFromPdf = async (file: File): Promise<string[]> => {
@@ -235,73 +234,6 @@ export function SkinFoldDialog({
         [site]: newValue === 0 ? undefined : newValue,
       },
     }));
-  };
-
-  const handleImageUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      toast.error("Por favor selecciona una imagen valida");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("La imagen es demasiado grande. Maximo 5MB.");
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = reader.result as string;
-        const base64Data = base64.split(",")[1];
-
-        const userData = {
-          age: preferences.age || 30,
-          height: preferences.height || 170,
-          weight: preferences.currentWeight || 70,
-          gender: preferences.gender || ("male" as const),
-        };
-
-        try {
-          const result = await api.skinFold.analyzeSkinFold({
-            imageBase64: base64Data,
-            user: userData,
-          });
-
-          if (result.success && result.data) {
-            const analysisData = result.data as SkinFoldRecord;
-            setFormData((prev) => ({
-              ...prev,
-              values: { ...prev.values, ...analysisData.values },
-              technician: "AI",
-            }));
-            setAiConfidence(analysisData.aiConfidence ?? null);
-
-            toast.success(
-              `Analisis completado con ${Math.round((analysisData.aiConfidence ?? 0) * 100)}% de confianza`
-            );
-          } else {
-            throw new Error("Error en el analisis");
-          }
-        } catch (error) {
-          console.error("Error analizando imagen:", error);
-          toast.error("Error analizando la imagen. Intenta de nuevo.");
-        }
-      };
-
-      reader.readAsDataURL(file);
-    } catch (error) {
-      console.error("Error procesando imagen:", error);
-      toast.error("Error procesando la imagen");
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleSave = async () => {
@@ -527,16 +459,6 @@ export function SkinFoldDialog({
           </button>
           <button
             className={`px-3 sm:px-4 py-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
-              activeTab === "ai"
-                ? "border-b-2 border-primary text-primary"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-            onClick={() => setActiveTab("ai")}
-          >
-            IA (Foto)
-          </button>
-          <button
-            className={`px-3 sm:px-4 py-2 font-medium text-xs sm:text-sm whitespace-nowrap ${
               activeTab === "pdf"
                 ? "border-b-2 border-primary text-primary"
                 : "text-muted-foreground hover:text-foreground"
@@ -583,42 +505,6 @@ export function SkinFoldDialog({
               </div>
             </div>
           </div>
-
-          {/* IA Analysis Tab */}
-          {activeTab === "ai" && (
-            <div className="space-y-4">
-              <div className="bg-accent p-4 rounded-lg">
-                <h3 className="font-medium text-accent-foreground mb-2">
-                  Analisis con Inteligencia Artificial
-                </h3>
-                <p className="text-sm text-accent-foreground mb-4">
-                  Sube una foto frontal y/o lateral para que la IA estime los
-                  pliegues cutaneos. Asegurate de que la imagen sea clara y
-                  muestre los sitios de medicion.
-                </p>
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isLoading}
-                  className="w-full"
-                >
-                  {isLoading ? (
-                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Analizando...</>
-                  ) : (
-                    <><Upload className="w-4 h-4 mr-2" /> Subir Imagen para Analisis</>
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
 
           {/* PDF Upload + Analysis Tab */}
           {activeTab === "pdf" && (

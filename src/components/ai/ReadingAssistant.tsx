@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/hooks/use-toast";
-import { apiClient } from "@/lib/api-client";
+import { api } from "@/lib/api-client";
 
 interface ContentRecommendation {
   title: string;
@@ -94,22 +94,20 @@ const ReadingAssistant: React.FC = () => {
         genre,
       });
 
-      const response = await apiClient.post<ContentRecommendation[]>(
-        "/reading-recommendations",
-        {
-          availableTime,
-          preferredMood,
-          contentType,
-          topic,
-          genre,
-        }
-      );
+      const response = await api.analysis.getContentRecommendations({
+        availableTime,
+        preferredMood,
+        contentType,
+        topic,
+        genre,
+        includeUserPatterns: true,
+      });
 
       if (response.success && response.data) {
-        setRecommendations(response.data);
+        setRecommendations(response.data as ContentRecommendation[]);
         toast({
           title: "✨ Recomendaciones generadas",
-          description: `Se encontraron ${response.data.length} recomendaciones perfectas para ti 📚`,
+          description: `Se encontraron ${(response.data as ContentRecommendation[]).length} recomendaciones perfectas para ti 📚`,
         });
 
         console.log("✅ Recomendaciones recibidas:", response.data);

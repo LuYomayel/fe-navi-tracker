@@ -66,6 +66,7 @@ import { MealPrepWidget } from "@/components/nutrition/MealPrepWidget";
 import { MealPrepView } from "@/components/nutrition/MealPrepView";
 import { GenerateMealPrepDialog } from "@/components/nutrition/GenerateMealPrepDialog";
 import { AICostWidget } from "@/components/nutrition/AICostWidget";
+import { DailyBalanceCard } from "@/components/nutrition/DailyBalanceCard";
 import { useDateHelper } from "@/hooks/useDateHelper";
 
 interface DailyProgress {
@@ -883,6 +884,9 @@ export default function NutritionPage() {
               />
             </div>
             <div className="w-full md:w-1/3 space-y-4">
+              <DailyBalanceCard
+                refreshKey={nutritionAnalyses.length + physicalActivities.length}
+              />
               <MealPrepWidget
                 onOpenMealPrep={() => setActiveTab("meal-prep")}
                 onOpenGenerate={() => setShowGenerateMealPrep(true)}

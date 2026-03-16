@@ -21,7 +21,7 @@ export function StreakWidget({
   className = "",
   compact = false,
 }: StreakWidgetProps) {
-  const { xpStats, isLoading } = useXp();
+  const { xpStats, streaks: hookStreaks, isLoading } = useXp();
 
   if (isLoading || !xpStats) {
     return (
@@ -46,9 +46,9 @@ export function StreakWidget({
     );
   }
 
-  // Usar las nuevas rachas por categoría si están disponibles, sino usar la racha general
-  const streaks: StreakData = xpStats.streaks || {
-    habits: { streak: xpStats.streak, lastDate: xpStats.lastStreakDate },
+  // Usar las rachas del hook dedicado, luego las de xpStats, y fallback a la racha general
+  const streaks: StreakData = hookStreaks || xpStats.streaks || {
+    habits: { streak: xpStats.streak, lastDate: xpStats.lastStreakDate ?? null },
     nutrition: { streak: 0, lastDate: null },
     activity: { streak: 0, lastDate: null },
   };
