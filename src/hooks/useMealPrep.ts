@@ -28,7 +28,7 @@ export function useMealPrep() {
   // ─── Load Methods ──────────────────────────────────────────
 
   const loadActiveMealPrep = useCallback(async (force = false) => {
-    if (!force && Date.now() - lastFetch.current < CACHE_TTL && activeMealPrep) return;
+    if (!force && Date.now() - lastFetch.current < CACHE_TTL) return;
 
     try {
       setIsLoading(true);
@@ -42,7 +42,7 @@ export function useMealPrep() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeMealPrep]);
+  }, []);
 
   const loadAllMealPreps = useCallback(async () => {
     try {

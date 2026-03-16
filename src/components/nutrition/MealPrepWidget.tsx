@@ -96,7 +96,7 @@ export function MealPrepWidget({
 
   if (!activeMealPrep) return null;
 
-  const todayMeals = activeMealPrep.days?.days?.[todayKey];
+  const todayMeals = activeMealPrep.days?.[todayKey];
   const dailyTotal = activeMealPrep.dailyTotals?.[todayKey];
 
   // Count eaten meals today

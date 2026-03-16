@@ -138,7 +138,7 @@ export function MealPrepView() {
 
   if (!prep) return null;
 
-  const dayMeals = prep.days?.days?.[selectedDay];
+  const dayMeals = prep.days?.[selectedDay];
   const dailyTotal: MacroSummary | undefined = prep.dailyTotals?.[selectedDay];
   const weeklyTotal: MacroSummary | undefined = prep.weeklyTotals;
 
@@ -327,7 +327,7 @@ export function MealPrepView() {
                 </div>
                 {DAY_KEYS.map((day) => {
                   const slot =
-                    prep.days?.days?.[day]?.slots?.[mealType] || null;
+                    prep.days?.[day]?.slots?.[mealType] || null;
                   return (
                     <MealPrepSlotCard
                       key={`${day}-${mealType}`}

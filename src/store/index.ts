@@ -1076,6 +1076,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             notesResponse,
             physicalActivitiesResponse,
             weightEntriesResponse,
+            skinFoldResponse,
           ] = await Promise.all([
             api.activities.getAll().catch(() => ({ data: [] })),
             api.nutrition.getAnalyses().catch(() => ({ data: [] })),
@@ -1083,6 +1084,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             api.notes.getAll().catch(() => ({ data: [] })),
             api.physicalActivity.getAll().catch(() => ({ data: [] })),
             api.nutrition.getAllWeightEntries().catch(() => ({ data: [] })),
+            api.skinFold.getRecords().catch(() => ({ data: [] })),
           ]);
 
           set({
@@ -1094,7 +1096,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             physicalActivities:
               (physicalActivitiesResponse.data as PhysicalActivity[]) || [],
             weightEntries: (weightEntriesResponse.data as WeightEntry[]) || [],
-            // bodyAnalyses se mantienen desde localStorage por ahora
+            skinFoldRecords: (skinFoldResponse.data as SkinFoldRecord[]) || [],
             isInitialized: true,
             isLoading: false,
           });

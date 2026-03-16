@@ -135,7 +135,7 @@ export interface MealPrep {
   weekStartDate: string; // YYYY-MM-DD (lunes)
   weekEndDate: string; // YYYY-MM-DD (domingo)
   name?: string;
-  days: MealPrepWeek;
+  days: Record<DayKey, MealPrepDay>;
   dailyTotals: Record<DayKey, MacroSummary>;
   weeklyTotals: MacroSummary;
   userContext?: string;
