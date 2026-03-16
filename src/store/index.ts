@@ -15,6 +15,7 @@ import type {
 import { toast } from "@/lib/toast-helper";
 import { api } from "@/lib/api-client";
 import { XpAction } from "@/types/xp";
+import { getErrorMessage } from "@/lib/api-error";
 
 // Helper functions
 const generateId = () => Math.random().toString(36).substring(2, 15);
@@ -304,10 +305,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
         } catch (error) {
           console.error("❌ Error creando actividad:", error);
           set({ isLoading: false });
-          toast.error(
-            "Error",
-            "No se pudo crear el hábito. Inténtalo de nuevo."
-          );
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -333,10 +331,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
         } catch (error) {
           console.error("❌ Error actualizando actividad:", error);
           set({ isLoading: false });
-          toast.error(
-            "Error",
-            "No se pudo actualizar el hábito. Inténtalo de nuevo."
-          );
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -364,10 +359,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
         } catch (error) {
           console.error("❌ Error eliminando actividad:", error);
           set({ isLoading: false });
-          toast.error(
-            "Error",
-            "No se pudo eliminar el hábito. Inténtalo de nuevo."
-          );
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -390,7 +382,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           });
 
           if (!response.success) {
-            toast.error("Error", "No se pudo duplicar el hábito");
+            toast.error("Error", getErrorMessage(error));
             return;
           }
 
@@ -405,10 +397,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           );
         } catch (error) {
           console.error("Error duplicando actividad:", error);
-          toast.error(
-            "Error",
-            "No se pudo duplicar el hábito. Inténtalo de nuevo."
-          );
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -438,10 +427,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           );
         } catch (error) {
           console.error("❌ Error archivando actividad:", error);
-          toast.error(
-            "Error",
-            "No se pudo archivar el hábito. Inténtalo de nuevo."
-          );
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -471,10 +457,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           );
         } catch (error) {
           console.error("Error restaurando actividad:", error);
-          toast.error(
-            "Error",
-            "No se pudo restaurar el hábito. Inténtalo de nuevo."
-          );
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -564,10 +547,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
                   } catch (error) {
                     console.error("❌ Error manejando XP/bonus:", error);
 
-                    toast.error(
-                      "Error",
-                      "No se pudo agregar el XP. Inténtalo de nuevo."
-                    );
+                    toast.error("Error", getErrorMessage(error));
                   }
 
                   window.dispatchEvent(new Event("day-completed"));
@@ -579,10 +559,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           }
         } catch (error) {
           console.error("❌ Error guardando completación:", error);
-          toast.error(
-            "Error",
-            "No se pudo guardar la completación. Inténtalo de nuevo."
-          );
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -607,7 +584,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             });
 
             if (!response.success) {
-              toast.error("Error", "No se pudo actualizar la nota");
+              toast.error("Error", getErrorMessage(error));
               return;
             }
 
@@ -628,7 +605,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             const response = await api.notes.create(noteToSave);
 
             if (!response.success) {
-              toast.error("Error", "No se pudo guardar la nota");
+              toast.error("Error", getErrorMessage(error));
               return;
             }
 
@@ -641,10 +618,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           toast.success("Nota guardada", "Tu reflexión diaria se ha guardado");
         } catch (error) {
           console.error("❌ Error guardando nota:", error);
-          toast.error(
-            "Error",
-            "No se pudo guardar la nota. Inténtalo de nuevo."
-          );
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -663,7 +637,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           if (noteToDelete?.id) {
             const response = await api.notes.delete(noteToDelete.id);
             if (!response.success) {
-              toast.error("Error", "No se pudo eliminar la nota");
+              toast.error("Error", getErrorMessage(error));
               return;
             }
           }
@@ -677,10 +651,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           toast.success("Nota eliminada", "La reflexión se ha eliminado");
         } catch (error) {
           console.error("Error eliminando nota:", error);
-          toast.error(
-            "Error",
-            "No se pudo eliminar la nota. Inténtalo de nuevo."
-          );
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -735,7 +706,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           const response = await api.notes.create(noteToSave);
 
           if (!response.success) {
-            toast.error("Error", "No se pudo guardar la reflexión");
+            toast.error("Error", getErrorMessage(error));
             return;
           }
 
@@ -751,7 +722,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             description: "Reflexión diaria guardada",
           });
           if (!xpResponse.success) {
-            toast.error("Error", "No se pudo guardar la reflexión");
+            toast.error("Error", getErrorMessage(error));
             return;
           }
 
@@ -765,9 +736,8 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             "Tu reflexión diaria se ha guardado"
           );
         } catch (error) {
-          //console.error("❌ Error guardando reflexión:", error);
-          console.log("error", error);
-          toast.error("Error", error.message);
+          console.error("Error guardando reflexión:", error);
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -819,10 +789,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
         } catch (error) {
           console.error("❌ Error guardando análisis nutricional:", error);
           set({ isLoading: false });
-          toast.error(
-            "Error",
-            "No se pudo guardar el análisis nutricional. Inténtalo de nuevo."
-          );
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -842,10 +809,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           );
         } catch (error) {
           console.error("Error eliminando análisis nutricional:", error);
-          toast.error(
-            "Error",
-            "No se pudo eliminar el análisis. Inténtalo de nuevo."
-          );
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -865,10 +829,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           toast.success("Análisis actualizado", "Los cambios se han guardado");
         } catch (error) {
           console.error("Error actualizando análisis nutricional:", error);
-          toast.error(
-            "Error",
-            "No se pudo actualizar el análisis. Inténtalo de nuevo."
-          );
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -892,10 +853,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
         } catch (error) {
           console.error("Error guardando análisis corporal:", error);
           set({ isLoading: false });
-          toast.error(
-            "Error",
-            "No se pudo guardar el análisis corporal. Inténtalo de nuevo."
-          );
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -914,10 +872,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           );
         } catch (error) {
           console.error("❌ Error eliminando análisis corporal:", error);
-          toast.error(
-            "Error",
-            "No se pudo eliminar el análisis. Inténtalo de nuevo."
-          );
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -937,10 +892,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           );
         } catch (error) {
           console.error("Error guardando pliegues cutáneos:", error);
-          toast.error(
-            "Error",
-            "No se pudieron guardar los pliegues. Inténtalo de nuevo."
-          );
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -958,10 +910,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           toast.success("Pliegues actualizados", "Los cambios se han guardado");
         } catch (error) {
           console.error("Error actualizando pliegues cutáneos:", error);
-          toast.error(
-            "Error",
-            "No se pudieron actualizar los pliegues. Inténtalo de nuevo."
-          );
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -981,10 +930,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           );
         } catch (error) {
           console.error("Error eliminando pliegues cutáneos:", error);
-          toast.error(
-            "Error",
-            "No se pudo eliminar el registro. Inténtalo de nuevo."
-          );
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -1005,10 +951,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           }));
         } catch (error) {
           console.error("Error enviando mensaje:", error);
-          toast.error(
-            "Error",
-            "No se pudo enviar el mensaje. Inténtalo de nuevo."
-          );
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -1022,10 +965,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           );
         } catch (error) {
           console.error("Error limpiando historial:", error);
-          toast.error(
-            "Error",
-            "No se pudo limpiar el historial. Inténtalo de nuevo."
-          );
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -1069,7 +1009,20 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
         try {
           set({ isLoading: true });
 
-          // 🚀 Cargar datos reales desde la API
+          // Track which modules failed to load
+          const failedModules: string[] = [];
+
+          const safeLoad = <T>(
+            promise: Promise<{ data: T }>,
+            moduleName: string,
+            fallback: T
+          ): Promise<{ data: T }> =>
+            promise.catch((err) => {
+              console.error(`Error cargando ${moduleName}:`, err);
+              failedModules.push(moduleName);
+              return { data: fallback };
+            });
+
           const [
             activitiesResponse,
             nutritionResponse,
@@ -1079,13 +1032,13 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
             weightEntriesResponse,
             skinFoldResponse,
           ] = await Promise.all([
-            api.activities.getAll().catch(() => ({ data: [] })),
-            api.nutrition.getAnalyses().catch(() => ({ data: [] })),
-            api.bodyAnalysis.getAll().catch(() => ({ data: [] })),
-            api.notes.getAll().catch(() => ({ data: [] })),
-            api.physicalActivity.getAll().catch(() => ({ data: [] })),
-            api.nutrition.getAllWeightEntries().catch(() => ({ data: [] })),
-            api.skinFold.getRecords().catch(() => ({ data: [] })),
+            safeLoad(api.activities.getAll(), "hábitos", []),
+            safeLoad(api.nutrition.getAnalyses(), "nutrición", []),
+            safeLoad(api.bodyAnalysis.getAll(), "análisis corporal", []),
+            safeLoad(api.notes.getAll(), "notas", []),
+            safeLoad(api.physicalActivity.getAll(), "actividad física", []),
+            safeLoad(api.nutrition.getAllWeightEntries(), "peso", []),
+            safeLoad(api.skinFold.getRecords(), "pliegues", []),
           ]);
 
           set({
@@ -1105,13 +1058,23 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           // Load nutrition goals from backend (non-blocking)
           get().loadNutritionGoals().catch(() => {});
 
-          toast.success("Datos cargados", "Tu información se ha sincronizado");
+          if (failedModules.length > 0) {
+            toast.error(
+              "Carga parcial",
+              `No se pudieron cargar: ${failedModules.join(", ")}. El resto se sincronizó correctamente.`
+            );
+          } else {
+            toast.success(
+              "Datos cargados",
+              "Tu información se ha sincronizado"
+            );
+          }
         } catch (error) {
-          console.error("❌ Error inicializando desde API:", error);
+          console.error("Error inicializando desde API:", error);
           set({ isLoading: false, isInitialized: true });
           toast.error(
             "Error de sincronización",
-            "No se pudieron cargar todos los datos. Trabajando en modo local."
+            getErrorMessage(error)
           );
         }
       },
@@ -1285,7 +1248,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           }));
         } catch (error) {
           console.error("Error agregando peso al state:", error);
-          toast.error("Error", "No se pudo registrar el peso");
+          toast.error("Error", getErrorMessage(error));
         }
       },
 
@@ -1304,7 +1267,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           );
         } catch (error) {
           console.error("❌ Error eliminando peso:", error);
-          toast.error("Error", "No se pudo eliminar el registro");
+          toast.error("Error", getErrorMessage(error));
         }
       },
 

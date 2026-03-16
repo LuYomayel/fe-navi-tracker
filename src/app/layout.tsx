@@ -6,6 +6,7 @@ import PWAInstaller from "@/components/PWAInstaller";
 import NetworkStatus from "@/components/NetworkStatus";
 import PWAUpdatePrompt from "@/components/PWAUpdatePrompt";
 import UnregisterSW from "@/components/UnregisterSW";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -60,7 +61,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
         <GlobalToaster />
         <PWAInstaller />
         <NetworkStatus />
