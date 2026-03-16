@@ -11,6 +11,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { MealPrepSlotCard } from "./MealPrepSlotCard";
+import { EditMealPrepSlotDialog } from "./EditMealPrepSlotDialog";
 import { useMealPrep } from "@/hooks/useMealPrep";
 import {
   DAY_KEYS,
@@ -18,6 +19,8 @@ import {
   MEAL_SLOT_KEYS,
   MEAL_SLOT_LABELS,
   DayKey,
+  MealSlotKey,
+  MealPrepSlot,
   MacroSummary,
 } from "@/types";
 import { getDateKey } from "@/lib/utils";
@@ -53,6 +56,13 @@ export function MealPrepView() {
   const [selectedDay, setSelectedDay] = useState<DayKey>(getTodayDayKey());
   const [viewMode, setViewMode] = useState<"today" | "week">("today");
 
+  // Edit slot state
+  const [editingSlot, setEditingSlot] = useState<{
+    day: DayKey;
+    mealType: MealSlotKey;
+    slot: MealPrepSlot | null;
+  } | null>(null);
+
   useEffect(() => {
     loadActiveMealPrep(true);
     loadActivePlan();
@@ -62,6 +72,15 @@ export function MealPrepView() {
   const todayKey = getTodayDayKey();
 
   const prep = activeMealPrep;
+
+  const handleEditSlot = (day: DayKey, mealType: MealSlotKey, slot: MealPrepSlot | null) => {
+    setEditingSlot({ day, mealType, slot });
+  };
+
+  const handleSlotUpdated = () => {
+    loadActiveMealPrep(true);
+    setEditingSlot(null);
+  };
 
   // ─── Empty State ─────────────────────────────────────────
 
@@ -280,6 +299,7 @@ export function MealPrepView() {
                   key={mealType}
                   slot={slot}
                   mealType={mealType}
+                  onEdit={() => handleEditSlot(selectedDay, mealType, slot)}
                   onEat={
                     slot && !slot.eatenAt
                       ? () =>
@@ -305,16 +325,16 @@ export function MealPrepView() {
             {/* Header row */}
             <div className="grid grid-cols-8 gap-1 mb-1">
               <div className="text-xs font-medium text-muted-foreground p-1" />
-              {DAY_KEYS.map((day) => (
+              {DAY_KEYS.map((d) => (
                 <div
-                  key={day}
+                  key={d}
                   className={`text-xs font-medium text-center p-1 rounded ${
-                    day === todayKey
+                    d === todayKey
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground"
                   }`}
                 >
-                  {DAY_LABELS[day].slice(0, 3)}
+                  {DAY_LABELS[d].slice(0, 3)}
                 </div>
               ))}
             </div>
@@ -325,21 +345,30 @@ export function MealPrepView() {
                 <div className="text-[10px] font-medium text-muted-foreground p-1 flex items-center">
                   {MEAL_SLOT_LABELS[mealType]}
                 </div>
-                {DAY_KEYS.map((day) => {
+                {DAY_KEYS.map((d) => {
                   const slot =
-                    prep.days?.[day]?.slots?.[mealType] || null;
+                    prep.days?.[d]?.slots?.[mealType] || null;
                   return (
-                    <MealPrepSlotCard
-                      key={`${day}-${mealType}`}
-                      slot={slot}
-                      mealType={mealType}
-                      compact
-                      onEat={
-                        slot && !slot.eatenAt
-                          ? () => eatSlot(prep.id, day, mealType, todayDate)
-                          : undefined
-                      }
-                    />
+                    <div
+                      key={`${d}-${mealType}`}
+                      className="cursor-pointer"
+                      onClick={() => {
+                        if (!slot?.eatenAt) {
+                          handleEditSlot(d, mealType, slot);
+                        }
+                      }}
+                    >
+                      <MealPrepSlotCard
+                        slot={slot}
+                        mealType={mealType}
+                        compact
+                        onEat={
+                          slot && !slot.eatenAt
+                            ? () => eatSlot(prep.id, d, mealType, todayDate)
+                            : undefined
+                        }
+                      />
+                    </div>
                   );
                 })}
               </div>
@@ -350,12 +379,12 @@ export function MealPrepView() {
               <div className="text-[10px] font-medium text-muted-foreground p-1 flex items-center">
                 Total
               </div>
-              {DAY_KEYS.map((day) => {
+              {DAY_KEYS.map((d) => {
                 const total: MacroSummary | undefined =
-                  prep.dailyTotals?.[day];
+                  prep.dailyTotals?.[d];
                 return (
                   <div
-                    key={day}
+                    key={d}
                     className="text-center p-1 text-[10px] text-muted-foreground"
                   >
                     {total ? (
@@ -385,6 +414,19 @@ export function MealPrepView() {
         isOpen={showImportDialog}
         onClose={() => setShowImportDialog(false)}
       />
+
+      {/* Edit Slot Dialog */}
+      {editingSlot && (
+        <EditMealPrepSlotDialog
+          isOpen={!!editingSlot}
+          onClose={() => setEditingSlot(null)}
+          prepId={prep.id}
+          day={editingSlot.day}
+          mealType={editingSlot.mealType}
+          currentSlot={editingSlot.slot}
+          onSlotUpdated={handleSlotUpdated}
+        />
+      )}
     </div>
   );
 }
