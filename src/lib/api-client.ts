@@ -40,7 +40,6 @@ import {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "https://api-navi-tracker.luciano-yomayel.com";
-console.log("API_BASE_URL", API_BASE_URL);
 // Función helper para obtener el token desde el store
 function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -109,18 +108,6 @@ async function fetchAPI<T = unknown>(
           const retryResponse = await fetch(url, newConfig);
 
           if (!retryResponse.ok) {
-            console.error(
-              `❌ Error en reintento: ${retryResponse.status} ${retryResponse.statusText}`
-            );
-
-            // Capturar el texto del error para debugging
-            try {
-              const errorText = await retryResponse.text();
-              console.error(`📄 Error body:`, errorText);
-            } catch (e) {
-              console.error(`❌ No se pudo leer el error body:`, e);
-            }
-
             throw new Error(`HTTP error! status: ${retryResponse.status}`);
           }
 
@@ -132,7 +119,6 @@ async function fetchAPI<T = unknown>(
     if (!response.ok) {
       if (response.status === 401) {
         // Token inválido o expirado definitivamente
-        console.warn("🚪 Sesión expirada, redirigiendo al login...");
         clearAuthAndRedirect();
         throw new Error("Sesión expirada");
       }
@@ -148,7 +134,6 @@ async function fetchAPI<T = unknown>(
             Array.isArray(errorData.errors) && errorData.errors.length > 0
               ? errorData.errors.join(", ")
               : errorData.message;
-          console.log("errorMessage", errorMessage);
           throw new Error(errorMessage);
         }
 
@@ -158,7 +143,6 @@ async function fetchAPI<T = unknown>(
         );
       } catch (_jsonError) {
         // Si no se puede parsear el JSON, usar el formato anterior
-        console.log((_jsonError as Error).message);
         throw new Error((_jsonError as Error).message);
       }
     }
@@ -166,7 +150,6 @@ async function fetchAPI<T = unknown>(
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error(`❌ Error en petición a ${url}:`, error);
     throw error;
   }
 }
@@ -218,7 +201,6 @@ async function refreshAuthToken(): Promise<boolean> {
 
     return false;
   } catch (error) {
-    console.error("❌ Error al renovar token:", error);
     return false;
   }
 }

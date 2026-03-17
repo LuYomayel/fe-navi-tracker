@@ -27,11 +27,8 @@ export default function PWAInstaller() {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
         .register("/sw.js")
-        .then((registration) => {
-          console.log("✅ Service Worker registrado:", registration);
-        })
-        .catch((error) => {
-          console.log("❌ Error al registrar Service Worker:", error);
+        .catch(() => {
+          // Service worker registration failed
         });
     }
 
@@ -72,11 +69,7 @@ export default function PWAInstaller() {
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
 
-    if (outcome === "accepted") {
-      console.log("✅ Usuario aceptó instalar la PWA");
-    } else {
-      console.log("❌ Usuario rechazó instalar la PWA");
-    }
+    // User made a choice about installing the PWA
 
     setDeferredPrompt(null);
     setShowInstallPrompt(false);

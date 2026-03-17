@@ -55,7 +55,7 @@ export function useXp() {
         });
       }
     } catch (error) {
-      console.error("❌ Error cargando estadísticas de XP:", error);
+      console.error("Error cargando estadísticas de XP:", error);
       setError(error instanceof Error ? error.message : "Error desconocido");
     } finally {
       setIsLoading(false);
@@ -101,7 +101,7 @@ export function useXp() {
 
         return result;
       } catch (error) {
-        console.error("❌ Error agregando XP de hábito:", error);
+        console.error("Error agregando XP de hábito:", error);
         toast({
           title: "Error",
           description: "No se pudo registrar la experiencia",
@@ -130,7 +130,7 @@ export function useXp() {
 
         return result;
       } catch (error) {
-        console.error("❌ Error agregando XP de nutrición:", error);
+        console.error("Error agregando XP de nutrición:", error);
         toast({
           title: "Error",
           description: "No se pudo registrar la experiencia",
@@ -156,7 +156,7 @@ export function useXp() {
 
         return result;
       } catch (error) {
-        console.error("❌ Error agregando XP de comentario:", error);
+        console.error("Error agregando XP de comentario:", error);
         toast({
           title: "Error",
           description: "No se pudo registrar la experiencia",

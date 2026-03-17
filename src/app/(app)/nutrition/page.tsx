@@ -702,7 +702,6 @@ export default function NutritionPage() {
   };
 
   const handleDeleteMeal = async (analysisId: string) => {
-    console.log("🔍 Analysis ID:", analysisId);
     if (
       confirm(
         "¿Estás seguro de que quieres eliminar este análisis nutricional?"
@@ -711,7 +710,6 @@ export default function NutritionPage() {
       try {
         // Llamar a la API
         const response = await api.nutrition.deleteAnalysis(analysisId);
-        console.log("🔍 Response:", response);
 
         if (response.success) {
           // Actualizar el store local
@@ -721,7 +719,7 @@ export default function NutritionPage() {
           toast.error("Error al eliminar el análisis");
         }
       } catch (error) {
-        console.error("❌ Error eliminando análisis:", error);
+        console.error("Error eliminando análisis:", error);
         // Intentar eliminar del store local como fallback
         await deleteNutritionAnalysis(analysisId);
         toast.success("Análisis eliminado del almacenamiento local");
@@ -737,7 +735,7 @@ export default function NutritionPage() {
         await deleteBodyAnalysis(analysisId);
         toast.success("Análisis corporal eliminado correctamente");
       } catch (error) {
-        console.error("❌ Error eliminando análisis corporal:", error);
+        console.error("Error eliminando análisis corporal:", error);
         toast.error("Error al eliminar el análisis corporal");
       }
     }
@@ -749,9 +747,6 @@ export default function NutritionPage() {
   };
 
   const handleAnalysisUpdated = async () => {
-    // Refrescar los datos después de actualizar
-    console.log("✅ Análisis actualizado, refrescando datos...");
-
     try {
       // El store de Zustand ya maneja la actualización automática
       // pero podemos forzar una actualización si es necesario
@@ -763,7 +758,7 @@ export default function NutritionPage() {
 
       toast.success("Datos actualizados correctamente");
     } catch (error) {
-      console.error("❌ Error refrescando datos:", error);
+      console.error("Error refrescando datos:", error);
     }
   };
 
@@ -789,7 +784,6 @@ export default function NutritionPage() {
 
   const formatDate = (timestamp: string | undefined, fallbackDate: string) => {
     if (timestamp) {
-      console.log("🔍 Timestamp:", typeof timestamp);
       return {
         date: new Date(timestamp).toLocaleDateString("es-ES", {
           day: "numeric",
@@ -813,7 +807,6 @@ export default function NutritionPage() {
   };
 
   const _handleSetAsGoals = (analysis: _BodyAnalysis) => {
-    console.log("🔍 Analysis:", analysis);
     setSelectedBodyAnalysis(analysis);
     setShowGoalsModal(true);
   };
@@ -1464,11 +1457,9 @@ export default function NutritionPage() {
           <WeightTracker
             entries={weightEntries}
             onEntryAdded={(entry) => {
-              console.log("🔄 Peso agregado, refrescando datos...");
               addWeightEntry(entry);
             }}
             onEntryDeleted={(entryId) => {
-              console.log("🔄 Peso eliminado, refrescando datos...");
               deleteWeightEntry(entryId);
             }}
           />
@@ -1673,7 +1664,6 @@ export default function NutritionPage() {
         onClose={() => setShowFoodAnalyzer(false)}
         selectedDate={selectedDate}
         onAnalysisSaved={() => {
-          console.log("🔄 Análisis nutricional guardado, refrescando datos...");
           getAllFoodAnalysis();
           // Los datos se actualizan automáticamente por el store de Zustand
           toast.success("Datos actualizados");
@@ -1684,7 +1674,6 @@ export default function NutritionPage() {
         isOpen={showBodyAnalyzer}
         onClose={() => setShowBodyAnalyzer(false)}
         onAnalysisSaved={() => {
-          console.log("🔄 Análisis corporal guardado, refrescando datos...");
           getAllBodyAnalysis();
           // Los datos se actualizan automáticamente por el store de Zustand
           toast.success("Datos actualizados");
@@ -1699,7 +1688,6 @@ export default function NutritionPage() {
         }}
         editingRecord={editingSkinFold || undefined}
         onRecordSaved={() => {
-          console.log("🔄 Registro de pliegues guardado, refrescando datos...");
           getAllSkinFoldRecords();
           setEditingSkinFold(null);
           toast.success("Datos actualizados");
@@ -1715,7 +1703,6 @@ export default function NutritionPage() {
         bodyAnalysis={selectedBodyAnalysis}
         isManualMode={!selectedBodyAnalysis}
         onGoalsSaved={() => {
-          console.log("🔄 Objetivos guardados, refrescando datos...");
           setShowGoalsModal(false);
           setSelectedBodyAnalysis(null);
           getAllBodyAnalysis();
@@ -1735,7 +1722,6 @@ export default function NutritionPage() {
         onOpenChange={() => setShowPhysicalActivityDialog(false)}
         date={selectedDate.toISOString().split("T")[0]}
         onActivityCreated={() => {
-          console.log("🔄 Actividad física creada, refrescando datos...");
           getAllPhysicalActivities();
         }}
       />

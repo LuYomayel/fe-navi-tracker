@@ -97,7 +97,7 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : "Error desconocido";
-          console.error("❌ Error en login:", errorMessage);
+          console.error("Error en login:", errorMessage);
           set({ error: errorMessage, isLoading: false });
           return false;
         }
@@ -138,7 +138,7 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : "Error desconocido";
-          console.error("❌ Error en registro:", errorMessage);
+          console.error("Error en registro:", errorMessage);
           set({ error: errorMessage, isLoading: false });
           return false;
         }
@@ -158,7 +158,7 @@ export const useAuthStore = create<AuthState>()(
             });
           }
         } catch (error) {
-          console.warn("⚠️ Error al hacer logout en el servidor:", error);
+          console.warn("Error al hacer logout en el servidor:", error);
         } finally {
           get().clearAuth();
         }
@@ -168,7 +168,7 @@ export const useAuthStore = create<AuthState>()(
         const tokens = get().tokens;
 
         if (!tokens?.refreshToken) {
-          console.warn("⚠️ No hay refresh token disponible");
+          console.warn("No hay refresh token disponible");
           get().clearAuth();
           return false;
         }
@@ -206,7 +206,7 @@ export const useAuthStore = create<AuthState>()(
 
           throw new Error("No se pudo renovar el token");
         } catch (error) {
-          console.error("❌ Error al renovar token:", error);
+          console.error("Error al renovar token:", error);
           get().clearAuth();
           return false;
         }
@@ -285,8 +285,6 @@ export const useAuthStore = create<AuthState>()(
             if (state.isTokenExpired()) {
               state.refreshToken();
             }
-          } else {
-            console.log("❌ No hay token en localStorage");
           }
 
           // Siempre marcar como hidratado

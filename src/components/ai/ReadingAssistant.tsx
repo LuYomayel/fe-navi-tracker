@@ -86,14 +86,6 @@ const ReadingAssistant: React.FC = () => {
   const fetchRecommendations = async () => {
     setIsLoading(true);
     try {
-      console.log("🔍 Solicitando recomendaciones con filtros...", {
-        availableTime,
-        preferredMood,
-        contentType,
-        topic,
-        genre,
-      });
-
       const response = await api.analysis.getContentRecommendations({
         availableTime,
         preferredMood,
@@ -110,7 +102,6 @@ const ReadingAssistant: React.FC = () => {
           description: `Se encontraron ${(response.data as ContentRecommendation[]).length} recomendaciones perfectas para ti 📚`,
         });
 
-        console.log("✅ Recomendaciones recibidas:", response.data);
       } else {
         throw new Error(
           (response as any).error || "Error obteniendo recomendaciones"

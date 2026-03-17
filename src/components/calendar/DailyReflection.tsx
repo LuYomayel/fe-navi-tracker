@@ -340,11 +340,7 @@ export function DailyReflection({
                         variant="outline"
                         className="mt-2 text-xs"
                         onClick={() => {
-                          // Aquí se puede implementar la acción
-                          console.log(
-                            "Suggestion action:",
-                            suggestion.actions?.[0]
-                          );
+                          // TODO: implementar la acción de sugerencia
                         }}
                       >
                         {suggestion.actions[0]?.label}

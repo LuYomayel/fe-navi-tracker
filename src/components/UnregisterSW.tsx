@@ -8,7 +8,6 @@ export default function UnregisterSW() {
       navigator.serviceWorker.getRegistrations().then((regs) => {
         regs.forEach((reg) => {
           if (reg.active && reg.active.scriptURL.includes("sw.js")) {
-            console.log("🧹 Unregistering old service worker");
             reg.unregister();
           }
         });

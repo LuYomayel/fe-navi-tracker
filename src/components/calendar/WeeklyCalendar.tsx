@@ -190,7 +190,6 @@ export function WeeklyCalendar() {
   const isDisabled = (activity: Activity, dayIndex: number) => {
     const today = new Date();
     // No se puede completar un hábito archivado ni un habito que sea de otro dia que no sea hoy
-    console.log("date", activity, dayIndex, today.getDate());
     return activity.archived || dayIndex !== today.getDay();
   };
 

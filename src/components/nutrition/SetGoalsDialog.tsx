@@ -54,7 +54,6 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
   // Calcular objetivos iniciales cuando se abre el modal
   useEffect(() => {
     if (isOpen) {
-      console.log("🔄 Body Analysis:", bodyAnalysis);
       if (bodyAnalysis && !isManualMode) {
         // Modo con análisis corporal - usar datos de la API
         const apiRecommendations = bodyAnalysis.recommendations;
@@ -133,12 +132,6 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
   // Función para enviar al endpoint (preparada para cuando esté listo)
   const saveNutritionGoalsToAPI = async (payload: SetGoalsRequest) => {
     try {
-      // TODO: Reemplazar con llamada real al endpoint
-      console.log(
-        "🚀 Payload que se enviará al endpoint:",
-        JSON.stringify(payload, null, 2)
-      );
-
       // Simulación de llamada API
       const response = await api.preferences.post(payload);
       if (response.success) {
@@ -152,7 +145,7 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
 
       return { success: true, data: payload };
     } catch (error) {
-      console.error("❌ Error enviando objetivos al API:", error);
+      console.error("Error enviando objetivos al API:", error);
       throw error;
     }
   };

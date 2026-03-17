@@ -63,7 +63,7 @@ export async function withAuth(
     // Ejecutar el handler
     return await handler(request as AuthenticatedRequest);
   } catch (error) {
-    console.error("❌ Error de autenticación:", error);
+    console.error("Error de autenticación:", error);
 
     if (error instanceof jwt.TokenExpiredError) {
       return NextResponse.json(
@@ -127,7 +127,6 @@ export async function authMiddleware(request: NextRequest) {
 
   // Si no hay token, redirigir al login
   if (!authCookie?.value) {
-    console.log("🔒 Acceso denegado: Sin token");
     const loginUrl = new URL("/auth/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
@@ -148,7 +147,6 @@ export async function authMiddleware(request: NextRequest) {
     );
 
     if (!response.ok) {
-      console.log("🔒 Token inválido, redirigiendo al login");
       const loginUrl = new URL("/auth/login", request.url);
       return NextResponse.redirect(loginUrl);
     }
@@ -156,16 +154,13 @@ export async function authMiddleware(request: NextRequest) {
     const data = await response.json();
 
     if (!data.success) {
-      console.log("🔒 Verificación de token falló");
       const loginUrl = new URL("/auth/login", request.url);
       return NextResponse.redirect(loginUrl);
     }
 
-    // Token válido, continuar
-    console.log("✅ Token válido, acceso permitido");
     return NextResponse.next();
   } catch (error) {
-    console.error("❌ Error verificando token:", error);
+    console.error("Error verificando token:", error);
     const loginUrl = new URL("/auth/login", request.url);
     return NextResponse.redirect(loginUrl);
   }

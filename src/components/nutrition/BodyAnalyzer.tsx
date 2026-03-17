@@ -159,8 +159,6 @@ export function BodyAnalyzer({
         goals: [formData.fitnessGoal],
       });
 
-      console.log("✅ Análisis corporal completado:", response);
-
       if (!response.success || !response.data) {
         throw new Error("El análisis no devolvió resultados");
       }
@@ -168,7 +166,7 @@ export function BodyAnalyzer({
       // El endpoint ahora devuelve el resultado directamente (sincrónico)
       await processAnalysisResult(response.data);
     } catch (error) {
-      console.error("❌ Error en análisis:", error);
+      console.error("Error en análisis:", error);
       toast.error(
         "Error en análisis",
         error instanceof Error
@@ -185,8 +183,6 @@ export function BodyAnalyzer({
   // Función para procesar el resultado del análisis
   const processAnalysisResult = async (apiResponse: any) => {
     try {
-      console.log("🎯 Procesando resultado:", apiResponse);
-
       const result: BodyAnalysisApiResponse = {
         bodyType: apiResponse.bodyType || BodyType.MESOMORPH,
         bodyComposition: {
@@ -251,7 +247,7 @@ export function BodyAnalyzer({
         "Tu análisis corporal ha sido procesado exitosamente"
       );
     } catch (error) {
-      console.error("❌ Error procesando resultado:", error);
+      console.error("Error procesando resultado:", error);
       toast.error(
         "Error procesando resultado",
         "Error al procesar el resultado del análisis"
@@ -295,7 +291,6 @@ export function BodyAnalyzer({
           insights: analysisResult.insights,
         },
       };
-      console.log("💾 Analysis:", analysis);
       const response = await api.bodyAnalysis.saveAnalysis(
         analysis as BodyAnalysis
       );
@@ -303,8 +298,6 @@ export function BodyAnalyzer({
       if (!response.success) {
         throw new Error(response.message || "Error al guardar el análisis");
       }
-      console.log("💾 Guardando análisis completo:", analysis);
-
       // Ya se creó en el backend; simplemente refrescamos la lista si es necesario
 
       toast.success(
@@ -315,8 +308,7 @@ export function BodyAnalyzer({
       onClose();
       onAnalysisSaved?.();
     } catch (error) {
-      console.error("❌ Error guardando análisis corporal:", error);
-      console.log("💾 Error:", (error as Error).message);
+      console.error("Error guardando análisis corporal:", error);
       toast.error(
         "Error",
         "No se pudo guardar el análisis. Inténtalo de nuevo más tarde."
@@ -365,7 +357,6 @@ export function BodyAnalyzer({
   );
 
   const handleSetAsGoals = (analysis: BodyAnalysis) => {
-    console.log("🔍 Analysis:", analysis);
     setSelectedBodyAnalysis(analysis);
     setShowGoalsModal(true);
   };

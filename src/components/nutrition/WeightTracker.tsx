@@ -142,16 +142,11 @@ export function WeightTracker({
       source: "manual",
       notes: formData.notes || undefined,
     };
-    console.log("entryData", entryData);
-    //return;
-
     try {
       const response = await api.nutrition.createWeightEntryManual(entryData);
       if (!response.success) {
         throw new Error("Error al guardar el registro de peso");
       }
-      console.log("response", response);
-
       const newEntry = response.data as WeightEntry;
       onEntryAdded(newEntry);
       resetForm();

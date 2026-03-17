@@ -34,10 +34,8 @@ export function PhysicalActivityTracker({
     try {
       setIsLoading(true);
       const response = await api.physicalActivity.getAll();
-      console.log("response", response);
       if (response.success) {
         // Las actividades se actualizan automáticamente en el store
-        console.log("✅ Actividades físicas cargadas");
       }
     } catch (error) {
       console.error("Error loading activities:", error);
@@ -94,7 +92,6 @@ export function PhysicalActivityTracker({
   );
 
   // Calcular totales del día (solo para el día seleccionado)
-  console.log("physicalActivities", physicalActivities);
   const totals = todayActivities.reduce(
     (acc, activity) => {
       acc.calories += activity.activeEnergyKcal || 0;

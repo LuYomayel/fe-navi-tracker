@@ -217,8 +217,6 @@ export function FoodAnalyzer({
         ...(contextText.trim() && { context: contextText.trim() }),
       });
 
-      console.log("🔍 Resultado de análisis manual con IA:", analysisData);
-
       const result: AnalysisResult = {
         foods: (analysisData.data as AnalysisResult).foods || [],
         totalCalories: (analysisData.data as AnalysisResult).totalCalories || 0,
@@ -397,7 +395,6 @@ export function FoodAnalyzer({
         xpAmount: 15,
         description: "Registrar una comida",
       });
-      console.log("🔍 XP Response:", expResponse);
       if (!expResponse.success) {
         throw Error(expResponse.message || "Error al agregar experiencia");
       }

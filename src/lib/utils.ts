@@ -42,9 +42,6 @@ export function calculateNutritionGoalsFromBodyAnalysis(
   carbs: number;
   fat: number;
 } {
-  console.log("Body analysis received:", bodyAnalysis);
-  console.log("Personal data received:", personalData);
-
   // Si no hay datos personales, usar valores por defecto
   if (!personalData) {
     return {

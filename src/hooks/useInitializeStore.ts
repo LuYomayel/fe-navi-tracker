@@ -13,7 +13,6 @@ export function useInitializeStore() {
     if (hasInitRef.current) return;
     if (!isInitialized && !isLoading) {
       hasInitRef.current = true;
-      console.log("🚀 Inicializando datos desde la base de datos MySQL...");
       initializeFromDatabase();
     }
   }, [isInitialized, isLoading, initializeFromDatabase]);

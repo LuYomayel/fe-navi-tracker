@@ -237,14 +237,12 @@ export function NutritionTracker({
   };
 
   const handleDeleteMeal = async (analysisId: string) => {
-    console.log("🔍 Analysis ID:", analysisId);
     if (
       confirm(
         "¿Estás seguro de que quieres eliminar este análisis nutricional?"
       )
     ) {
       const response = await api.nutrition.deleteAnalysis(analysisId);
-      console.log("🔍 Response:", response);
       if (response.success) {
         toast.success("Análisis eliminado correctamente");
         //await deleteNutritionAnalysis(analysisId);

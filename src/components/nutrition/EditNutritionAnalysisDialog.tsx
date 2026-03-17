@@ -107,15 +107,11 @@ export function EditNutritionAnalysisDialog({
         updatedAt: new Date(),
       };
 
-      console.log("🔄 Actualizando análisis:", analysisToUpdate);
-
       // Llamar a la API para actualizar
       const response = await api.nutrition.updateAnalysis(
         editableAnalysis.id,
         analysisToUpdate
       );
-
-      console.log("✅ Análisis actualizado en API:", response);
 
       // Actualizar también en el store local para refrescar la UI inmediatamente
       await updateNutritionAnalysis(editableAnalysis.id, {
@@ -125,9 +121,7 @@ export function EditNutritionAnalysisDialog({
         updatedAt: new Date(),
       });
 
-      console.log("✅ Store local actualizado");
-
-      toast.success("✅ Análisis actualizado correctamente");
+      toast.success("Análisis actualizado correctamente");
 
       // Notificar que el análisis fue actualizado
       onAnalysisUpdated();
@@ -135,8 +129,8 @@ export function EditNutritionAnalysisDialog({
       // Cerrar el diálogo
       onClose();
     } catch (error) {
-      console.error("❌ Error actualizando análisis:", error);
-      toast.error("❌ Error al actualizar el análisis");
+      console.error("Error actualizando análisis:", error);
+      toast.error("Error al actualizar el análisis");
     } finally {
       setIsLoading(false);
     }

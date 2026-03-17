@@ -24,7 +24,6 @@ export function useActivities() {
       // Verificar cache si no es forzado
       const now = Date.now();
       if (!force && lastFetch && now - lastFetch < CACHE_DURATION) {
-        console.log("📦 Usando actividades desde cache");
         return;
       }
 
@@ -32,14 +31,9 @@ export function useActivities() {
       setError(null);
 
       try {
-        console.log("🔄 Cargando actividades desde backend...");
         const response = await api.activities.getAll();
         setActivities(response.data as Activity[]);
         setLastFetch(now);
-        console.log(
-          "✅ Actividades cargadas:",
-          (response.data as Activity[]).length
-        );
       } catch (error) {
         console.error("❌ Error cargando actividades:", error);
         setError(error instanceof Error ? error.message : "Error desconocido");
@@ -64,7 +58,6 @@ export function useActivities() {
       const newActivity = response.data as Activity;
 
       setActivities((prev) => [...prev, newActivity]);
-      console.log("✅ Actividad creada:", newActivity.name);
 
       return newActivity;
     } catch (error) {
@@ -93,7 +86,6 @@ export function useActivities() {
         )
       );
 
-      console.log("✅ Actividad actualizada:", updatedActivity.name);
       return updatedActivity;
     } catch (error) {
       console.error("❌ Error actualizando actividad:", error);
@@ -115,7 +107,6 @@ export function useActivities() {
       await api.activities.delete(id);
 
       setActivities((prev) => prev.filter((activity) => activity.id !== id));
-      console.log("✅ Actividad eliminada");
     } catch (error) {
       console.error("❌ Error eliminando actividad:", error);
       setError(error instanceof Error ? error.message : "Error desconocido");
