@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Task } from "@/types";
+import { Task, TaskPriority, TaskCategory } from "@/types";
 import {
   Dialog,
   DialogContent,
@@ -48,10 +48,10 @@ export default function AddTaskDialog({
   );
   const [dueDate, setDueDate] = useState(editingTask?.dueDate || "");
   const [dueTime, setDueTime] = useState(editingTask?.dueTime || "");
-  const [priority, setPriority] = useState(
+  const [priority, setPriority] = useState<TaskPriority>(
     editingTask?.priority || "medium"
   );
-  const [category, setCategory] = useState(editingTask?.category || "");
+  const [category, setCategory] = useState<TaskCategory | "">(editingTask?.category || "");
 
   const handleSave = () => {
     if (!title.trim()) return;
@@ -141,7 +141,7 @@ export default function AddTaskDialog({
               {priorities.map((p) => (
                 <button
                   key={p.value}
-                  onClick={() => setPriority(p.value)}
+                  onClick={() => setPriority(p.value as TaskPriority)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     priority === p.value
                       ? `${p.color} text-white ring-2 ring-offset-2 ring-offset-background ring-primary`
@@ -161,7 +161,7 @@ export default function AddTaskDialog({
                 <button
                   key={c.value}
                   onClick={() =>
-                    setCategory(category === c.value ? "" : c.value)
+                    setCategory(category === c.value ? "" : c.value as TaskCategory)
                   }
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     category === c.value

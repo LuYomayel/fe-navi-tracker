@@ -245,7 +245,7 @@ export const apiClient = {
 
   post: <T = unknown>(
     endpoint: string,
-    data?: Record<string, unknown>,
+    data?: Record<string, any>,
     headers?: Record<string, string>
   ) =>
     fetchAPI<ApiResponse<T>>(endpoint, {
@@ -256,7 +256,7 @@ export const apiClient = {
 
   put: <T = unknown>(
     endpoint: string,
-    data?: Record<string, unknown>,
+    data?: Record<string, any>,
     headers?: Record<string, string>
   ) =>
     fetchAPI<ApiResponse<T>>(endpoint, {
@@ -274,12 +274,12 @@ export const apiClient = {
       apiClient.get<T>(endpoint, headers),
     post: <T = unknown>(
       endpoint: string,
-      data?: Record<string, unknown>,
+      data?: Record<string, any>,
       headers?: Record<string, string>
     ) => apiClient.post<T>(endpoint, data, headers),
     put: <T = unknown>(
       endpoint: string,
-      data?: Record<string, unknown>,
+      data?: Record<string, any>,
       headers?: Record<string, string>
     ) => apiClient.put<T>(endpoint, data, headers),
     delete: <T = unknown>(endpoint: string, headers?: Record<string, string>) =>
@@ -303,9 +303,9 @@ export const api = {
   activities: {
     getAll: () => apiClient.get("/activities"),
     getById: (id: string) => apiClient.get(`/activities/${id}`),
-    create: (data: Record<string, unknown>) =>
+    create: (data: Record<string, any>) =>
       apiClient.post("/activities", data),
-    update: (id: string, data: Record<string, unknown>) =>
+    update: (id: string, data: Record<string, any>) =>
       apiClient.put("/activities", { id, ...data }),
     delete: (id: string) => apiClient.delete(`/activities?id=${id}`),
     archive: (id: string) => apiClient.put(`/activities/archive/${id}`),
@@ -315,7 +315,7 @@ export const api = {
   // Chat
   chat: {
     getMessages: () => apiClient.get("/chat"),
-    sendMessage: (data: Record<string, unknown>) =>
+    sendMessage: (data: Record<string, any>) =>
       apiClient.post("/chat", data),
     clearMessages: () => apiClient.delete("/chat"),
   },
@@ -323,7 +323,7 @@ export const api = {
   // Nutrición
   nutrition: {
     getAnalyses: () => apiClient.get<NutritionAnalysis[]>("/nutrition"),
-    createAnalysis: (data: NutritionAnalysis) =>
+    createAnalysis: (data: Omit<NutritionAnalysis, "id" | "createdAt" | "updatedAt">) =>
       apiClient.post("/nutrition", data as any),
     getByDate: (date: string) => apiClient.get(`/nutrition?date=${date}`),
     updateAnalysis: (id: string, data: any) =>
@@ -362,9 +362,9 @@ export const api = {
 
   // Completions
   completions: {
-    toggle: (data: Record<string, unknown>) =>
+    toggle: (data: Record<string, any>) =>
       apiClient.post("/completions", data),
-    update: (id: string, data: Record<string, unknown>) =>
+    update: (id: string, data: Record<string, any>) =>
       apiClient.put(`/completions/${id}`, data),
   },
 
@@ -426,7 +426,7 @@ export const api = {
 
   // AI Suggestions
   aiSuggestions: {
-    generate: (data: Record<string, unknown>) =>
+    generate: (data: Record<string, any>) =>
       apiClient.post("/ai-suggestions", data),
     getAll: () => apiClient.get("/ai-suggestions"),
     dismiss: (id: string) => apiClient.delete(`/ai-suggestions/${id}`),

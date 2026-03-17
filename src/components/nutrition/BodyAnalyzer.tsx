@@ -281,9 +281,11 @@ export function BodyAnalyzer({
                 Math.pow(analysisResult.measurements.height / 100, 2)
               : undefined),
         },
-        recommendations: analysisResult.insights,
+        bodyComposition: analysisResult.bodyComposition,
+        progress: analysisResult.progress,
+        disclaimer: analysisResult.disclaimer,
+        recommendations: analysisResult.recommendations,
         confidence: analysisResult.confidence,
-        // Agregar toda la información detallada de la API
         fullAnalysisData: {
           measurements: analysisResult.measurements,
           bodyComposition: analysisResult.bodyComposition,
@@ -314,7 +316,7 @@ export function BodyAnalyzer({
       onAnalysisSaved?.();
     } catch (error) {
       console.error("❌ Error guardando análisis corporal:", error);
-      console.log("💾 Error:", error.message);
+      console.log("💾 Error:", (error as Error).message);
       toast.error(
         "Error",
         "No se pudo guardar el análisis. Inténtalo de nuevo más tarde."
@@ -385,7 +387,10 @@ export function BodyAnalyzer({
               Math.pow(analysisResult.measurements.height / 100, 2)
             : undefined,
       },
-      recommendations: analysisResult.insights,
+      bodyComposition: analysisResult.bodyComposition,
+      progress: analysisResult.progress,
+      disclaimer: analysisResult.disclaimer,
+      recommendations: analysisResult.recommendations,
       confidence: analysisResult.confidence,
     };
 

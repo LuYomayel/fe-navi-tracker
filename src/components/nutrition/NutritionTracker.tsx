@@ -1133,7 +1133,7 @@ export function NutritionTracker({
                                   Recomendaciones:
                                 </h4>
                                 <ul className="text-sm text-gray-600 space-y-1">
-                                  {analysis.recommendations?.map((rec, i) => (
+                                  {analysis.recommendations?.nutrition?.map((rec, i) => (
                                     <li key={i}>• {rec}</li>
                                   ))}
                                 </ul>

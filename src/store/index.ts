@@ -119,7 +119,7 @@ interface NaviTrackerState {
 
   // Actions
   addActivity: (
-    activity: Omit<Activity, "id" | "createdAt" | "updatedAt">
+    activity: Omit<Activity, "id" | "createdAt" | "updatedAt" | "userId" | "user">
   ) => Promise<void>;
   updateActivity: (id: string, updates: Partial<Activity>) => Promise<void>;
   deleteActivity: (id: string) => Promise<void>;
@@ -847,7 +847,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
         } catch (error) {
           //console.error("❌ Error guardando reflexión:", error);
           console.log("error", error);
-          toast.error("Error", error.message);
+          toast.error("Error", (error as Error).message);
         }
       },
 
@@ -937,7 +937,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
           set((state) => ({
             nutritionAnalyses: state.nutritionAnalyses.map((analysis) =>
               analysis.id === id
-                ? { ...analysis, ...updatedAnalysis }
+                ? { ...analysis, ...(updatedAnalysis as object) }
                 : analysis
             ),
           }));

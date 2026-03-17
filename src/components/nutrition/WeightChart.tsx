@@ -170,12 +170,12 @@ export function WeightChart({ entries, targetWeight }: WeightChartProps) {
                 >
                   {getTrendIcon(analysis.trend)}
                   <span>
-                    {analysis.weightChange > 0 ? "+" : ""}
-                    {analysis.weightChange.toFixed(1)} kg
+                    {(analysis.weightChange ?? 0) > 0 ? "+" : ""}
+                    {(analysis.weightChange ?? 0).toFixed(1)} kg
                   </span>
                   <span className="text-xs">
-                    ({analysis.weightChangePercentage > 0 ? "+" : ""}
-                    {analysis.weightChangePercentage.toFixed(1)}%)
+                    ({(analysis.weightChangePercentage ?? 0) > 0 ? "+" : ""}
+                    {(analysis.weightChangePercentage ?? 0).toFixed(1)}%)
                   </span>
                 </div>
               )}
@@ -350,17 +350,17 @@ export function WeightChart({ entries, targetWeight }: WeightChartProps) {
 
                 <div className="flex items-center gap-2">
                   {entry.bmi && (
-                    <Badge variant="outline" size="sm">
+                    <Badge variant="outline" className="text-xs">
                       BMI: {entry.bmi}
                     </Badge>
                   )}
                   {entry.bodyFatPercentage && (
-                    <Badge variant="outline" size="sm">
+                    <Badge variant="outline" className="text-xs">
                       BF: {entry.bodyFatPercentage}%
                     </Badge>
                   )}
                   {index === 0 && (
-                    <Badge variant="default" size="sm">
+                    <Badge variant="default" className="text-xs">
                       Actual
                     </Badge>
                   )}

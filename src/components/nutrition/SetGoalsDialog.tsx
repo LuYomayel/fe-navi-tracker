@@ -189,8 +189,7 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
                   </div>
                   <div>
                     <strong>Grasa corporal:</strong>{" "}
-                    {fullData.measurements?.bodyFatPercentage ||
-                      fullData.measurements?.estimatedBodyFat}
+                    {fullData.measurements?.bodyFat}
                     %
                   </div>
                   <div>
@@ -210,15 +209,15 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
                   </div>
                   <div>
                     <strong>Nivel fitness:</strong>{" "}
-                    {fullData.measurements?.overallFitness}
+                    {fullData.fullAnalysisData?.measurements?.overallFitness}
                   </div>
                   <div>
                     <strong>Definición muscular:</strong>{" "}
-                    {fullData.measurements?.muscleDefinition}
+                    {fullData.fullAnalysisData?.measurements?.muscleDefinition}
                   </div>
                   <div>
                     <strong>Confianza:</strong>{" "}
-                    {Math.round((bodyAnalysis?.aiConfidence || 0) * 100)}%
+                    {Math.round((bodyAnalysis?.confidence || 0) * 100)}%
                   </div>
                 </div>
               </div>
@@ -516,7 +515,7 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
                     min="120"
                     max="250"
                     defaultValue={
-                      fullData?.measurements.height ||
+                      fullData?.measurements?.height ||
                       preferences?.height ||
                       170
                     }
@@ -533,7 +532,7 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
                     min="30"
                     max="200"
                     defaultValue={
-                      fullData?.measurements.weight ||
+                      fullData?.measurements?.weight ||
                       preferences?.currentWeight ||
                       70
                     }
@@ -564,7 +563,7 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
                     min="15"
                     max="100"
                     defaultValue={
-                      fullData?.measurements.age || preferences?.age || 25
+                      fullData?.fullAnalysisData?.measurements?.age || preferences?.age || 25
                     }
                     required
                   />
@@ -580,7 +579,7 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
                   <select
                     name="gender"
                     defaultValue={
-                      fullData?.measurements.gender ||
+                      fullData?.fullAnalysisData?.measurements?.gender ||
                       preferences?.gender ||
                       "male"
                     }
@@ -599,7 +598,7 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
                   <select
                     name="activityLevel"
                     defaultValue={
-                      fullData?.measurements.activityLevel || "moderate"
+                      fullData?.fullAnalysisData?.measurements?.activityLevel || "moderate"
                     }
                     className="w-full p-2 border rounded-md bg-background"
                     required
@@ -621,7 +620,7 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
                 <select
                   name="goal"
                   defaultValue={
-                    fullData?.measurements.goals?.[0] || "lose_weight"
+                    fullData?.fullAnalysisData?.measurements?.goals?.[0] || "lose_weight"
                   }
                   className="w-full p-2 border rounded-md bg-background"
                   required

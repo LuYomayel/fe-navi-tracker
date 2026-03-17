@@ -80,7 +80,7 @@ export function ImportNutritionistPlanDialog({
       const ctx = canvas.getContext("2d");
       if (!ctx) continue;
 
-      await page.render({ canvasContext: ctx, viewport }).promise;
+      await page.render({ canvas, canvasContext: ctx, viewport } as Parameters<typeof page.render>[0]).promise;
       // Get base64 without the data:image/jpeg;base64, prefix
       const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
       images.push(dataUrl.split(",")[1]);

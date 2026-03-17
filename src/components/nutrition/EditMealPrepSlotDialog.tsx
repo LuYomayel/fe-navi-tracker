@@ -33,6 +33,7 @@ import {
   DAY_LABELS,
   MEAL_SLOT_LABELS,
   UpdateSlotDto,
+  FoodCategory,
 } from "@/types";
 import type { SavedMeal, DetectedFood, Macronutrients, MealType } from "@/types";
 
@@ -164,7 +165,7 @@ export function EditMealPrepSlotDialog({
       calories: 0,
       confidence: 1,
       macronutrients: { ...emptyMacros },
-      category: "other",
+      category: FoodCategory.OTHER,
     };
     setFoods([...foods, newFood]);
   };
