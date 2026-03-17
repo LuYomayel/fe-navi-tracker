@@ -33,6 +33,7 @@ export default function DailyAgenda() {
     fetchCalendarEvents,
     fetchDayScore,
     fetchTodayHydration,
+    refreshActivities,
     createCalendarEvent,
     updateCalendarEvent,
     deleteCalendarEvent,
@@ -41,10 +42,11 @@ export default function DailyAgenda() {
   const dateKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
 
   useEffect(() => {
+    refreshActivities();
     fetchDayScore(dateKey);
     fetchCalendarEvents(dateKey, dateKey);
     fetchTodayHydration(dateKey);
-  }, [dateKey, fetchDayScore, fetchCalendarEvents, fetchTodayHydration]);
+  }, [dateKey, refreshActivities, fetchDayScore, fetchCalendarEvents, fetchTodayHydration]);
 
   const navigateDay = (dir: number) => {
     const d = new Date(selectedDate);

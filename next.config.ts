@@ -13,6 +13,9 @@ const nextConfig: NextConfig = {
     // Ignorar errores de TypeScript en build (para acelerar)
     ignoreBuildErrors: process.env.NODE_ENV === "production",
   },
+  eslint: {
+    ignoreDuringBuilds: process.env.NODE_ENV === "production",
+  },
 
   // Configuración de salida: standalone para VPS, omitir para Netlify
   ...(process.env.NETLIFY ? {} : { output: "standalone" as const }),

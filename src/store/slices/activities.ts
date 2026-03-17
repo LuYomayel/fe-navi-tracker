@@ -365,7 +365,8 @@ export const createActivitiesSlice = (set: StoreSet, get: StoreGet): ActivitiesS
         ?.completions?.some(
           (completion) =>
             completion.activityId === activityId &&
-            completion.date === dateKey
+            completion.date === dateKey &&
+            completion.completed
         ) || false
     );
   },

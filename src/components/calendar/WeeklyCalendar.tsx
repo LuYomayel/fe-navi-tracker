@@ -33,6 +33,7 @@ import type { Activity } from "@/types";
 import { EditActivityModal } from "./EditActivityModal";
 import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
 import { useToast } from "@/hooks/use-toast";
+import { useXp } from "@/hooks/useXp";
 
 export function WeeklyCalendar() {
   const {
@@ -52,6 +53,7 @@ export function WeeklyCalendar() {
   } = useNaviTrackerStore();
 
   const { toast } = useToast();
+  const { streaks } = useXp();
 
   const [weekDates, setWeekDates] = useState<Date[]>([]);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
@@ -457,7 +459,7 @@ export function WeeklyCalendar() {
 
         <div className="p-3 sm:p-4 rounded-xl border border-border text-center sm:text-left">
           <h3 className="text-[10px] sm:text-sm font-medium text-muted-foreground">Racha</h3>
-          <p className="text-lg sm:text-2xl font-bold mt-0.5">0 días</p>
+          <p className="text-lg sm:text-2xl font-bold mt-0.5">{streaks?.habits?.streak ?? 0} días</p>
         </div>
       </div>
 
