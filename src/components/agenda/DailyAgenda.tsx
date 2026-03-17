@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNaviTrackerStore } from "@/store";
 import { CalendarEvent } from "@/types";
-import { ChevronLeft, ChevronRight, Calendar, CheckCircle2, Circle, Utensils, Dumbbell, BookOpen, Plus, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, CheckCircle2, Circle, Utensils, Dumbbell, BookOpen, Droplets, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
@@ -26,10 +26,13 @@ export default function DailyAgenda() {
     physicalActivities,
     dailyNotes,
     currentDayScore,
+    todayHydration,
+    hydrationGoal,
     toggleTask,
     toggleCompletion,
     fetchCalendarEvents,
     fetchDayScore,
+    fetchTodayHydration,
     createCalendarEvent,
     updateCalendarEvent,
     deleteCalendarEvent,
@@ -40,7 +43,8 @@ export default function DailyAgenda() {
   useEffect(() => {
     fetchDayScore(dateKey);
     fetchCalendarEvents(dateKey, dateKey);
-  }, [dateKey, fetchDayScore, fetchCalendarEvents]);
+    fetchTodayHydration(dateKey);
+  }, [dateKey, fetchDayScore, fetchCalendarEvents, fetchTodayHydration]);
 
   const navigateDay = (dir: number) => {
     const d = new Date(selectedDate);
@@ -96,6 +100,9 @@ export default function DailyAgenda() {
   const nutritionRegistered = isToday ? dayNutrition.length > 0 : (score?.nutritionLogged ?? dayNutrition.length > 0);
   const exerciseRegistered = isToday ? dayExercise.length > 0 : (score?.exerciseLogged ?? dayExercise.length > 0);
   const reflectionRegistered = isToday ? !!dayNote : (score?.reflectionLogged ?? !!dayNote);
+  const hydrationRegistered = isToday
+    ? (todayHydration?.glassesConsumed ?? 0) >= hydrationGoal.goalGlasses
+    : (score?.hydrationLogged ?? false);
 
   const statusColors: Record<string, string> = {
     won: "text-green-500",
@@ -345,6 +352,23 @@ export default function DailyAgenda() {
               <span className="text-xs text-muted-foreground">Sin registrar</span>
             )}
           </div>
+
+          <Link
+            href="/hydration"
+            className="flex items-center gap-3 text-sm hover:bg-muted/50 rounded p-2 -m-2 transition"
+          >
+            <Droplets className="h-4 w-4 text-blue-500" />
+            <span className="flex-1">Hidratacion</span>
+            {hydrationRegistered ? (
+              <span className="text-xs text-green-500">Meta alcanzada</span>
+            ) : (
+              <span className="text-xs text-muted-foreground">
+                {isToday && todayHydration
+                  ? `${todayHydration.glassesConsumed}/${hydrationGoal.goalGlasses} vasos`
+                  : "Sin registrar"}
+              </span>
+            )}
+          </Link>
         </div>
       </div>
 
