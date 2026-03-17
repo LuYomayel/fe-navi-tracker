@@ -137,9 +137,6 @@ export const createActivitiesSlice = (set: StoreSet, get: StoreGet): ActivitiesS
         activities: state.activities.filter(
           (activity) => activity.id !== id
         ),
-        completions: state.completions.filter(
-          (completion) => completion.activityId !== id
-        ),
         isLoading: false,
       }));
 
@@ -278,24 +275,23 @@ export const createActivitiesSlice = (set: StoreSet, get: StoreGet): ActivitiesS
 
       const completion = response.data as DailyCompletion;
       set((state) => {
-        const activity = state.activities.find((a) => a.id === activityId);
-        if (completion.completed) {
-          const activitiesNew = state.activities.map((a) =>
-            a.id === activityId
-              ? {
-                  ...a,
-                  completions: [...(a.completions || []), completion],
-                }
-              : a
-          );
-          return { activities: activitiesNew };
-        } else {
-          return {
-            completions: activity?.completions?.filter(
-              (c) => !(c.activityId === activityId && c.date === dateKey)
-            ),
-          };
-        }
+        const activitiesNew = state.activities.map((a) => {
+          if (a.id !== activityId) return a;
+          if (completion.completed) {
+            return {
+              ...a,
+              completions: [...(a.completions || []), completion],
+            };
+          } else {
+            return {
+              ...a,
+              completions: (a.completions || []).filter(
+                (c) => !(c.activityId === activityId && c.date === dateKey)
+              ),
+            };
+          }
+        });
+        return { activities: activitiesNew };
       });
 
       try {

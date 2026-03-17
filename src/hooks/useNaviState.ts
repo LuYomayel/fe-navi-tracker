@@ -134,7 +134,11 @@ function getBestStreak(xpStats: {
 
 export function useNaviState() {
   const { xpStats, isLevelingUp } = useXp();
-  const completions = useNaviTrackerStore((state) => state.completions);
+  const activities = useNaviTrackerStore((state) => state.activities);
+  const completions = useMemo(
+    () => activities.flatMap((a) => a.completions || []),
+    [activities]
+  );
 
   const [currentState, setCurrentState] = useState<NaviState>(() => {
     if (typeof window === "undefined") return "default";

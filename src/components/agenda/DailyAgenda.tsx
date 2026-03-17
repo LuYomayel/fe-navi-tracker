@@ -21,7 +21,6 @@ export default function DailyAgenda() {
   const {
     tasks,
     activities,
-    completions,
     calendarEvents,
     nutritionAnalyses,
     physicalActivities,
@@ -36,7 +35,7 @@ export default function DailyAgenda() {
     deleteCalendarEvent,
   } = useNaviTrackerStore();
 
-  const dateKey = selectedDate.toISOString().split("T")[0];
+  const dateKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
 
   useEffect(() => {
     fetchDayScore(dateKey);
@@ -49,7 +48,9 @@ export default function DailyAgenda() {
     setSelectedDate(d);
   };
 
-  const isToday = dateKey === new Date().toISOString().split("T")[0];
+  const today = new Date();
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const isToday = dateKey === todayKey;
 
   // Day of week for habits (0=Mon in our system)
   const dayOfWeek = selectedDate.getDay();
@@ -240,18 +241,16 @@ export default function DailyAgenda() {
           <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-500" />
             Habitos ({scheduledHabits.filter((h) => {
-              const comp = completions.find(
-                (c) => c.activityId === h.id && c.date === dateKey
+              return h.completions?.some(
+                (c) => c.activityId === h.id && c.date === dateKey && c.completed
               );
-              return comp?.completed;
             }).length}/{scheduledHabits.length})
           </h3>
           <div className="space-y-2">
             {scheduledHabits.map((habit) => {
-              const comp = completions.find(
-                (c) => c.activityId === habit.id && c.date === dateKey
-              );
-              const isCompleted = comp?.completed ?? false;
+              const isCompleted = habit.completions?.some(
+                (c) => c.activityId === habit.id && c.date === dateKey && c.completed
+              ) ?? false;
               return (
                 <div key={habit.id} className="flex items-center gap-2">
                   <Checkbox
