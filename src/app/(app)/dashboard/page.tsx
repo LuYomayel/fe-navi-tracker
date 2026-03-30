@@ -179,7 +179,7 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="grid gap-2 sm:gap-3 md:grid-cols-2">
-        <Link href="/habits" className="block">
+        <Link href="/habits" className="block" prefetch={false}>
           <div className="rounded-2xl bg-card p-4 hover:bg-accent/50 active:scale-[0.98] transition-all">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -205,7 +205,7 @@ export default function DashboardPage() {
           </div>
         </Link>
 
-        <Link href="/nutrition" className="block">
+        <Link href="/nutrition" className="block" prefetch={false}>
           <div className="rounded-2xl bg-card p-4 hover:bg-accent/50 active:scale-[0.98] transition-all">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">

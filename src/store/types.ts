@@ -8,6 +8,7 @@ import type { DayScoreSlice } from "./slices/day-score";
 import type { HydrationSlice } from "./slices/hydration";
 import type { ShoppingSlice } from "./slices/shopping";
 import type { UISlice } from "./slices/ui";
+import type { XpSlice } from "./slices/xp";
 
 export type NaviTrackerState = ActivitiesSlice &
   NotesSlice &
@@ -18,7 +19,8 @@ export type NaviTrackerState = ActivitiesSlice &
   DayScoreSlice &
   HydrationSlice &
   ShoppingSlice &
-  UISlice;
+  UISlice &
+  XpSlice;
 
 export type StoreSet = {
   (

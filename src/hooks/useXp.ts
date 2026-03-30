@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api-client";
-import { XpStats, LevelUpResponse, StreakInfo } from "@/types/xp";
+import { LevelUpResponse, StreakInfo } from "@/types/xp";
 import { useAuthStore } from "@/modules/auth/store";
 import { toast } from "@/hooks/use-toast";
+import { useNaviTrackerStore } from "@/store";
 
 export interface Streaks {
   habits: StreakInfo;
@@ -13,16 +14,18 @@ export interface Streaks {
 }
 
 export function useXp() {
-  const [xpStats, setXpStats] = useState<XpStats | null>(null);
-  const [streaks, setStreaks] = useState<Streaks | null>(null);
+  // XP stats now come from the shared store (deduplicates 9 concurrent fetches)
+  const { xpStats, fetchXpStats, invalidateXpStats } = useNaviTrackerStore();
+
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingStreaks, setIsLoadingStreaks] = useState(false);
+  const [streaks, setStreaks] = useState<Streaks | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLevelingUp, setIsLevelingUp] = useState(false);
 
   const { user, updateUser } = useAuthStore();
 
-  // Cargar estadísticas de XP
+  // Force-refresh XP stats (invalidates cache then fetches)
   const loadXpStats = useCallback(async () => {
     if (!user) return;
 
@@ -30,39 +33,45 @@ export function useXp() {
     setError(null);
 
     try {
-      const response = await api.xp.getStats();
-      if (!response.success) {
-        throw new Error("Error al cargar estadísticas de XP");
-      }
-      const stats = response.data as XpStats;
-      setXpStats(stats);
-      // Actualizar streaks si vienen en los stats
-      if (stats.streaks) {
-        setStreaks(stats.streaks);
-      }
-      // Actualizar usuario en el store con los datos de XP (solo si han cambiado)
-      if (
-        user.level !== stats.level ||
-        user.xp !== stats.xp ||
-        user.totalXp !== stats.totalXp
-      ) {
-        updateUser({
-          level: stats.level,
-          xp: stats.xp,
-          totalXp: stats.totalXp,
-          streak: stats.streak,
-          lastStreakDate: stats.lastStreakDate,
-        });
-      }
-    } catch (error) {
-      console.error("Error cargando estadísticas de XP:", error);
-      setError(error instanceof Error ? error.message : "Error desconocido");
+      invalidateXpStats();
+      await fetchXpStats();
+    } catch (err) {
+      console.error("Error cargando estadísticas de XP:", err);
+      setError(err instanceof Error ? err.message : "Error desconocido");
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id, updateUser]); // Solo depender del ID del usuario, no del objeto completo
+  }, [user?.id, fetchXpStats, invalidateXpStats]);
 
-  // Cargar rachas desde el endpoint dedicado
+  // Sync auth store user object when xpStats change
+  useEffect(() => {
+    if (!xpStats || !user) return;
+    if (xpStats.streaks) {
+      setStreaks(xpStats.streaks);
+    }
+    if (
+      user.level !== xpStats.level ||
+      user.xp !== xpStats.xp ||
+      user.totalXp !== xpStats.totalXp
+    ) {
+      updateUser({
+        level: xpStats.level,
+        xp: xpStats.xp,
+        totalXp: xpStats.totalXp,
+        streak: xpStats.streak,
+        lastStreakDate: xpStats.lastStreakDate,
+      });
+    }
+  }, [xpStats, user?.id, updateUser]);
+
+  // Initial load (uses TTL cache — all 9 hook instances share the same fetch)
+  useEffect(() => {
+    if (user?.id) {
+      fetchXpStats();
+    }
+  }, [user?.id, fetchXpStats]);
+
+  // Reload streaks separately when needed
   const loadStreaks = useCallback(async () => {
     if (!user) return;
 
@@ -74,12 +83,33 @@ export function useXp() {
         throw new Error("Error al cargar rachas");
       }
       setStreaks(response.data);
-    } catch (error) {
-      console.error("Error cargando rachas:", error);
+    } catch (err) {
+      console.error("Error cargando rachas:", err);
     } finally {
       setIsLoadingStreaks(false);
     }
   }, [user?.id]);
+
+  // Listen for XP update events and force-refresh
+  useEffect(() => {
+    const handleXpUpdate = () => {
+      loadXpStats();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("xp-updated", handleXpUpdate);
+      window.addEventListener("habit-completed", handleXpUpdate);
+      window.addEventListener("day-completed", handleXpUpdate);
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("xp-updated", handleXpUpdate);
+        window.removeEventListener("habit-completed", handleXpUpdate);
+        window.removeEventListener("day-completed", handleXpUpdate);
+      }
+    };
+  }, [loadXpStats]);
 
   // Agregar XP por completar hábito
   const addHabitXp = useCallback(
@@ -93,15 +123,12 @@ export function useXp() {
         const response = await api.xp.addHabitXp({ habitName, date });
         const result = response.data as LevelUpResponse;
 
-        // Recargar stats después de agregar XP
         await loadXpStats();
-
-        // Mostrar notificación de XP
         showXpNotification(result, habitName);
 
         return result;
-      } catch (error) {
-        console.error("Error agregando XP de hábito:", error);
+      } catch (err) {
+        console.error("Error agregando XP de hábito:", err);
         toast({
           title: "Error",
           description: "No se pudo registrar la experiencia",
@@ -129,8 +156,8 @@ export function useXp() {
         showXpNotification(result, `Registro de ${mealType}`);
 
         return result;
-      } catch (error) {
-        console.error("Error agregando XP de nutrición:", error);
+      } catch (err) {
+        console.error("Error agregando XP de nutrición:", err);
         toast({
           title: "Error",
           description: "No se pudo registrar la experiencia",
@@ -155,8 +182,8 @@ export function useXp() {
         showXpNotification(result, "Reflexión diaria");
 
         return result;
-      } catch (error) {
-        console.error("Error agregando XP de comentario:", error);
+      } catch (err) {
+        console.error("Error agregando XP de comentario:", err);
         toast({
           title: "Error",
           description: "No se pudo registrar la experiencia",
@@ -179,12 +206,10 @@ export function useXp() {
           duration: 5000,
         });
 
-        // Disparar evento de level-up para Navi
         if (typeof window !== "undefined") {
           window.dispatchEvent(new Event("level-up"));
         }
 
-        // Resetear el estado de level up después de unos segundos
         setTimeout(() => setIsLevelingUp(false), 3000);
       } else {
         const streakText =
@@ -198,7 +223,6 @@ export function useXp() {
         });
       }
 
-      // Disparar eventos de milestone de racha
       if (typeof window !== "undefined") {
         if (result.streakBonus > 0) {
           window.dispatchEvent(new Event("streak-bonus"));
@@ -222,45 +246,15 @@ export function useXp() {
     []
   );
 
-  // Calcular porcentaje de progreso
   const getProgressPercentage = useCallback((): number => {
     if (!xpStats) return 0;
     return Math.min(100, xpStats.xpProgressPercentage);
   }, [xpStats]);
 
-  // Calcular XP restante para el siguiente nivel
   const getXpToNextLevel = useCallback((): number => {
     if (!xpStats) return 0;
     return Math.max(0, xpStats.xpForNextLevel - xpStats.xp);
   }, [xpStats]);
-
-  // Cargar estadísticas al montar el hook (solo cuando cambia el usuario)
-  useEffect(() => {
-    if (user?.id) {
-      loadXpStats();
-    }
-  }, [user?.id, loadXpStats]);
-
-  // Escuchar eventos de actualización de XP
-  useEffect(() => {
-    const handleXpUpdate = () => {
-      loadXpStats();
-    };
-
-    if (typeof window !== "undefined") {
-      window.addEventListener("xp-updated", handleXpUpdate);
-      window.addEventListener("habit-completed", handleXpUpdate);
-      window.addEventListener("day-completed", handleXpUpdate);
-    }
-
-    return () => {
-      if (typeof window !== "undefined") {
-        window.removeEventListener("xp-updated", handleXpUpdate);
-        window.removeEventListener("habit-completed", handleXpUpdate);
-        window.removeEventListener("day-completed", handleXpUpdate);
-      }
-    };
-  }, [loadXpStats]);
 
   return {
     xpStats,

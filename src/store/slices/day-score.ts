@@ -2,6 +2,10 @@ import type { DayScore, MonthlyStats, WinStreak } from "@/types";
 import { api } from "@/lib/api-client";
 import type { StoreSet, StoreGet } from "../types";
 
+// Module-level in-flight deduplication: prevent concurrent duplicate fetches
+const inFlightDayScoreFetches = new Map<string, Promise<void>>();
+let inFlightWinStreak: Promise<void> | null = null;
+
 export interface DayScoreSlice {
   dayScores: DayScore[];
   dayScoresLoading: boolean;
@@ -23,14 +27,25 @@ export const createDayScoreSlice = (set: StoreSet, _get: StoreGet): DayScoreSlic
   monthlyStats: null,
 
   fetchDayScore: async (date) => {
-    set({ currentDayScore: null });
-    try {
-      const res = await api.dayScore.getByDate(date);
-      if (res.data)
-        set({ currentDayScore: res.data as DayScore });
-    } catch (e) {
-      console.error("Error fetching day score:", e);
+    const key = `day-score-${date}`;
+    // Return the in-flight promise if this date is already being fetched
+    if (inFlightDayScoreFetches.has(key)) {
+      return inFlightDayScoreFetches.get(key)!;
     }
+
+    const promise = (async () => {
+      try {
+        const res = await api.dayScore.getByDate(date);
+        if (res.data) set({ currentDayScore: res.data as DayScore });
+      } catch (e) {
+        console.error("Error fetching day score:", e);
+      } finally {
+        inFlightDayScoreFetches.delete(key);
+      }
+    })();
+
+    inFlightDayScoreFetches.set(key, promise);
+    return promise;
   },
 
   fetchDayScoreRange: async (from, to) => {
@@ -46,12 +61,21 @@ export const createDayScoreSlice = (set: StoreSet, _get: StoreGet): DayScoreSlic
   },
 
   fetchWinStreak: async () => {
-    try {
-      const res = await api.dayScore.getWinStreak();
-      if (res.data) set({ winStreak: res.data as WinStreak });
-    } catch (e) {
-      console.error("Error fetching win streak:", e);
-    }
+    // Deduplicate concurrent win streak fetches
+    if (inFlightWinStreak) return inFlightWinStreak;
+
+    inFlightWinStreak = (async () => {
+      try {
+        const res = await api.dayScore.getWinStreak();
+        if (res.data) set({ winStreak: res.data as WinStreak });
+      } catch (e) {
+        console.error("Error fetching win streak:", e);
+      } finally {
+        inFlightWinStreak = null;
+      }
+    })();
+
+    return inFlightWinStreak;
   },
 
   fetchMonthlyStats: async (month) => {

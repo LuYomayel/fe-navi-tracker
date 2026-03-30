@@ -11,6 +11,7 @@ import { createDayScoreSlice } from "./slices/day-score";
 import { createHydrationSlice } from "./slices/hydration";
 import { createShoppingSlice } from "./slices/shopping";
 import { createUISlice } from "./slices/ui";
+import { createXpSlice } from "./slices/xp";
 
 import type { NaviTrackerState } from "./types";
 export type { NaviTrackerState } from "./types";
@@ -28,6 +29,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
       ...createHydrationSlice(set, get),
       ...createShoppingSlice(set, get),
       ...createUISlice(set, get),
+      ...createXpSlice(set, get),
     }),
     {
       name: "navi-preferences",

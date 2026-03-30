@@ -22,6 +22,7 @@ export default function WinStreakWidget() {
         <Link
           href="/calendar"
           className="text-xs text-primary hover:underline"
+          prefetch={false}
         >
           Ver calendario
         </Link>
