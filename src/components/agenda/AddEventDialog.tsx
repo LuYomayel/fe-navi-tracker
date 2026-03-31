@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { CalendarEvent } from "@/types";
+import { getDateKey } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -67,7 +68,7 @@ export default function AddEventDialog({
         setTitle("");
         setDescription("");
         setLocation("");
-        setDate(defaultDate || new Date().toISOString().split("T")[0]);
+        setDate(defaultDate || getDateKey(new Date()));
         setStartTime("09:00");
         setEndTime("10:00");
         setAllDay(false);

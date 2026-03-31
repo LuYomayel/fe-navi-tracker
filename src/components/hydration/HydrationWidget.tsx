@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useNaviTrackerStore } from "@/store";
 import Link from "next/link";
 import { Droplets, Plus } from "lucide-react";
+import { getDateKey } from "@/lib/utils";
 
 export default function HydrationWidget() {
   const {
@@ -14,7 +15,7 @@ export default function HydrationWidget() {
     fetchHydrationGoal,
   } = useNaviTrackerStore();
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getDateKey(new Date());
 
   useEffect(() => {
     fetchTodayHydration(today);

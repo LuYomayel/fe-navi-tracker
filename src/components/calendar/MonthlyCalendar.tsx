@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useNaviTrackerStore } from "@/store";
 import { DayScore } from "@/types";
+import { getDateKey } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DayDetailDialog from "./DayDetailDialog";
@@ -64,7 +65,7 @@ export default function MonthlyCalendar() {
     cells.push(scoreMap.get(dateStr) || { date: dateStr, status: "no_data", percentage: 0, totalItems: 0, completedItems: 0, habitsTotal: 0, habitsCompleted: 0, tasksTotal: 0, tasksCompleted: 0, nutritionLogged: false, exerciseLogged: false, reflectionLogged: false });
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getDateKey(new Date());
 
   const stats = monthlyStats;
 

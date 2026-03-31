@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { useNaviTrackerStore } from "@/store";
 import { Task } from "@/types";
+import { getDateKey } from "@/lib/utils";
 import TaskItem from "./TaskItem";
 import AddTaskDialog from "./AddTaskDialog";
 import { Button } from "@/components/ui/button";
@@ -34,14 +35,14 @@ export default function TaskList() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getDateKey(new Date());
 
   const getWeekEnd = () => {
     const d = new Date();
     const day = d.getDay();
     const diff = day === 0 ? 0 : 7 - day;
     d.setDate(d.getDate() + diff);
-    return d.toISOString().split("T")[0];
+    return getDateKey(d);
   };
 
   const filteredTasks = useMemo(() => {

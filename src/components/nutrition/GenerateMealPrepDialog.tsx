@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Sparkles, Loader2, Check, X } from "lucide-react";
 import { useMealPrep } from "@/hooks/useMealPrep";
 import { api } from "@/lib/api-client";
+import { getDateKey } from "@/lib/utils";
 import {
   DayKey,
   MealSlotKey,
@@ -36,7 +37,7 @@ function getNextMonday(): string {
   const daysUntilMonday = day === 0 ? 1 : day === 1 ? 0 : 8 - day;
   const monday = new Date(now);
   monday.setDate(now.getDate() + daysUntilMonday);
-  return monday.toISOString().split("T")[0];
+  return getDateKey(monday);
 }
 
 export function GenerateMealPrepDialog({

@@ -2,6 +2,7 @@ import type { HydrationLog, HydrationGoal } from "@/types";
 import { toast } from "@/lib/toast-helper";
 import { api } from "@/lib/api-client";
 import type { StoreSet, StoreGet } from "../types";
+import { getDateKey } from "@/lib/utils";
 
 export interface HydrationSlice {
   todayHydration: HydrationLog | null;
@@ -18,7 +19,7 @@ export const createHydrationSlice = (set: StoreSet, get: StoreGet): HydrationSli
 
   fetchTodayHydration: async (date?: string) => {
     try {
-      const targetDate = date || new Date().toISOString().split("T")[0];
+      const targetDate = date || getDateKey(new Date());
       const res = await api.hydration.getByDate(targetDate);
       if (res.data) {
         set({ todayHydration: res.data as HydrationLog });

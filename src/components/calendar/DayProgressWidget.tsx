@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useNaviTrackerStore } from "@/store";
 import Link from "next/link";
 import { Target } from "lucide-react";
+import { getDateKey } from "@/lib/utils";
 
 const statusLabels: Record<string, string> = {
   won: "Dia ganado",
@@ -21,7 +22,7 @@ const statusColors: Record<string, string> = {
 
 export default function DayProgressWidget() {
   const { currentDayScore, fetchDayScore } = useNaviTrackerStore();
-  const today = new Date().toISOString().split("T")[0];
+  const today = getDateKey(new Date());
 
   useEffect(() => {
     fetchDayScore(today);

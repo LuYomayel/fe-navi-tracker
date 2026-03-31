@@ -13,6 +13,7 @@ import type {
 import { toast } from "@/lib/toast-helper";
 import { api } from "@/lib/api-client";
 import type { StoreSet, StoreGet } from "../types";
+import { getDateKey } from "@/lib/utils";
 
 export interface UISlice {
   selectedDate: Date;
@@ -82,12 +83,10 @@ export const createUISlice = (set: StoreSet, get: StoreGet): UISlice => ({
     try {
       set({ isLoading: true });
 
-      const todayStr = new Date().toISOString().split("T")[0];
-      const thirtyDaysLater = new Date(
+      const todayStr = getDateKey(new Date());
+      const thirtyDaysLater = getDateKey(new Date(
         Date.now() + 30 * 24 * 60 * 60 * 1000
-      )
-        .toISOString()
-        .split("T")[0];
+      ));
 
       const [
         activitiesResponse,

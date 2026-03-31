@@ -4,11 +4,12 @@ import { useNaviTrackerStore } from "@/store";
 import { CheckSquare } from "lucide-react";
 import Link from "next/link";
 import { Checkbox } from "@/components/ui/checkbox";
+import { getDateKey } from "@/lib/utils";
 
 export default function TasksWidget() {
   const { tasks, toggleTask } = useNaviTrackerStore();
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getDateKey(new Date());
   const todayTasks = tasks.filter(
     (t) => t.dueDate === today || (!t.dueDate && !t.completed)
   );

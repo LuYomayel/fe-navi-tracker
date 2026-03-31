@@ -5,6 +5,7 @@ import { useNaviTrackerStore } from "@/store";
 import { CalendarClock } from "lucide-react";
 import Link from "next/link";
 import { Progress } from "@/components/ui/progress";
+import { getDateKey } from "@/lib/utils";
 
 export default function AgendaWidget() {
   const {
@@ -15,7 +16,7 @@ export default function AgendaWidget() {
     calendarEvents,
   } = useNaviTrackerStore();
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getDateKey(new Date());
 
   useEffect(() => {
     fetchDayScore(today);

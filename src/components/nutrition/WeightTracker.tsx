@@ -10,6 +10,7 @@ import {
   Minus,
   Pencil,
 } from "lucide-react";
+import { getDateKey } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -129,7 +130,7 @@ export function WeightTracker({
 
   const submitManualEntry = async () => {
     const entryData: CreateWeightEntryManualDto = {
-      date: new Date().toISOString().split("T")[0],
+      date: getDateKey(new Date()),
       weight: parseFloat(formData.weight),
       bodyFatPercentage: formData.bodyFatPercentage
         ? parseFloat(formData.bodyFatPercentage)

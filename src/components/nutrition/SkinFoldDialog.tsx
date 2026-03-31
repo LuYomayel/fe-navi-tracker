@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useNaviTrackerStore } from "@/store";
+import { getDateKey } from "@/lib/utils";
 import type { SkinFoldRecord, SkinFoldSite } from "@/types/skinFold";
 import {
   SkinFoldSiteNames,
@@ -97,7 +98,7 @@ export function SkinFoldDialog({
     notes: string;
     values: Partial<Record<SkinFoldSite, number>>;
   }>(() => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = getDateKey(new Date());
     return {
       date: editingRecord?.date || today,
       technician: editingRecord?.technician || "",
@@ -109,7 +110,7 @@ export function SkinFoldDialog({
   // Sync form data when editingRecord changes (e.g., opening dialog in edit mode)
   useEffect(() => {
     if (isOpen) {
-      const today = new Date().toISOString().split("T")[0];
+      const today = getDateKey(new Date());
       if (editingRecord) {
         // Parse notes: if it's a JSON string from PDF analysis, extract only userNotes
         let userNotes = editingRecord.notes || "";
@@ -321,7 +322,7 @@ export function SkinFoldDialog({
       onClose();
 
       // Reset form
-      const today = new Date().toISOString().split("T")[0];
+      const today = getDateKey(new Date());
       setFormData({
         date: today,
         technician: "",

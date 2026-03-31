@@ -2,6 +2,7 @@ import type { CalendarEvent, GoogleCalendarStatus } from "@/types";
 import { toast } from "@/lib/toast-helper";
 import { api } from "@/lib/api-client";
 import type { StoreSet, StoreGet } from "../types";
+import { getDateKey } from "@/lib/utils";
 
 export interface CalendarSlice {
   calendarEvents: CalendarEvent[];
@@ -117,12 +118,10 @@ export const createCalendarSlice = (set: StoreSet, get: StoreGet): CalendarSlice
     try {
       await api.calendar.google.sync();
       toast.success("Google Calendar sincronizado");
-      const today = new Date().toISOString().split("T")[0];
-      const thirtyDaysLater = new Date(
+      const today = getDateKey(new Date());
+      const thirtyDaysLater = getDateKey(new Date(
         Date.now() + 30 * 24 * 60 * 60 * 1000
-      )
-        .toISOString()
-        .split("T")[0];
+      ));
       get().fetchCalendarEvents(today, thirtyDaysLater);
     } catch {
       toast.error("Error", "No se pudo sincronizar Google Calendar");

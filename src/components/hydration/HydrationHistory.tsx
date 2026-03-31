@@ -4,8 +4,14 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api-client";
 import { useNaviTrackerStore } from "@/store";
 import type { HydrationLog } from "@/types";
+import { getDateKey } from "@/lib/utils";
 
-export default function HydrationHistory() {
+interface Props {
+  selectedDate?: string;
+  onSelectDate?: (date: string) => void;
+}
+
+export default function HydrationHistory({ selectedDate, onSelectDate }: Props) {
   const { hydrationGoal } = useNaviTrackerStore();
   const [history, setHistory] = useState<HydrationLog[]>([]);
 
@@ -13,8 +19,8 @@ export default function HydrationHistory() {
     const today = new Date();
     const from = new Date(today);
     from.setDate(from.getDate() - 6);
-    const fromStr = from.toISOString().split("T")[0];
-    const toStr = today.toISOString().split("T")[0];
+    const fromStr = getDateKey(from);
+    const toStr = getDateKey(today);
 
     api.hydration.getRange(fromStr, toStr).then((res) => {
       if (res.data) setHistory(res.data as HydrationLog[]);
@@ -24,12 +30,12 @@ export default function HydrationHistory() {
   const goal = hydrationGoal.goalGlasses;
   const maxGlasses = Math.max(goal, ...history.map((h) => h.glassesConsumed), 1);
 
-  // Generate last 7 days
+  // Generar últimos 7 días
   const days: { date: string; label: string; glasses: number }[] = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split("T")[0];
+    const dateStr = getDateKey(d);
     const log = history.find((h) => h.date === dateStr);
     const dayNames = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
     days.push({
@@ -46,10 +52,14 @@ export default function HydrationHistory() {
         {days.map((day) => {
           const height = maxGlasses > 0 ? (day.glasses / maxGlasses) * 100 : 0;
           const reachedGoal = day.glasses >= goal;
+          const isSelected = day.date === selectedDate;
           return (
-            <div
+            <button
               key={day.date}
-              className="flex-1 flex flex-col items-center gap-1"
+              className={`flex-1 flex flex-col items-center gap-1 rounded transition-all ${
+                onSelectDate ? "cursor-pointer hover:opacity-80 active:scale-95" : "cursor-default"
+              } ${isSelected ? "ring-2 ring-primary ring-offset-1 rounded" : ""}`}
+              onClick={() => onSelectDate?.(day.date)}
             >
               <span className="text-[10px] font-medium text-muted-foreground">
                 {day.glasses}
@@ -62,18 +72,27 @@ export default function HydrationHistory() {
                 />
                 <div
                   className={`absolute bottom-0 w-full rounded-t-sm transition-all ${
-                    reachedGoal ? "bg-green-500" : "bg-blue-500/60"
+                    isSelected
+                      ? "bg-primary"
+                      : reachedGoal
+                      ? "bg-green-500"
+                      : "bg-blue-500/60"
                   }`}
                   style={{ height: `${height}%`, minHeight: day.glasses > 0 ? "4px" : "0" }}
                 />
               </div>
-              <span className="text-[10px] text-muted-foreground">
+              <span className={`text-[10px] ${isSelected ? "text-primary font-semibold" : "text-muted-foreground"}`}>
                 {day.label}
               </span>
-            </div>
+            </button>
           );
         })}
       </div>
+      {onSelectDate && (
+        <p className="text-[10px] text-muted-foreground mt-2 text-center">
+          Tocá un día para editarlo
+        </p>
+      )}
     </div>
   );
 }
