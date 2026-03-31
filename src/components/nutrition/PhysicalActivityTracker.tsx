@@ -4,7 +4,10 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Activity, Clock, Footprints, Zap } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Plus, Activity, Clock, Footprints, Zap, Pencil } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { PhysicalActivity } from "@/types";
 import { CreatePhysicalActivityDialog } from "@/components/nutrition/CreatePhysicalActivityDialog";
@@ -25,6 +28,16 @@ export function PhysicalActivityTracker({
   } = useNaviTrackerStore();
   const [isLoading, setIsLoading] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [editingActivity, setEditingActivity] = useState<PhysicalActivity | null>(null);
+  const [editForm, setEditForm] = useState({
+    date: "",
+    steps: "",
+    distanceKm: "",
+    activeEnergyKcal: "",
+    exerciseMinutes: "",
+    standHours: "",
+  });
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   useEffect(() => {
     loadActivities();
@@ -63,6 +76,42 @@ export function PhysicalActivityTracker({
       title: "¡Actividad registrada!",
       description: `Has ganado 60 XP por registrar tu actividad física`,
     });
+  };
+
+  const openEditDialog = (activity: PhysicalActivity) => {
+    setEditingActivity(activity);
+    setEditForm({
+      date: activity.date,
+      steps: activity.steps?.toString() ?? "",
+      distanceKm: activity.distanceKm?.toString() ?? "",
+      activeEnergyKcal: activity.activeEnergyKcal?.toString() ?? "",
+      exerciseMinutes: activity.exerciseMinutes?.toString() ?? "",
+      standHours: activity.standHours?.toString() ?? "",
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingActivity) return;
+    try {
+      setIsSavingEdit(true);
+      const response = await api.physicalActivity.update(editingActivity.id, {
+        date: editForm.date,
+        steps: editForm.steps ? parseInt(editForm.steps) : undefined,
+        distanceKm: editForm.distanceKm ? parseFloat(editForm.distanceKm) : undefined,
+        activeEnergyKcal: editForm.activeEnergyKcal ? parseInt(editForm.activeEnergyKcal) : undefined,
+        exerciseMinutes: editForm.exerciseMinutes ? parseInt(editForm.exerciseMinutes) : undefined,
+        standHours: editForm.standHours ? parseInt(editForm.standHours) : undefined,
+      });
+      if (response.success) {
+        refreshPhysicalActivities();
+        setEditingActivity(null);
+        toast({ title: "Actividad actualizada" });
+      }
+    } catch {
+      toast({ title: "Error", description: "No se pudo actualizar la actividad", variant: "destructive" });
+    } finally {
+      setIsSavingEdit(false);
+    }
   };
 
   const handleDeleteActivity = async (id: string) => {
@@ -252,14 +301,23 @@ export function PhysicalActivityTracker({
                       </div>
                     </div>
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteActivity(activity.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      Eliminar
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditDialog(activity)}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteActivity(activity.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        Eliminar
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
@@ -267,6 +325,47 @@ export function PhysicalActivityTracker({
           </CardContent>
         </Card>
       )}
+
+      {/* Dialog para editar actividad */}
+      <Dialog open={!!editingActivity} onOpenChange={(open) => !open && setEditingActivity(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Actividad Física</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-date">Fecha</Label>
+              <Input id="edit-date" type="date" value={editForm.date} onChange={(e) => setEditForm((p) => ({ ...p, date: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="edit-steps">Pasos</Label>
+                <Input id="edit-steps" type="number" value={editForm.steps} onChange={(e) => setEditForm((p) => ({ ...p, steps: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-distance">Distancia (km)</Label>
+                <Input id="edit-distance" type="number" step="0.1" value={editForm.distanceKm} onChange={(e) => setEditForm((p) => ({ ...p, distanceKm: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-calories">Calorías (kcal)</Label>
+                <Input id="edit-calories" type="number" value={editForm.activeEnergyKcal} onChange={(e) => setEditForm((p) => ({ ...p, activeEnergyKcal: e.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-minutes">Minutos de ejercicio</Label>
+                <Input id="edit-minutes" type="number" value={editForm.exerciseMinutes} onChange={(e) => setEditForm((p) => ({ ...p, exerciseMinutes: e.target.value }))} />
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="edit-stand">Horas de pie</Label>
+                <Input id="edit-stand" type="number" value={editForm.standHours} onChange={(e) => setEditForm((p) => ({ ...p, standHours: e.target.value }))} />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setEditingActivity(null)}>Cancelar</Button>
+              <Button className="flex-1" onClick={handleSaveEdit} disabled={isSavingEdit}>{isSavingEdit ? "Guardando..." : "Guardar"}</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog para crear actividad */}
       <CreatePhysicalActivityDialog

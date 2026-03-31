@@ -125,7 +125,7 @@ export default function MonthlyCalendar() {
                     score.status === "won" || score.status === "lost"
                       ? "text-white"
                       : score.status === "partial" && score.percentage >= 50
-                        ? "text-gray-900"
+                        ? "text-gray-900 dark:text-gray-100"
                         : ""
                   }`}
                 >
@@ -137,7 +137,7 @@ export default function MonthlyCalendar() {
                       score.status === "won" || score.status === "lost"
                         ? "text-white/80"
                         : score.status === "partial"
-                          ? "text-gray-700"
+                          ? "text-gray-700 dark:text-gray-300"
                           : "text-muted-foreground"
                     }`}
                   >

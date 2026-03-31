@@ -67,7 +67,7 @@ export function CalorieBalanceWidget({
         {showDetails && (
           <>
             <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-3 bg-green-50 rounded-lg">
+              <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                 <div className={`font-semibold ${formatted.consumedColor}`}>
                   {balance.caloriesConsumed}
                 </div>
@@ -80,7 +80,7 @@ export function CalorieBalanceWidget({
                 </div>
               </div>
 
-              <div className="text-center p-3 bg-red-50 rounded-lg">
+              <div className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
                 <div className={`font-semibold ${formatted.burnedColor}`}>
                   {balance.caloriesBurned}
                 </div>
@@ -117,17 +117,17 @@ export function CalorieBalanceWidget({
         {/* Indicadores de estado */}
         <div className="flex justify-center gap-2 text-xs">
           {balance.isDeficit && (
-            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+            <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full">
               🔥 Quemando grasa
             </span>
           )}
           {balance.isSurplus && (
-            <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full">
+            <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 rounded-full">
               📈 Ganando peso
             </span>
           )}
           {balance.netCalories === 0 && (
-            <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full">
+            <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full">
               ⚖️ Balance perfecto
             </span>
           )}

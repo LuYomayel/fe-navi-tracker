@@ -8,6 +8,7 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,14 +31,17 @@ interface WeightTrackerProps {
   entries: WeightEntry[];
   onEntryAdded: (entry: WeightEntry) => void;
   onEntryDeleted: (entryId: string) => void;
+  onEntryUpdated?: (entry: WeightEntry) => void;
 }
 
 export function WeightTracker({
   entries,
   onEntryAdded,
   onEntryDeleted,
+  onEntryUpdated,
 }: WeightTrackerProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<WeightEntry | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [entryType, setEntryType] = useState<"manual" | "photo">("manual");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -160,6 +164,50 @@ export function WeightTracker({
     }
   };
 
+  const openEditModal = (entry: WeightEntry) => {
+    setEditingEntry(entry);
+    setFormData({
+      weight: entry.weight?.toString() ?? "",
+      bodyFatPercentage: entry.bodyFatPercentage?.toString() ?? "",
+      muscleMassPercentage: entry.muscleMassPercentage?.toString() ?? "",
+      bodyWaterPercentage: entry.bodyWaterPercentage?.toString() ?? "",
+      bmi: entry.bmi?.toString() ?? "",
+      bfr: entry.bfr?.toString() ?? "",
+      score: entry.score?.toString() ?? "",
+      notes: entry.notes ?? "",
+    });
+    setEntryType("manual");
+    setIsModalOpen(true);
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editingEntry || !formData.weight) return;
+    setIsLoading(true);
+    try {
+      const response = await api.nutrition.updateWeightEntry(editingEntry.id, {
+        weight: parseFloat(formData.weight),
+        bodyFatPercentage: formData.bodyFatPercentage ? parseFloat(formData.bodyFatPercentage) : undefined,
+        muscleMassPercentage: formData.muscleMassPercentage ? parseFloat(formData.muscleMassPercentage) : undefined,
+        bodyWaterPercentage: formData.bodyWaterPercentage ? parseFloat(formData.bodyWaterPercentage) : undefined,
+        bmi: formData.bmi ? parseFloat(formData.bmi) : undefined,
+        bfr: formData.bfr ? parseFloat(formData.bfr) : undefined,
+        score: formData.score ? parseFloat(formData.score) : undefined,
+        notes: formData.notes || undefined,
+      });
+      if (response.success) {
+        onEntryUpdated?.(response.data as WeightEntry);
+        resetForm();
+        setEditingEntry(null);
+        setIsModalOpen(false);
+        toast.success("Registro actualizado correctamente");
+      }
+    } catch {
+      toast.error("Error al actualizar el registro");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       weight: "",
@@ -260,7 +308,7 @@ export function WeightTracker({
 
       {/* Botón para agregar nuevo registro */}
       <div className="flex justify-center">
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <Dialog open={isModalOpen} onOpenChange={(open) => { setIsModalOpen(open); if (!open) setEditingEntry(null); }}>
           <DialogTrigger asChild>
             <Button className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
@@ -269,10 +317,10 @@ export function WeightTracker({
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Nuevo Registro de Peso</DialogTitle>
+              <DialogTitle>{editingEntry ? "Editar Registro de Peso" : "Nuevo Registro de Peso"}</DialogTitle>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={editingEntry ? (e) => { e.preventDefault(); handleEditSubmit(); } : handleSubmit} className="space-y-4">
               {/* Selector de tipo de entrada */}
               <div className="flex gap-2">
                 <Button
@@ -496,13 +544,22 @@ export function WeightTracker({
                     </Badge>
                   </div>
 
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onEntryDeleted(entry.id)}
-                  >
-                    Eliminar
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openEditModal(entry)}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEntryDeleted(entry.id)}
+                    >
+                      Eliminar
+                    </Button>
+                  </div>
                 </div>
 
                 {entry.notes && (

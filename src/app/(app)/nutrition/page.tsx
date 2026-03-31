@@ -428,6 +428,7 @@ export default function NutritionPage() {
     updateSkinFoldRecord: _updateSkinFoldRecord,
     addWeightEntry,
     deleteWeightEntry,
+    refreshWeightEntries,
     preferences,
     updatePreferences: _updatePreferences,
     getAllFoodAnalysis,
@@ -1461,6 +1462,9 @@ export default function NutritionPage() {
             }}
             onEntryDeleted={(entryId) => {
               deleteWeightEntry(entryId);
+            }}
+            onEntryUpdated={() => {
+              refreshWeightEntries();
             }}
           />
         </div>

@@ -134,7 +134,7 @@ export function WeightWidget({
 
         {/* Objetivo */}
         {targetWeight && (
-          <div className="p-2 bg-blue-50/50 rounded-lg">
+          <div className="p-2 bg-blue-50/50 dark:bg-blue-900/20 rounded-lg">
             <div className="flex items-center justify-between text-sm">
               <span>Objetivo:</span>
               <span className="font-medium">{targetWeight} kg</span>
