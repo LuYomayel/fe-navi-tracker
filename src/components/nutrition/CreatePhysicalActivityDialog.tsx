@@ -34,6 +34,7 @@ export function CreatePhysicalActivityDialog({
   const [mode, setMode] = useState<"image" | "manual">("manual");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [contextText, setContextText] = useState("");
+  const [selectedDate, setSelectedDate] = useState(date);
 
   // Form data para entrada manual
   const [manualData, setManualData] = useState({
@@ -62,7 +63,7 @@ export function CreatePhysicalActivityDialog({
       setIsLoading(true);
 
       const activityData: CreatePhysicalActivityDto = {
-        date,
+        date: selectedDate,
         screenshotUrl: selectedImage,
         source: "image",
         ...(contextText.trim() && { context: contextText.trim() }),
@@ -98,7 +99,7 @@ export function CreatePhysicalActivityDialog({
       setIsLoading(true);
 
       const activityData: CreatePhysicalActivityDto = {
-        date,
+        date: selectedDate,
         steps: manualData.steps ? parseInt(manualData.steps) : undefined,
         distanceKm: manualData.distanceKm
           ? parseFloat(manualData.distanceKm)
@@ -141,6 +142,7 @@ export function CreatePhysicalActivityDialog({
   const resetForm = () => {
     setSelectedImage(null);
     setContextText("");
+    setSelectedDate(date);
     setManualData({
       steps: "",
       distanceKm: "",
@@ -162,6 +164,17 @@ export function CreatePhysicalActivityDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Fecha de la actividad */}
+          <div className="space-y-2">
+            <Label htmlFor="activity-date">Fecha de la actividad</Label>
+            <Input
+              id="activity-date"
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+            />
+          </div>
+
           {/* Selector de modo */}
           <div className="flex gap-2">
             <Button

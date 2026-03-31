@@ -111,8 +111,8 @@ export function PhysicalActivityTracker({
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <div className="h-32 bg-gray-100 rounded-lg animate-pulse" />
-        <div className="h-20 bg-gray-100 rounded-lg animate-pulse" />
+        <div className="h-32 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" />
+        <div className="h-20 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" />
       </div>
     );
   }
@@ -210,8 +210,8 @@ export function PhysicalActivityTracker({
                     key={activity.id}
                     className={`flex items-center justify-between p-3 rounded-lg ${
                       isToday
-                        ? "bg-blue-50 border-2 border-blue-200"
-                        : "bg-gray-50"
+                        ? "bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700"
+                        : "bg-gray-50 dark:bg-gray-800"
                     }`}
                   >
                     <div className="flex-1">
