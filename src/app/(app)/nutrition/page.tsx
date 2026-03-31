@@ -443,10 +443,12 @@ export default function NutritionPage() {
   const [activeTab, setActiveTab] = useState<
     "overview" | "food" | "body" | "skinfold" | "physical-activity" | "weight" | "meal-prep"
   >("overview");
+  const [showFoodAnalyzer, setShowFoodAnalyzer] = useState(false);
 
   // Establecer tab inicial basado en URL
   useEffect(() => {
     const tabParam = searchParams.get("tab");
+    const logParam = searchParams.get("log");
     if (
       tabParam &&
       [
@@ -470,8 +472,11 @@ export default function NutritionPage() {
           | "meal-prep"
       );
     }
+    if (logParam === "true") {
+      setActiveTab("food");
+      setShowFoodAnalyzer(true);
+    }
   }, [searchParams]);
-  const [showFoodAnalyzer, setShowFoodAnalyzer] = useState(false);
   const [showBodyAnalyzer, setShowBodyAnalyzer] = useState(false);
   const [showSkinFoldDialog, setShowSkinFoldDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -997,6 +1002,21 @@ export default function NutritionPage() {
       {/* Food Tracking Tab */}
       {activeTab === "food" && (
         <div className="space-y-6">
+          {/* CTA principal: registrar comida */}
+          <button
+            onClick={() => setShowFoodAnalyzer(true)}
+            className="w-full flex items-center gap-4 p-4 rounded-2xl bg-primary text-primary-foreground active:scale-[0.98] transition-transform shadow-md"
+          >
+            <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+              <Camera className="h-6 w-6" />
+            </div>
+            <div className="text-left">
+              <div className="font-semibold text-base">Registrar comida</div>
+              <div className="text-sm opacity-80">Foto o entrada manual · +15 XP</div>
+            </div>
+            <div className="ml-auto opacity-70 text-2xl">→</div>
+          </button>
+
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <h3 className="text-base sm:text-lg font-medium">
@@ -1006,14 +1026,6 @@ export default function NutritionPage() {
                 Gestiona y filtra tus análisis
               </p>
             </div>
-            <Button
-              onClick={() => setShowFoodAnalyzer(true)}
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <Camera className="h-4 w-4" />
-              Nuevo análisis
-            </Button>
           </div>
 
           {/* Filtros */}

@@ -18,6 +18,7 @@ import {
   ShoppingCart,
   MoreHorizontal,
   X,
+  UtensilsCrossed,
 } from "lucide-react";
 import { useAuthStore } from "../../auth/store";
 import { Button } from "@/components/ui/button";
@@ -231,6 +232,15 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <main className="max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-4 pb-20 md:pb-6">
         {children}
       </main>
+
+      {/* FAB: registrar comida rápido (mobile only) */}
+      <Link
+        href="/nutrition?tab=food&log=true"
+        className="md:hidden fixed bottom-20 right-4 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center active:scale-95 transition-transform"
+        aria-label="Registrar comida"
+      >
+        <UtensilsCrossed className="h-6 w-6" />
+      </Link>
 
       {/* iOS-style Bottom Tab Bar (mobile only) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl backdrop-saturate-150 border-t border-border/50 pb-safe">

@@ -27,6 +27,9 @@ import {
   BarChart3,
   Clock,
   Flame,
+  UtensilsCrossed,
+  Dumbbell,
+  Droplets,
 } from "lucide-react";
 import { getDateKey } from "@/lib/utils";
 
@@ -108,6 +111,31 @@ export default function DashboardPage() {
         <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
           Tu resumen de hoy
         </p>
+      </div>
+
+      {/* Quick Actions - acciones diarias principales */}
+      <div className="grid grid-cols-3 gap-2">
+        <Link
+          href="/nutrition?tab=food&log=true"
+          className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-primary text-primary-foreground active:scale-95 transition-transform shadow-sm"
+        >
+          <UtensilsCrossed className="h-6 w-6" />
+          <span className="text-[11px] font-semibold text-center leading-tight">Registrar comida</span>
+        </Link>
+        <Link
+          href="/nutrition?tab=physical-activity"
+          className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-orange-500/10 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 active:scale-95 transition-transform"
+        >
+          <Dumbbell className="h-6 w-6" />
+          <span className="text-[11px] font-semibold text-center leading-tight">Actividad física</span>
+        </Link>
+        <Link
+          href="/hydration"
+          className="flex flex-col items-center gap-1.5 p-3 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 active:scale-95 transition-transform"
+        >
+          <Droplets className="h-6 w-6" />
+          <span className="text-[11px] font-semibold text-center leading-tight">Registrar agua</span>
+        </Link>
       </div>
 
       {/* Quick Stats Grid */}
@@ -205,31 +233,39 @@ export default function DashboardPage() {
           </div>
         </Link>
 
-        <Link href="/nutrition" className="block" prefetch={false}>
-          <div className="rounded-2xl bg-card p-4 hover:bg-accent/50 active:scale-[0.98] transition-all">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-green-500/10 flex items-center justify-center">
-                  <Apple className="h-5 w-5 text-green-500" />
+        <div className="rounded-2xl bg-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+                <Apple className="h-5 w-5 text-green-500" />
+              </div>
+              <div>
+                <div className="font-semibold text-sm">
+                  Nutricion y Salud
                 </div>
-                <div>
-                  <div className="font-semibold text-sm">
-                    Nutricion y Salud
-                  </div>
-                  <div className="text-xs text-muted-foreground flex items-center gap-2">
-                    <span>{totalCaloriesToday} kcal hoy</span>
-                    <span className="text-border">|</span>
-                    <span className="flex items-center gap-0.5">
-                      <TrendingUp className="h-3 w-3" />
-                      {averageCaloriesWeek} kcal/dia
-                    </span>
-                  </div>
+                <div className="text-xs text-muted-foreground flex items-center gap-2">
+                  <span>{totalCaloriesToday} kcal hoy</span>
+                  <span className="text-border">|</span>
+                  <span className="flex items-center gap-0.5">
+                    <TrendingUp className="h-3 w-3" />
+                    {averageCaloriesWeek} kcal/dia
+                  </span>
                 </div>
               </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </div>
+            <Link href="/nutrition" prefetch={false}>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </Link>
           </div>
-        </Link>
+          <Link
+            href="/nutrition?tab=food&log=true"
+            prefetch={false}
+            className="flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium active:scale-[0.98] transition-transform"
+          >
+            <UtensilsCrossed className="h-4 w-4" />
+            Registrar comida ahora
+          </Link>
+        </div>
       </div>
 
       {/* Hydration & Tasks, Agenda & Win Streak */}
