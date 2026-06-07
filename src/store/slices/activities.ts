@@ -3,6 +3,7 @@ import { toast } from "@/lib/toast-helper";
 import { api } from "@/lib/api-client";
 import { XpAction } from "@/types/xp";
 import type { StoreSet, StoreGet } from "../types";
+import { hapticSuccess } from "@/lib/native/haptics";
 
 const getRandomColor = () => {
   const colors = [
@@ -296,6 +297,7 @@ export const createActivitiesSlice = (set: StoreSet, get: StoreGet): ActivitiesS
 
       try {
         if (completion.completed) {
+          hapticSuccess(); // feedback haptico en mobile (no-op en web)
           if (typeof window !== "undefined") {
             window.dispatchEvent(new Event("habit-completed"));
             window.dispatchEvent(new Event("xp-updated"));

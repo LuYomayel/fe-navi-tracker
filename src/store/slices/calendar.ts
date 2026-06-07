@@ -97,8 +97,23 @@ export const createCalendarSlice = (set: StoreSet, get: StoreGet): CalendarSlice
 
   connectGoogleCalendar: async () => {
     try {
-      const res = await api.calendar.google.getAuthUrl();
-      if (res.data?.url) window.location.href = res.data.url;
+      const { isNative, getPlatform } = await import("@/lib/native/platform");
+      const native = isNative();
+      const res = await api.calendar.google.getAuthUrl(
+        native ? getPlatform() : undefined,
+      );
+      const url = res.data?.url;
+      if (!url) return;
+
+      if (native) {
+        // Google bloquea OAuth en WebView embebido => abrir en el browser del
+        // sistema (SafariViewController / Custom Tabs). El callback vuelve por
+        // deep link (navitracker://oauth-callback).
+        const { Browser } = await import("@capacitor/browser");
+        await Browser.open({ url });
+      } else {
+        window.location.href = url;
+      }
     } catch {
       toast.error("Error", "No se pudo conectar con Google Calendar");
     }

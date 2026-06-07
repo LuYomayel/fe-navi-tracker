@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { isNative } from "@/lib/native/platform";
+import { pickPhoto } from "@/lib/native/camera";
 import {
   Dialog,
   DialogContent,
@@ -191,11 +193,29 @@ export function FoodAnalyzer({
     }
   };
 
-  const handleCameraCapture = () => {
+  const handleCameraCapture = async () => {
+    // En mobile: camara nativa. En web: input file con capture.
+    if (isNative()) {
+      const dataUrl = await pickPhoto("camera");
+      if (dataUrl) {
+        setSelectedImage(dataUrl);
+        setStep("selecting");
+      }
+      return;
+    }
     cameraInputRef.current?.click();
   };
 
-  const handleFileSelect = () => {
+  const handleFileSelect = async () => {
+    // En mobile: galeria nativa. En web: input file.
+    if (isNative()) {
+      const dataUrl = await pickPhoto("photos");
+      if (dataUrl) {
+        setSelectedImage(dataUrl);
+        setStep("selecting");
+      }
+      return;
+    }
     fileInputRef.current?.click();
   };
 
@@ -440,6 +460,7 @@ export function FoodAnalyzer({
   const mealTypeOptions = [
     { value: MealType.BREAKFAST, label: "Desayuno", emoji: "🌅" },
     { value: MealType.LUNCH, label: "Almuerzo", emoji: "☀️" },
+    { value: MealType.MERIENDA, label: "Merienda", emoji: "🧉" },
     { value: MealType.DINNER, label: "Cena", emoji: "🌙" },
     { value: MealType.SNACK, label: "Snack", emoji: "🍎" },
     { value: MealType.OTHER, label: "Otro", emoji: "🍽️" },

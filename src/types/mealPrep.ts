@@ -11,7 +11,12 @@ export type DayKey =
   | "saturday"
   | "sunday";
 
-export type MealSlotKey = "breakfast" | "lunch" | "snack" | "dinner";
+export type MealSlotKey =
+  | "breakfast"
+  | "lunch"
+  | "merienda"
+  | "snack"
+  | "dinner";
 
 export const DAY_KEYS: DayKey[] = [
   "monday",
@@ -26,6 +31,7 @@ export const DAY_KEYS: DayKey[] = [
 export const MEAL_SLOT_KEYS: MealSlotKey[] = [
   "breakfast",
   "lunch",
+  "merienda",
   "snack",
   "dinner",
 ];
@@ -43,7 +49,8 @@ export const DAY_LABELS: Record<DayKey, string> = {
 export const MEAL_SLOT_LABELS: Record<MealSlotKey, string> = {
   breakfast: "Desayuno",
   lunch: "Almuerzo",
-  snack: "Merienda",
+  merienda: "Merienda",
+  snack: "Snack",
   dinner: "Cena",
 };
 
@@ -64,7 +71,8 @@ export interface MealPrepSlot {
 // ─── Meal Prep Day & Week ─────────────────────────────────────
 
 export interface MealPrepDay {
-  slots: Record<MealSlotKey, MealPrepSlot | null>;
+  // Partial: la data previa a "merienda" tiene 4 slots; un dia puede no tener todos.
+  slots: Partial<Record<MealSlotKey, MealPrepSlot | null>>;
 }
 
 export interface MealPrepWeek {
@@ -94,6 +102,7 @@ export interface NutritionistMealSlot {
 export interface NutritionistDayPlan {
   breakfast?: NutritionistMealSlot | null;
   lunch?: NutritionistMealSlot | null;
+  merienda?: NutritionistMealSlot | null;
   snack?: NutritionistMealSlot | null;
   dinner?: NutritionistMealSlot | null;
 }

@@ -252,7 +252,13 @@ export function GenerateMealPrepDialog({
                   className="h-8 rounded-md border bg-background px-2 text-xs"
                 >
                   {(
-                    ["breakfast", "lunch", "snack", "dinner"] as MealSlotKey[]
+                    [
+                      "breakfast",
+                      "lunch",
+                      "merienda",
+                      "snack",
+                      "dinner",
+                    ] as MealSlotKey[]
                   ).map((m) => (
                     <option key={m} value={m}>
                       {MEAL_SLOT_LABELS[m]}

@@ -330,6 +330,8 @@ export function NutritionTracker({
         return "🌅";
       case "lunch":
         return "☀️";
+      case "merienda":
+        return "🧉";
       case "dinner":
         return "🌙";
       case "snack":
@@ -767,6 +769,7 @@ export function NutritionTracker({
                       <option value="all">Todas</option>
                       <option value="breakfast">🌅 Desayuno</option>
                       <option value="lunch">☀️ Almuerzo</option>
+                      <option value="merienda">🧉 Merienda</option>
                       <option value="dinner">🌙 Cena</option>
                       <option value="snack">🍎 Snack</option>
                     </select>
@@ -829,6 +832,7 @@ export function NutritionTracker({
                                       🌅 Desayuno
                                     </option>
                                     <option value="lunch">☀️ Almuerzo</option>
+                                    <option value="merienda">🧉 Merienda</option>
                                     <option value="dinner">🌙 Cena</option>
                                     <option value="snack">🍎 Snack</option>
                                   </select>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api-client";
 import { Suspense } from "react";
+import { isNative } from "@/lib/native/platform";
 
 function GoogleCallbackContent() {
   const router = useRouter();
@@ -30,6 +31,18 @@ function GoogleCallbackContent() {
     if (!code) {
       setStatus("error");
       setErrorMessage("No se recibio codigo de autorizacion.");
+      return;
+    }
+
+    // Flujo nativo: si esta pagina se abrio en el browser del sistema (no en la
+    // app Capacitor) como parte del OAuth mobile, rebotar el code a la app por
+    // deep link. La app, autenticada, hace el intercambio real.
+    const state = searchParams.get("state");
+    const nativeFlow = state?.includes("native") ?? false;
+    if (nativeFlow && !isNative()) {
+      window.location.href = `navitracker://oauth-callback?code=${encodeURIComponent(
+        code,
+      )}`;
       return;
     }
 

@@ -6,6 +6,7 @@ import PWAInstaller from "@/components/PWAInstaller";
 import NetworkStatus from "@/components/NetworkStatus";
 import PWAUpdatePrompt from "@/components/PWAUpdatePrompt";
 import UnregisterSW from "@/components/UnregisterSW";
+import CapacitorProvider from "@/components/native/CapacitorProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +39,7 @@ export function generateViewport() {
     width: "device-width",
     initialScale: 1,
     maximumScale: 1,
+    viewportFit: "cover", // respeta safe-areas (notch / home indicator) en mobile
     themeColor: "#3b82f6",
   };
 }
@@ -61,6 +63,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <CapacitorProvider />
         <GlobalToaster />
         <PWAInstaller />
         <NetworkStatus />

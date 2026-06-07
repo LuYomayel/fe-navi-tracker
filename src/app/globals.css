@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Safe areas para mobile (notch / status bar / home indicator).
+   En web los insets son 0, asi que es no-op. */
+@supports (padding-top: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Utilidades para que componentes fixed respeten las safe areas. */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 @layer base {
   :root {
     /* iOS-inspired light theme */

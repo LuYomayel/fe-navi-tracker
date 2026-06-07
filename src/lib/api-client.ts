@@ -596,8 +596,12 @@ export const api = {
     deleteEvent: (id: string) =>
       apiClient.delete(`/calendar/events/${id}`),
     google: {
-      getAuthUrl: () =>
-        apiClient.get<{ url: string }>("/calendar/google/auth-url"),
+      // platform: "native" agrega un marcador en el state para que la pagina
+      // de callback rebote el code a la app via deep link.
+      getAuthUrl: (platform?: string) =>
+        apiClient.get<{ url: string }>(
+          `/calendar/google/auth-url${platform ? `?platform=${platform}` : ""}`,
+        ),
       callback: (code: string) =>
         apiClient.post("/calendar/google/callback", { code }),
       sync: () => apiClient.post("/calendar/google/sync"),
@@ -605,6 +609,14 @@ export const api = {
       getStatus: () =>
         apiClient.get<GoogleCalendarStatus>("/calendar/google/status"),
     },
+  },
+
+  // DEVICE TOKENS (push notifications)
+  deviceTokens: {
+    register: (token: string, platform: string) =>
+      apiClient.post("/device-tokens", { token, platform }),
+    unregister: (token: string) =>
+      apiClient.delete(`/device-tokens/${encodeURIComponent(token)}`),
   },
 
   // DAY SCORE

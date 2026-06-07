@@ -40,6 +40,7 @@ export function EditNutritionAnalysisDialog({
   const mealTypeOptions = [
     { value: MealType.BREAKFAST, label: "Desayuno", emoji: "🌅" },
     { value: MealType.LUNCH, label: "Almuerzo", emoji: "☀️" },
+    { value: MealType.MERIENDA, label: "Merienda", emoji: "🧉" },
     { value: MealType.DINNER, label: "Cena", emoji: "🌙" },
     { value: MealType.SNACK, label: "Snack", emoji: "🍎" },
     { value: MealType.OTHER, label: "Otro", emoji: "🍽️" },

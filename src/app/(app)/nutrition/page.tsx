@@ -779,6 +779,8 @@ export default function NutritionPage() {
         return "🌅";
       case "lunch":
         return "☀️";
+      case "merienda":
+        return "🧉";
       case "dinner":
         return "🌙";
       case "snack":
@@ -1145,6 +1147,16 @@ export default function NutritionPage() {
                       }
                     >
                       ☀️ Almuerzo
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setFoodFilters({
+                          ...foodFilters,
+                          mealTypeFilter: "merienda" as MealType,
+                        })
+                      }
+                    >
+                      🧉 Merienda
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() =>

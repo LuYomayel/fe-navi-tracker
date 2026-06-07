@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 import path from "path";
 
+// Target de build:
+//  - "capacitor" => export estatico (SPA) para empaquetar en la app mobile
+//  - default     => web (standalone en VPS / Netlify)
+const isCapacitor = process.env.NEXT_PUBLIC_BUILD_TARGET === "capacitor";
+
 const nextConfig: NextConfig = {
   // Optimizaciones de compilación
   compiler: {
@@ -17,8 +22,15 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: process.env.NODE_ENV === "production",
   },
 
-  // Configuración de salida: standalone para VPS, omitir para Netlify
-  ...(process.env.NETLIFY ? {} : { output: "standalone" as const }),
+  // Configuración de salida segun target:
+  //  - capacitor => "export" (genera /out con HTML/CSS/JS estatico)
+  //  - VPS       => "standalone"
+  //  - Netlify   => default
+  ...(isCapacitor
+    ? { output: "export" as const, trailingSlash: true }
+    : process.env.NETLIFY
+      ? {}
+      : { output: "standalone" as const }),
 
   // Configuración para builds rápidos en producción
   productionBrowserSourceMaps: false, // ahorra RAM
@@ -26,7 +38,8 @@ const nextConfig: NextConfig = {
 
   // Configuración de imágenes optimizada
   images: {
-    unoptimized: false, // Solo para export estático
+    // En export estatico no hay servidor que optimice => unoptimized.
+    unoptimized: isCapacitor,
     formats: ["image/webp", "image/avif"],
     deviceSizes: [640, 750, 828, 1080, 1200],
     imageSizes: [16, 32, 48, 64, 96, 128, 256],
@@ -76,39 +89,29 @@ const nextConfig: NextConfig = {
     return config;
   },
 
-  // Configuración de headers (solo para VPS)
-  async headers() {
-    return [
-      {
-        source: "/(.*)",
-        headers: [
-          {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
-          },
-          {
-            key: "X-Frame-Options",
-            value: "DENY",
-          },
-          {
-            key: "X-XSS-Protection",
-            value: "1; mode=block",
-          },
-        ],
-      },
-    ];
-  },
-
-  // Configuración de redirects (solo para VPS)
-  async redirects() {
-    return [
-      {
-        source: "/dashboard",
-        destination: "/",
-        permanent: false,
-      },
-    ];
-  },
+  // headers() y redirects() son features de servidor: NO se aplican en
+  // export estatico (Capacitor). Solo se incluyen en el build web.
+  ...(isCapacitor
+    ? {}
+    : {
+        async headers() {
+          return [
+            {
+              source: "/(.*)",
+              headers: [
+                { key: "X-Content-Type-Options", value: "nosniff" },
+                { key: "X-Frame-Options", value: "DENY" },
+                { key: "X-XSS-Protection", value: "1; mode=block" },
+              ],
+            },
+          ];
+        },
+        async redirects() {
+          return [
+            { source: "/dashboard", destination: "/", permanent: false },
+          ];
+        },
+      }),
 };
 
 export default nextConfig;

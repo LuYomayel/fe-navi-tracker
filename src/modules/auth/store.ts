@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { createCapacitorStorage } from "@/lib/native/storage";
 import {
   User,
   JWTTokens,
@@ -33,18 +34,6 @@ interface AuthState {
   getAccessToken: () => string | null;
   isTokenExpired: () => boolean;
 }
-
-// Función para crear un storage seguro que funciona en SSR
-const createSafeStorage = () => {
-  if (typeof window === "undefined") {
-    return {
-      getItem: () => null,
-      setItem: () => {},
-      removeItem: () => {},
-    };
-  }
-  return localStorage;
-};
 
 // URL del backend
 const BACKEND_URL =
@@ -271,7 +260,8 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "auth-storage",
-      storage: createJSONStorage(() => createSafeStorage()),
+      // Native: Preferences (durable). Web/SSR: localStorage. Ver createCapacitorStorage.
+      storage: createJSONStorage(() => createCapacitorStorage()),
       partialize: (state) => ({
         user: state.user,
         tokens: state.tokens,
