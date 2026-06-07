@@ -23,7 +23,10 @@ import { getDateKey } from "@/lib/utils";
 
 interface BriefingContent {
   date: string;
+  narrative: string | null;
   score: { percentage: number; status: string } | null;
+  calendar: { title: string; time: string; location?: string | null }[];
+  tickets: string | null;
   nutrition: {
     consumed: { calories: number; protein: number; carbs: number; fat: number };
     goals: { dailyCalorieGoal: number; proteinGoal: number };
@@ -160,6 +163,14 @@ export default function BriefingPage() {
         </Card>
       ) : (
         <>
+          {c.narrative && (
+            <Card>
+              <CardContent className="py-4 text-sm leading-relaxed">
+                {c.narrative}
+              </CardContent>
+            </Card>
+          )}
+
           {status && (
             <Card>
               <CardContent className="flex items-center justify-between py-4">
@@ -167,6 +178,39 @@ export default function BriefingPage() {
                 <Badge className={`${status.color} text-white`}>
                   {c.score?.percentage}%
                 </Badge>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">🗓️ Agenda</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {c.calendar && c.calendar.length ? (
+                c.calendar.map((e, i) => (
+                  <div key={i} className="py-1 text-sm">
+                    <span className="font-medium">{e.time}</span> · {e.title}
+                    {e.location ? (
+                      <span className="text-muted-foreground"> ({e.location})</span>
+                    ) : null}
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">Sin eventos hoy.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {c.tickets && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">💼 Trabajo (Trello)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <pre className="whitespace-pre-wrap font-sans text-sm text-muted-foreground">
+                  {c.tickets}
+                </pre>
               </CardContent>
             </Card>
           )}
