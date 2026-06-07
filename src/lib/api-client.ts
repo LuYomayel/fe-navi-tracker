@@ -683,6 +683,19 @@ export const api = {
     uncheckAll: (listId: string) =>
       apiClient.post(`/shopping-list/${listId}/uncheck-all`),
   },
+
+  // BRIEFING
+  briefing: {
+    getByDate: (date?: string) =>
+      apiClient.get<any>(`/briefing${date ? `?date=${date}` : ""}`),
+    getRange: (from: string, to: string) =>
+      apiClient.get<any[]>(`/briefing/range?from=${from}&to=${to}`),
+    generate: (data?: { date?: string; send?: boolean }) =>
+      apiClient.post<{ briefing: any; emailSent: boolean }>(
+        "/briefing/generate",
+        data || {},
+      ),
+  },
 };
 
 export default apiClient;

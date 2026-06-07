@@ -19,6 +19,8 @@ import {
   MoreHorizontal,
   X,
   UtensilsCrossed,
+  Plug,
+  Sunrise,
 } from "lucide-react";
 import { useAuthStore } from "../../auth/store";
 import { Button } from "@/components/ui/button";
@@ -119,6 +121,18 @@ export default function AppLayout({ children }: AppLayoutProps) {
       label: "Navi",
       path: "/navi",
       active: pathname === "/navi",
+    },
+    {
+      icon: Sunrise,
+      label: "Briefing",
+      path: "/briefing",
+      active: pathname === "/briefing",
+    },
+    {
+      icon: Plug,
+      label: "Claude",
+      path: "/connect-claude",
+      active: pathname === "/connect-claude",
     },
   ];
 
