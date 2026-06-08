@@ -1,10 +1,7 @@
-import DashboardPage from "./(app)/dashboard/page";
-import AppLayout from "@/modules/shared/components/AppLayout";
+import { redirect } from "next/navigation";
 
+// El home del rediseño es "Hoy" (dashboard condensado), bajo el grupo (app)
+// que aplica auth + el nuevo AppLayout (nav de 5 secciones).
 export default function HomePage() {
-  return (
-    <AppLayout>
-      <DashboardPage />
-    </AppLayout>
-  );
+  redirect("/hoy");
 }

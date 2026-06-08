@@ -13,7 +13,11 @@ const badgeVariants = cva(
         secondary:
           "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
         destructive:
-          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+          "border-transparent bg-destructive/12 text-destructive",
+        // Semánticos tintados (12-14%): día ganado / parcial / agua / IA
+        success: "border-transparent bg-success/12 text-success",
+        warning: "border-transparent bg-warning/16 text-warning-foreground dark:text-warning",
+        info: "border-transparent bg-info/12 text-info",
         outline: "text-foreground",
       },
     },

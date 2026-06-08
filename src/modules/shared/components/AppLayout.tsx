@@ -7,20 +7,12 @@ import {
   LogOut,
   Moon,
   Sun,
-  LayoutDashboard,
-  Target,
   Apple,
-  Heart,
-  CheckSquare,
-  CalendarClock,
-  Calendar,
-  Droplets,
-  ShoppingCart,
-  MoreHorizontal,
-  X,
-  UtensilsCrossed,
-  Plug,
-  Sunrise,
+  Target,
+  CalendarCheck,
+  Star,
+  Plus,
+  Settings,
 } from "lucide-react";
 import { useAuthStore } from "../../auth/store";
 import { Button } from "@/components/ui/button";
@@ -39,16 +31,19 @@ interface AppLayoutProps {
   children: React.ReactNode;
 }
 
+// Navegación de 5 secciones (agrupadas por intención del usuario).
+const SECTIONS = [
+  { id: "hoy", label: "Hoy", icon: Sun, path: "/hoy" },
+  { id: "salud", label: "Salud", icon: Apple, path: "/salud" },
+  { id: "habitos", label: "Hábitos", icon: Target, path: "/habitos" },
+  { id: "plan", label: "Plan", icon: CalendarCheck, path: "/plan" },
+  { id: "navi", label: "Navi", icon: Star, path: "/navi" },
+];
+
 export default function AppLayout({ children }: AppLayoutProps) {
   const [darkMode, setDarkMode] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
-
-  // Close "Más" menu on navigation
-  useEffect(() => {
-    setMoreOpen(false);
-  }, [pathname]);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -60,6 +55,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
     document.documentElement.classList.toggle("dark", isDark);
   }, []);
 
+  // Scroll al tope al cambiar de sección.
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [pathname]);
+
   const toggleTheme = () => {
     const newDarkMode = !darkMode;
     setDarkMode(newDarkMode);
@@ -67,122 +67,62 @@ export default function AppLayout({ children }: AppLayoutProps) {
     document.documentElement.classList.toggle("dark", newDarkMode);
   };
 
-  const menuItems = [
-    {
-      icon: LayoutDashboard,
-      label: "Inicio",
-      path: "/dashboard",
-      active: pathname === "/dashboard" || pathname === "/",
-    },
-    {
-      icon: Target,
-      label: "Habitos",
-      path: "/habits",
-      active: pathname === "/habits",
-    },
-    {
-      icon: Apple,
-      label: "Nutricion",
-      path: "/nutrition",
-      active: pathname === "/nutrition",
-    },
-    {
-      icon: CheckSquare,
-      label: "Tareas",
-      path: "/tasks",
-      active: pathname === "/tasks",
-    },
-    {
-      icon: CalendarClock,
-      label: "Agenda",
-      path: "/agenda",
-      active: pathname === "/agenda",
-    },
-    {
-      icon: Calendar,
-      label: "Calendario",
-      path: "/calendar",
-      active: pathname === "/calendar",
-    },
-    {
-      icon: Droplets,
-      label: "Agua",
-      path: "/hydration",
-      active: pathname === "/hydration",
-    },
-    {
-      icon: ShoppingCart,
-      label: "Compras",
-      path: "/shopping",
-      active: pathname === "/shopping",
-    },
-    {
-      icon: Heart,
-      label: "Navi",
-      path: "/navi",
-      active: pathname === "/navi",
-    },
-    {
-      icon: Sunrise,
-      label: "Briefing",
-      path: "/briefing",
-      active: pathname === "/briefing",
-    },
-    {
-      icon: Plug,
-      label: "Claude",
-      path: "/connect-claude",
-      active: pathname === "/connect-claude",
-    },
-  ];
+  const isActive = (path: string) => {
+    if (path === "/hoy") return pathname === "/" || pathname.startsWith("/hoy");
+    return pathname.startsWith(path);
+  };
 
-  // Mobile: 4 primary tabs + "Más" menu for the rest
-  const mobileTabItems = menuItems.slice(0, 4); // Inicio, Habitos, Nutricion, Tareas
-  const mobileMoreItems = menuItems.slice(4);    // Agenda, Calendario, Agua, Compras, Navi
-  const isMoreActive = mobileMoreItems.some((item) => item.active);
+  // Ajustes va fuera del nav: pantalla full con back button.
+  const onAjustes = pathname.startsWith("/ajustes");
 
-  const getInitials = (name: string) => {
-    return name
+  const getInitials = (name: string) =>
+    name
       .split(" ")
       .map((n) => n[0])
       .join("")
       .toUpperCase();
-  };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* iOS-style Header */}
-      <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-xl backdrop-saturate-150 border-b border-border/50">
-        <div className="flex h-12 items-center justify-between px-3 sm:px-4 max-w-5xl mx-auto">
-          {/* Logo */}
-          <Link href="/dashboard" className="flex items-center gap-2">
+      {/* Header: wordmark + Navi · racha/XP · tema · avatar */}
+      <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur-xl backdrop-saturate-150">
+        <div className="mx-auto flex h-12 max-w-5xl items-center justify-between px-3 sm:px-4">
+          <Link href="/hoy" className="flex items-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/Navi.png"
+              alt=""
+              width={26}
+              height={26}
+              className="rounded-md"
+            />
             <span className="text-lg font-semibold tracking-tight">
-              NaviTracker
+              <span className="text-primary">Navi</span>Tracker
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
+          {/* Desktop: 5 secciones */}
+          <nav className="hidden items-center gap-1 md:flex">
+            {SECTIONS.map((s) => {
+              const Icon = s.icon;
+              const active = isActive(s.path);
               return (
                 <Link
-                  key={item.path}
-                  href={item.path}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                    item.active
+                  key={s.id}
+                  href={s.path}
+                  className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-all ${
+                    active
                       ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
-                  <span>{item.label}</span>
+                  <Icon className={`h-4 w-4 ${active ? "stroke-[2.5]" : ""}`} />
+                  <span>{s.label}</span>
                 </Link>
               );
             })}
           </nav>
 
-          {/* Right controls */}
           <div className="flex items-center gap-1">
             <XpGlobalIndicator compact className="hidden sm:flex" />
 
@@ -191,6 +131,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               size="icon"
               onClick={toggleTheme}
               className="h-9 w-9 rounded-full"
+              aria-label="Cambiar tema"
             >
               {darkMode ? (
                 <Sun className="h-4 w-4" />
@@ -208,7 +149,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   >
                     <Avatar className="h-8 w-8">
                       <AvatarImage src="" alt={user.name} />
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                      <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
                         {getInitials(user.name)}
                       </AvatarFallback>
                     </Avatar>
@@ -228,12 +169,18 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/ajustes">
+                      <Settings className="mr-2 h-4 w-4" />
+                      Ajustes
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={logout}
                     className="text-destructive focus:text-destructive"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
-                    Cerrar sesion
+                    Cerrar sesión
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -242,90 +189,52 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-3 sm:px-4 py-3 sm:py-4 pb-20 md:pb-6">
+      {/* Contenido */}
+      <main className="mx-auto max-w-5xl px-3 py-3 pb-24 sm:px-4 sm:py-4 md:pb-6">
         {children}
       </main>
 
-      {/* FAB: registrar comida rápido (mobile only) */}
-      <Link
-        href="/nutrition?tab=food&log=true"
-        className="md:hidden fixed bottom-20 right-4 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center active:scale-95 transition-transform"
-        aria-label="Registrar comida"
-      >
-        <UtensilsCrossed className="h-6 w-6" />
-      </Link>
+      {/* FAB contextual: registro rápido → Salud (Comidas). Oculto en Ajustes. */}
+      {!onAjustes && (
+        <Link
+          href="/salud?tab=comidas&log=1"
+          className="fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-fab transition-transform active:scale-95 md:hidden"
+          aria-label="Registro rápido"
+        >
+          <Plus className="h-6 w-6" strokeWidth={2.5} />
+        </Link>
+      )}
 
-      {/* iOS-style Bottom Tab Bar (mobile only) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl backdrop-saturate-150 border-t border-border/50 pb-safe">
-        <div className="flex items-center justify-around h-14 px-1">
-          {mobileTabItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.path}
-                href={item.path}
-                className={`flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 py-1 transition-colors ${
-                  item.active
-                    ? "text-primary"
-                    : "text-muted-foreground"
-                }`}
-              >
-                <Icon
-                  className={`h-5 w-5 sm:h-6 sm:w-6 ${item.active ? "stroke-[2.5]" : ""}`}
-                />
-                <span className="text-[10px] font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
-          {/* "Más" button */}
-          <button
-            onClick={() => setMoreOpen(!moreOpen)}
-            className={`flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 py-1 transition-colors ${
-              isMoreActive || moreOpen
-                ? "text-primary"
-                : "text-muted-foreground"
-            }`}
-          >
-            {moreOpen ? (
-              <X className="h-5 w-5 sm:h-6 sm:w-6 stroke-[2.5]" />
-            ) : (
-              <MoreHorizontal
-                className={`h-5 w-5 sm:h-6 sm:w-6 ${isMoreActive ? "stroke-[2.5]" : ""}`}
-              />
-            )}
-            <span className="text-[10px] font-medium">Mas</span>
-          </button>
-        </div>
-
-        {/* "Más" expandable menu */}
-        {moreOpen && (
-          <div className="absolute bottom-full left-0 right-0 bg-background/95 backdrop-blur-xl border-t border-border/50 animate-in slide-in-from-bottom-2 duration-200">
-            <div className="grid grid-cols-5 gap-1 p-3 max-w-md mx-auto">
-              {mobileMoreItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.path}
-                    href={item.path}
-                    onClick={() => setMoreOpen(false)}
-                    className={`flex flex-col items-center justify-center gap-1 py-3 rounded-xl transition-colors ${
-                      item.active
-                        ? "text-primary bg-primary/10"
-                        : "text-muted-foreground hover:bg-muted"
-                    }`}
+      {/* Bottom tab bar: 5 tabs (mobile). Oculto en Ajustes. */}
+      {!onAjustes && (
+        <nav className="safe-bottom fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-background/80 backdrop-blur-xl backdrop-saturate-150 md:hidden">
+          <div className="flex h-16 items-center justify-around px-1">
+            {SECTIONS.map((s) => {
+              const Icon = s.icon;
+              const active = isActive(s.path);
+              return (
+                <Link
+                  key={s.id}
+                  href={s.path}
+                  className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 py-1 transition-colors ${
+                    active ? "text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  <Icon
+                    className="h-[22px] w-[22px]"
+                    strokeWidth={active ? 2.5 : 2}
+                  />
+                  <span
+                    className={`text-[10px] ${active ? "font-bold" : "font-medium"}`}
                   >
-                    <Icon
-                      className={`h-6 w-6 ${item.active ? "stroke-[2.5]" : ""}`}
-                    />
-                    <span className="text-[11px] font-medium">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
+                    {s.label}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
-        )}
-      </nav>
+        </nav>
+      )}
     </div>
   );
 }

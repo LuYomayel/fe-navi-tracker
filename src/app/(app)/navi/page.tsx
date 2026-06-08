@@ -1,320 +1,255 @@
 "use client";
 
+import { useEffect, useMemo } from "react";
+import {
+  Flame,
+  Target,
+  Utensils,
+  Dumbbell,
+  Zap,
+  Sparkles,
+} from "lucide-react";
+
 import { useNaviState } from "@/hooks/useNaviState";
 import { useXp } from "@/hooks/useXp";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+
+import { PageHeader } from "@/components/ui/page-header";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import Image from "next/image";
-import { Heart, Sparkles, TrendingUp, Calendar } from "lucide-react";
-import { XpBar } from "@/components/xp/XpBar";
-import { NaviControls } from "@/components/navi/NaviControls";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { IconWell } from "@/components/ui/icon-well";
+import {
+  NaviMascot,
+  type NaviState as MascotState,
+} from "@/components/ui/navi-mascot";
+import type { Tone } from "@/components/ui/tone";
+
+import { formatXpLog } from "@/components/screens/navi/xp-log-format";
+
+// La mascota solo soporta 6 estados; mapeamos los del hook (excited/proud) a esos.
+const MASCOT_STATE: Record<string, MascotState> = {
+  celebrating: "celebrating",
+  excited: "celebrating",
+  happy: "happy",
+  proud: "happy",
+  sad: "sad",
+  sleepy: "sleepy",
+  sick: "sick",
+  default: "default",
+};
+
+interface StreakCell {
+  label: string;
+  sub: string;
+  value: number;
+  icon: typeof Target;
+  tone: Tone;
+}
 
 export default function NaviPage() {
-  const { currentState, getNaviInfo, getNaviAdvice } = useNaviState();
-  const { xpStats } = useXp();
+  const { currentState, getNaviInfo } = useNaviState();
+  const { xpStats, isLoading, loadStreaks } = useXp();
+
+  // Las rachas vienen en xpStats.streaks, pero refrescamos por las dudas.
+  useEffect(() => {
+    loadStreaks();
+  }, [loadStreaks]);
 
   const naviInfo = getNaviInfo();
-  const advice = getNaviAdvice();
+  const mascotState = MASCOT_STATE[currentState] ?? "default";
 
-  // Función para obtener descripción del estado
-  const getStateDescription = (state: typeof currentState): string => {
-    switch (state) {
-      case "celebrating":
-        return "Navi está celebrando tu increíble progreso. ¡Has subido de nivel!";
-      case "happy":
-        return "Navi se siente muy feliz contigo. Tu actividad de hoy lo emociona mucho.";
-      case "sad":
-        return "Navi se siente un poco triste, pero sabe que mañana será mejor.";
-      case "sick":
-        return "Navi te extraña mucho. Ha estado esperando que regreses.";
-      case "sleepy":
-        return "Navi tiene un poco de sueño, pero está listo para acompañarte.";
-      default:
-        return "Navi está aquí, listo para acompañarte en tu jornada diaria.";
-    }
-  };
+  // --- Nivel + XP (datos reales) ---
+  const level = xpStats?.level ?? 1;
+  const xp = xpStats?.xp ?? 0;
+  const xpForNextLevel = xpStats?.xpForNextLevel ?? 100;
+  const totalXp = xpStats?.totalXp ?? 0;
+  const xpPct = Math.min(100, Math.round(xpStats?.xpProgressPercentage ?? 0));
+  const xpRemaining = Math.max(0, xpForNextLevel - xp);
 
-  // Función para obtener el color del estado
-  const getStateColor = (state: typeof currentState): string => {
-    switch (state) {
-      case "celebrating":
-        return "bg-gradient-to-r from-yellow-400 to-orange-500";
-      case "happy":
-        return "bg-gradient-to-r from-green-400 to-emerald-500";
-      case "sad":
-        return "bg-gradient-to-r from-blue-400 to-blue-600";
-      case "sick":
-        return "bg-gradient-to-r from-purple-400 to-purple-600";
-      case "sleepy":
-        return "bg-gradient-to-r from-indigo-400 to-blue-500";
-      default:
-        return "bg-gradient-to-r from-gray-400 to-gray-600";
-    }
-  };
-
-  // Calcular estadísticas de relación con Navi
-  const relationshipLevel = Math.min(
-    100,
-    Math.floor((xpStats?.totalXp || 0) / 50)
+  // --- Rachas (3 categorías reales + racha global) ---
+  const streaks = xpStats?.streaks;
+  const habitsStreak = streaks?.habits.streak ?? 0;
+  const nutritionStreak = streaks?.nutrition.streak ?? 0;
+  const activityStreak = streaks?.activity.streak ?? 0;
+  const bestStreak = Math.max(
+    habitsStreak,
+    nutritionStreak,
+    activityStreak,
+    xpStats?.streak ?? 0
   );
-  const daysTogether = Math.floor((xpStats?.totalXp || 0) / 25) + 1;
+
+  const streakCells: StreakCell[] = [
+    {
+      label: "Hábitos",
+      sub: "Todos los del día",
+      value: habitsStreak,
+      icon: Target,
+      tone: "primary",
+    },
+    {
+      label: "Nutrición",
+      sub: "3+ comidas",
+      value: nutritionStreak,
+      icon: Utensils,
+      tone: "success",
+    },
+    {
+      label: "Actividad",
+      sub: "1+ registro",
+      value: activityStreak,
+      icon: Dumbbell,
+      tone: "warning",
+    },
+  ];
+
+  // --- Actividad reciente (XP log real) ---
+  const recentLogs = useMemo(
+    () => (xpStats?.recentLogs ?? []).map(formatXpLog),
+    [xpStats?.recentLogs]
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/30 dark:via-indigo-950/20 dark:to-purple-950/30 p-3 sm:p-4">
-      <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
-        {/* Header */}
-        <div className="text-center mb-4 sm:mb-8">
-          <h1 className="text-2xl sm:text-4xl font-bold text-foreground mb-1 sm:mb-2">
-            Conoce a Navi <span className="text-xl sm:text-2xl">✨</span>
-          </h1>
-          <p className="text-sm sm:text-lg text-muted-foreground">
-            Tu compañero emocional en el viaje hacia mejores hábitos
-          </p>
-        </div>
+    <div className="space-y-4">
+      <PageHeader
+        title="Navi"
+        subtitle="Tu compañero de progreso"
+        icon={Sparkles}
+        metric={<span>{totalXp.toLocaleString("es")}</span>}
+        metricLabel="XP total"
+      />
 
-        {/* Navi Principal */}
-        <Card
-          className={`${getStateColor(
-            currentState
-          )} text-white border-0 shadow-xl`}
-        >
-          <CardContent className="p-4 sm:p-8">
-            <div className="flex flex-col md:flex-row items-center gap-4 sm:gap-8">
-              {/* Imagen de Navi */}
-              <div className="relative">
-                <div className="w-28 h-28 sm:w-40 sm:h-40 md:w-48 md:h-48 relative">
-                  {/* Efecto de brillo para estados especiales */}
-                  {(currentState === "celebrating" ||
-                    currentState === "happy") && (
-                    <div className="absolute inset-0 rounded-full bg-white/20 animate-pulse scale-110"></div>
-                  )}
+      {/* Hero: mascota + mensaje */}
+      <Card className="flex flex-col items-center gap-2 bg-gradient-to-b from-primary/[0.08] to-card px-5 py-6 text-center">
+        <NaviMascot state={mascotState} size={132} float alt="Navi" />
+        <div className="mt-1 text-lg font-bold">Navi</div>
+        <p className="max-w-[280px] text-[13.5px] text-muted-foreground">
+          {naviInfo.message}
+        </p>
+      </Card>
 
-                  <Image
-                    src={naviInfo.image}
-                    alt={`Navi ${currentState}`}
-                    fill
-                    className={`object-contain drop-shadow-2xl ${
-                      currentState === "celebrating"
-                        ? "animate-bounce"
-                        : "animate-float"
-                    }`}
-                    priority
-                  />
-                </div>
-
-                {/* Badge de estado */}
-                <Badge className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-white text-gray-900 shadow-lg">
-                  {naviInfo.emoji}{" "}
-                  {currentState.charAt(0).toUpperCase() + currentState.slice(1)}
-                </Badge>
+      {/* Nivel + XP unificado */}
+      {isLoading && !xpStats ? (
+        <Card className="p-4">
+          <div className="mb-3 flex items-center gap-3">
+            <Skeleton className="h-[52px] w-[52px] rounded-md" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-3 w-40" />
+            </div>
+          </div>
+          <Skeleton className="h-2.5 w-full rounded-full" />
+        </Card>
+      ) : (
+        <Card className="p-4">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="flex h-[52px] w-[52px] shrink-0 flex-col items-center justify-center rounded-md bg-primary text-primary-foreground">
+              <span className="text-[9px] font-semibold uppercase tracking-wide opacity-80">
+                Nivel
+              </span>
+              <span className="font-mono text-xl font-bold leading-none tabular-nums">
+                {level}
+              </span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline gap-1.5">
+                <span className="font-mono text-[22px] font-bold tabular-nums">
+                  {totalXp.toLocaleString("es")}
+                </span>
+                <span className="text-[13px] text-muted-foreground">
+                  XP total
+                </span>
               </div>
-
-              {/* Información de Navi */}
-              <div className="flex-1 text-center md:text-left">
-                <h2 className="text-xl sm:text-3xl font-bold mb-2 sm:mb-4">{naviInfo.message}</h2>
-                <p className="text-sm sm:text-lg mb-4 sm:mb-6 opacity-90">
-                  {getStateDescription(currentState)}
-                </p>
-
-                {/* Estadísticas rápidas */}
-                <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                  <div className="bg-white/20 rounded-xl p-2.5 sm:p-3">
-                    <Heart className="h-4 w-4 sm:h-5 sm:w-5 mb-0.5 sm:mb-1" />
-                    <div className="text-xs sm:text-sm opacity-80">Relación</div>
-                    <div className="font-bold text-sm sm:text-base">{relationshipLevel}%</div>
-                  </div>
-                  <div className="bg-white/20 rounded-xl p-2.5 sm:p-3">
-                    <Calendar className="h-4 w-4 sm:h-5 sm:w-5 mb-0.5 sm:mb-1" />
-                    <div className="text-xs sm:text-sm opacity-80">Días juntos</div>
-                    <div className="font-bold text-sm sm:text-base">{daysTogether}</div>
-                  </div>
-                </div>
+              <div className="text-xs text-muted-foreground">
+                Faltan{" "}
+                <span className="font-mono tabular-nums">{xpRemaining}</span> XP
+                para el nivel {level + 1}
               </div>
             </div>
-          </CardContent>
+          </div>
+
+          <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-primary to-info transition-[width] duration-500"
+              style={{ width: `${xpPct}%` }}
+            />
+          </div>
+          <div className="mt-1.5 flex justify-between font-mono text-[11px] tabular-nums text-muted-foreground">
+            <span>
+              {xp} / {xpForNextLevel} XP
+            </span>
+            <span>{xpPct}%</span>
+          </div>
         </Card>
+      )}
 
-        {/* Grid de información */}
-        <div className="grid md:grid-cols-2 gap-3 sm:gap-6">
-          {/* Estado Emocional */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5" />
-                Estado Emocional
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span>Felicidad</span>
-                    <span>
-                      {currentState === "happy" ||
-                      currentState === "celebrating"
-                        ? "100%"
-                        : currentState === "sad"
-                        ? "20%"
-                        : currentState === "sick"
-                        ? "10%"
-                        : currentState === "sleepy"
-                        ? "40%"
-                        : "70%"}
-                    </span>
-                  </div>
-                  <Progress
-                    value={
-                      currentState === "happy" || currentState === "celebrating"
-                        ? 100
-                        : currentState === "sad"
-                        ? 20
-                        : currentState === "sick"
-                        ? 10
-                        : currentState === "sleepy"
-                        ? 40
-                        : 70
-                    }
-                    className="h-2"
-                  />
-                </div>
-
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span>Energía</span>
-                    <span>
-                      {currentState === "celebrating"
-                        ? "100%"
-                        : currentState === "happy"
-                        ? "90%"
-                        : currentState === "sleepy"
-                        ? "30%"
-                        : currentState === "sick"
-                        ? "20%"
-                        : currentState === "sad"
-                        ? "50%"
-                        : "80%"}
-                    </span>
-                  </div>
-                  <Progress
-                    value={
-                      currentState === "celebrating"
-                        ? 100
-                        : currentState === "happy"
-                        ? 90
-                        : currentState === "sleepy"
-                        ? 30
-                        : currentState === "sick"
-                        ? 20
-                        : currentState === "sad"
-                        ? 50
-                        : 80
-                    }
-                    className="h-2"
-                  />
-                </div>
-
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span>Motivación</span>
-                    <span>
-                      {currentState === "celebrating" ||
-                      currentState === "happy"
-                        ? "100%"
-                        : currentState === "sad"
-                        ? "40%"
-                        : currentState === "sick"
-                        ? "25%"
-                        : currentState === "sleepy"
-                        ? "60%"
-                        : "85%"}
-                    </span>
-                  </div>
-                  <Progress
-                    value={
-                      currentState === "celebrating" || currentState === "happy"
-                        ? 100
-                        : currentState === "sad"
-                        ? 40
-                        : currentState === "sick"
-                        ? 25
-                        : currentState === "sleepy"
-                        ? 60
-                        : 85
-                    }
-                    className="h-2"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Progreso Juntos */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Nuestro Progreso
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <XpBar compact={false} />
-
-                <div className="grid grid-cols-2 gap-2 sm:gap-4 text-center">
-                  <div className="bg-muted/50 rounded-xl p-2.5 sm:p-3">
-                    <div className="text-xl sm:text-2xl font-bold text-blue-600">
-                      {xpStats?.level || 1}
-                    </div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">Nivel Actual</div>
-                  </div>
-                  <div className="bg-muted/50 rounded-xl p-2.5 sm:p-3">
-                    <div className="text-xl sm:text-2xl font-bold text-green-600">
-                      {xpStats?.streak || 0}
-                    </div>
-                    <div className="text-xs sm:text-sm text-muted-foreground">Racha Días</div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Rachas */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Rachas
+          </h2>
+          {bestStreak > 0 && (
+            <span className="ml-auto inline-flex items-center gap-1 text-xs font-bold text-warning-foreground dark:text-warning">
+              <Flame size={14} />
+              <span className="font-mono tabular-nums">{bestStreak}</span>
+              {bestStreak === 1 ? " día" : " días"}
+            </span>
+          )}
         </div>
-
-        {/* Consejos de Navi */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Consejos de Navi</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {advice.map((tip, index) => (
-                <div
-                  key={index}
-                  className="flex items-start gap-3 p-3 bg-muted/50 rounded-xl"
-                >
-                  <span className="text-lg">{naviInfo.emoji}</span>
-                  <p className="text-sm text-muted-foreground">{tip}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Configuración de Navi */}
-        <NaviControls />
-
-        {/* Botón para volver */}
-        <div className="text-center">
-          <Button
-            onClick={() => window.history.back()}
-            size="lg"
-            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-          >
-            Volver a Hábitos
-          </Button>
+        <div className="grid grid-cols-3 gap-2">
+          {streakCells.map((s) => (
+            <Card
+              key={s.label}
+              className="flex flex-col items-center gap-1 p-3 text-center"
+            >
+              <IconWell icon={s.icon} tone={s.tone} size={32} iconSize={16} />
+              <span className="font-mono text-xl font-bold tabular-nums">
+                {s.value}
+              </span>
+              <span className="text-[11.5px] font-semibold">{s.label}</span>
+              <span className="text-[10.5px] text-muted-foreground">
+                {s.sub}
+              </span>
+            </Card>
+          ))}
         </div>
       </div>
+
+      {/* Actividad reciente (XP log) */}
+      <Card className="p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <Zap size={17} className="text-warning-foreground dark:text-warning" />
+          <span className="text-[15px] font-semibold">Actividad reciente</span>
+        </div>
+
+        {recentLogs.length === 0 ? (
+          <EmptyState
+            icon={Sparkles}
+            title="Sin actividad todavía"
+            description="Completá un hábito, registrá una comida o sumá ejercicio para empezar a ganar XP."
+          />
+        ) : (
+          <div className="flex flex-col gap-3">
+            {recentLogs.map((e) => (
+              <div key={e.id} className="flex items-center gap-3">
+                <IconWell icon={e.icon} tone={e.tone} size={30} iconSize={15} />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[13.5px] font-medium">
+                    {e.label}
+                  </div>
+                  {e.when && (
+                    <div className="font-mono text-[11px] tabular-nums text-muted-foreground">
+                      {e.when}
+                    </div>
+                  )}
+                </div>
+                <Badge variant="warning">+{e.xp} XP</Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

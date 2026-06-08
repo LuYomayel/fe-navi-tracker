@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AppLayout from "@/modules/shared/components/AppLayout";
 import { useAuthStore } from "@/modules/auth/store";
+import { useInitializeStore } from "@/hooks/useInitializeStore";
 
 export default function AppLayoutWrapper({
   children,
@@ -12,6 +13,8 @@ export default function AppLayoutWrapper({
 }) {
   const router = useRouter();
   const { user, isAuthenticated, isHydrated, setHydrated } = useAuthStore();
+  // Inicializa el store global para TODAS las secciones (idempotente).
+  useInitializeStore();
 
   // Timeout de emergencia para forzar la hidratación
   useEffect(() => {

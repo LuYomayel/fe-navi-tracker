@@ -20,61 +20,102 @@
 }
 
 @layer base {
+  /* NaviTracker Design System — shadcn/HSL. Light (:root) + dark (.dark).
+     Tokens guardan "H S% L%" y se consumen con hsl(var(--token)). */
   :root {
-    /* iOS-inspired light theme */
-    --background: 220 20% 97%;
-    --foreground: 0 0% 0%;
+    /* Base / surfaces */
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
-    --primary: 211 100% 50%;
+    --popover-foreground: 222 47% 11%;
+    /* Primary (refined blue) */
+    --primary: 221 83% 53%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
-    --accent: 220 14% 96%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84% 60%;
+    /* Secondary / muted / accent (roles distintos) */
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 94%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 214 100% 95%;
+    --accent-foreground: 221 83% 45%;
+    /* Semánticos (mapeados a conceptos del producto) */
+    --success: 142 71% 45%; /* día ganado / hábito hecho */
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%; /* parcial / racha */
+    --warning-foreground: 28 80% 12%;
+    --info: 199 89% 48%; /* hidratación / agua */
+    --info-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%; /* perdido / borrar */
     --destructive-foreground: 0 0% 100%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 211 100% 50%;
-    --radius: 0.875rem;
-    --chart-1: 211 100% 50%;
-    --chart-2: 142 71% 45%;
-    --chart-3: 25 95% 53%;
-    --chart-4: 280 67% 55%;
-    --chart-5: 340 75% 55%;
+    /* Borders / focus */
+    --border: 214 25% 90%;
+    --input: 214 25% 90%;
+    --ring: 221 83% 53%;
+    /* Charts / macros */
+    --chart-1: 221 83% 53%; /* calorías */
+    --chart-2: 142 71% 45%; /* proteína */
+    --chart-3: 38 92% 50%; /* carbohidratos */
+    --chart-4: 262 83% 58%; /* grasas */
+    --chart-5: 330 81% 60%; /* fibra */
+    /* Radii (base 12px) */
+    --radius: 0.75rem;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    /* Shadows (light) */
+    --shadow-xs: 0 1px 2px hsl(222 47% 11% / 0.04);
+    --shadow-sm: 0 1px 3px hsl(222 47% 11% / 0.06), 0 1px 2px hsl(222 47% 11% / 0.04);
+    --shadow-md: 0 4px 12px hsl(222 47% 11% / 0.08);
+    --shadow-lg: 0 12px 32px hsl(222 47% 11% / 0.12);
+    --shadow-fab: 0 8px 24px hsl(221 83% 53% / 0.35);
+    /* Motion */
+    --duration-fast: 150ms;
+    --duration-base: 200ms;
+    --duration-slow: 300ms;
+    --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .dark {
-    /* iOS-inspired dark theme */
-    --background: 0 0% 0%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 11%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 11%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 211 100% 50%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 17%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 17%;
-    --muted-foreground: 0 0% 64%;
-    --accent: 0 0% 17%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 211 100% 50%;
-    --chart-1: 211 100% 60%;
-    --chart-2: 142 60% 50%;
-    --chart-3: 25 90% 58%;
-    --chart-4: 280 60% 65%;
-    --chart-5: 340 70% 60%;
+    --background: 222 47% 8%;
+    --foreground: 210 20% 98%;
+    --card: 222 41% 11%;
+    --card-foreground: 210 20% 98%;
+    --popover: 222 41% 11%;
+    --popover-foreground: 210 20% 98%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 217 33% 18%;
+    --secondary-foreground: 210 20% 98%;
+    --muted: 217 33% 16%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 24%;
+    --accent-foreground: 210 20% 98%;
+    --success: 142 65% 50%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 95% 56%;
+    --warning-foreground: 28 80% 10%;
+    --info: 199 89% 56%;
+    --info-foreground: 222 47% 11%;
+    --destructive: 0 72% 56%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 217 33% 20%;
+    --input: 217 33% 22%;
+    --ring: 217 91% 60%;
+    --chart-1: 217 91% 60%;
+    --chart-2: 142 65% 50%;
+    --chart-3: 38 95% 56%;
+    --chart-4: 263 90% 70%;
+    --chart-5: 330 85% 68%;
+    /* Dark: la elevación viene del color de card → sombras casi nulas */
+    --shadow-xs: 0 1px 2px hsl(0 0% 0% / 0.3);
+    --shadow-sm: 0 1px 3px hsl(0 0% 0% / 0.36);
+    --shadow-md: 0 4px 12px hsl(0 0% 0% / 0.45);
+    --shadow-lg: 0 12px 32px hsl(0 0% 0% / 0.55);
+    --shadow-fab: 0 8px 24px hsl(217 91% 60% / 0.4);
   }
 }
 
@@ -84,10 +125,41 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
-      "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+    /* Geist (cargada por next/font en layout.tsx) */
+    font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Celebraciones (Navi). ease-spring SOLO para recompensas. */
+@keyframes navi-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+@keyframes navi-pop-in {
+  0% {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
