@@ -35,25 +35,20 @@ import {
   ShoppingList,
   ShoppingItem,
 } from "@/types";
+import { useAuthStore } from "@/modules/auth/store";
 
 // Configuración de la API
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "https://api-navi-tracker.luciano-yomayel.com";
-// Función helper para obtener el token desde el store
+// Función helper para obtener el token desde el store.
+// Fuente de verdad: el auth store en memoria (ya rehidratado), NO localStorage.
+// En nativo (Capacitor) el persist vive en @capacitor/preferences; leer
+// localStorage acá dejaba las requests sin Authorization en iOS/Android y
+// disparaba 401 -> reload en loop.
 function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;
-
-  try {
-    const authStorage = localStorage.getItem("auth-storage");
-    if (!authStorage) return null;
-
-    const parsed = JSON.parse(authStorage);
-    return parsed?.state?.tokens?.accessToken || null;
-  } catch (error) {
-    console.warn("Error al obtener token:", error);
-    return null;
-  }
+  return useAuthStore.getState().getAccessToken();
 }
 
 // Función helper para hacer peticiones HTTP
@@ -154,63 +149,23 @@ async function fetchAPI<T = unknown>(
   }
 }
 
-// Función para refrescar el token
+// Función para refrescar el token.
+// Delegar al auth store: hace el refresh y persiste los nuevos tokens en el
+// storage correcto de cada plataforma (Capacitor Preferences en nativo,
+// localStorage en web). Antes esto escribía localStorage a mano y no tocaba la
+// sesión nativa.
 async function refreshAuthToken(): Promise<boolean> {
-  try {
-    if (typeof window === "undefined") return false;
-
-    const authStorage = localStorage.getItem("auth-storage");
-    if (!authStorage) return false;
-
-    const parsed = JSON.parse(authStorage);
-    const refreshToken = parsed?.state?.tokens?.refreshToken;
-
-    if (!refreshToken) return false;
-
-    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ refreshToken }),
-    });
-
-    if (!response.ok) return false;
-
-    const data = await response.json();
-
-    if (data.success) {
-      // Actualizar el localStorage con los nuevos tokens
-      const currentState = parsed.state;
-      const newState = {
-        ...currentState,
-        tokens: data.data.tokens,
-        expiresAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-      };
-
-      localStorage.setItem(
-        "auth-storage",
-        JSON.stringify({
-          ...parsed,
-          state: newState,
-        })
-      );
-
-      return true;
-    }
-
-    return false;
-  } catch (error) {
-    return false;
-  }
+  if (typeof window === "undefined") return false;
+  return useAuthStore.getState().refreshToken();
 }
 
-// Función para limpiar autenticación y redirigir
+// Función para limpiar autenticación y redirigir.
+// Limpiar vía el store para que borre el storage correcto (Preferences en
+// nativo). El AppLayout, al ver isAuthenticated=false, redirige a /auth/login
+// con router.push (sin reload duro: evita el loop de recarga en iOS nativo).
 function clearAuthAndRedirect(): void {
   if (typeof window === "undefined") return;
-
-  localStorage.removeItem("auth-storage");
-  window.location.href = "/auth/login";
+  useAuthStore.getState().clearAuth();
 }
 
 // Tipos para las respuestas de API
