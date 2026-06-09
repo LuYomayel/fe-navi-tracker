@@ -894,3 +894,37 @@ export interface AICostStats {
     createdAt: Date;
   }>;
 }
+
+// ==========================================
+// GOALS (Fondo de ahorro — ej: Objetivo NZ)
+// ==========================================
+export interface GoalContribution {
+  id: string;
+  goalId: string;
+  amountUsd: number; // negativo = gasto/corrección
+  description?: string | null;
+  date: string; // YYYY-MM-DD
+  createdAt?: string;
+}
+
+export interface Goal {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string | null;
+  targetUsd: number;
+  currentUsd: number;
+  startDate?: string | null; // YYYY-MM-DD
+  targetDate?: string | null; // YYYY-MM-DD
+  status: "active" | "paused" | "achieved" | "archived";
+  contributions?: GoalContribution[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface GoalProgress {
+  goal: Goal;
+  percentage: number; // 0-100 (cap)
+  remainingUsd: number;
+  daysRemaining: number | null;
+}

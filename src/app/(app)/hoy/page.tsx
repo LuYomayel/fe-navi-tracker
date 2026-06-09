@@ -21,6 +21,7 @@ import { DayStatusPill, type DayStatus } from "@/components/ui/day-status-pill";
 import { StatCard } from "@/components/ui/stat-card";
 import { SummaryRow } from "@/components/ui/summary-row";
 import { NaviMascot } from "@/components/ui/navi-mascot";
+import GoalWidget from "@/components/goal/GoalWidget";
 
 import {
   Sunrise,
@@ -271,6 +272,9 @@ export default function HoyPage() {
           tone="warning"
         />
       </div>
+
+      {/* (4a-bis) Fondo de ahorro (Objetivo NZ) — null si no hay objetivo */}
+      <GoalWidget />
 
       {/* (4b) Gamificación unificada — tappable → /navi */}
       <Card
