@@ -34,6 +34,9 @@ import {
   HydrationGoal,
   ShoppingList,
   ShoppingItem,
+  Goal,
+  GoalContribution,
+  GoalProgress,
 } from "@/types";
 import { useAuthStore } from "@/modules/auth/store";
 
@@ -661,6 +664,28 @@ export const api = {
       apiClient.post<{ briefing: any; emailSent: boolean }>(
         "/briefing/generate",
         data || {},
+      ),
+  },
+
+  // Goals (fondo de ahorro — Objetivo NZ)
+  goals: {
+    getAll: () => apiClient.get<Goal[]>("/goals"),
+    getProgress: () => apiClient.get<GoalProgress>("/goals/progress"),
+    create: (data: {
+      name: string;
+      targetUsd: number;
+      description?: string;
+      targetDate?: string;
+      currentUsd?: number;
+      startDate?: string;
+    }) => apiClient.post<Goal>("/goals", data),
+    contribute: (
+      goalId: string,
+      data: { amountUsd: number; description?: string; date?: string },
+    ) =>
+      apiClient.post<{ goal: Goal; contribution: GoalContribution }>(
+        `/goals/${goalId}/contributions`,
+        data,
       ),
   },
 };

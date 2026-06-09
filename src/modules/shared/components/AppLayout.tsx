@@ -13,6 +13,7 @@ import {
   Star,
   Plus,
   Settings,
+  Plane,
 } from "lucide-react";
 import { useAuthStore } from "../../auth/store";
 import { Button } from "@/components/ui/button";
@@ -31,12 +32,13 @@ interface AppLayoutProps {
   children: React.ReactNode;
 }
 
-// Navegación de 5 secciones (agrupadas por intención del usuario).
+// Navegación principal (agrupada por intención del usuario).
 const SECTIONS = [
   { id: "hoy", label: "Hoy", icon: Sun, path: "/hoy" },
   { id: "salud", label: "Salud", icon: Apple, path: "/salud" },
   { id: "habitos", label: "Hábitos", icon: Target, path: "/habitos" },
   { id: "plan", label: "Plan", icon: CalendarCheck, path: "/plan" },
+  { id: "objetivo", label: "Objetivo", icon: Plane, path: "/objetivo" },
   { id: "navi", label: "Navi", icon: Star, path: "/navi" },
 ];
 
