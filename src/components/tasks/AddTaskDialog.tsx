@@ -27,6 +27,7 @@ const categories = [
   { value: "finance", label: "Finanzas" },
   { value: "study", label: "Estudio" },
   { value: "other", label: "Otro" },
+  { value: "nz", label: "🇳🇿 NZ" },
 ];
 
 interface AddTaskDialogProps {

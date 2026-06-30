@@ -25,7 +25,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 
-type FilterType = "today" | "week" | "all" | "overdue";
+type FilterType = "today" | "week" | "all" | "overdue" | "nz";
 
 export default function TaskList() {
   const { tasks, createTask, updateTask, deleteTask, toggleTask, reorderTasks } =
@@ -48,22 +48,28 @@ export default function TaskList() {
   const filteredTasks = useMemo(() => {
     let result = [...tasks];
 
-    // Date filter
+    // Date filter. Las tareas de categoría "nz" (roadmap Nueva Zelanda / 3D) son
+    // backlog sin fecha: se excluyen de Hoy/Semana para no mezclarlas con lo
+    // operativo, y tienen su propio filtro dedicado.
     if (filter === "today") {
       result = result.filter(
-        (t) => t.dueDate === today || (!t.dueDate && !t.completed)
+        (t) =>
+          t.dueDate === today ||
+          (!t.dueDate && !t.completed && t.category !== "nz")
       );
     } else if (filter === "week") {
       const weekEnd = getWeekEnd();
       result = result.filter(
         (t) =>
           (t.dueDate && t.dueDate >= today && t.dueDate <= weekEnd) ||
-          (!t.dueDate && !t.completed)
+          (!t.dueDate && !t.completed && t.category !== "nz")
       );
     } else if (filter === "overdue") {
       result = result.filter(
         (t) => t.dueDate && t.dueDate < today && !t.completed
       );
+    } else if (filter === "nz") {
+      result = result.filter((t) => t.category === "nz");
     }
 
     // Status filter
@@ -94,7 +100,9 @@ export default function TaskList() {
   }, [tasks, filter, statusFilter, today]);
 
   const todayTasks = tasks.filter(
-    (t) => t.dueDate === today || (!t.dueDate && !t.completed)
+    (t) =>
+      t.dueDate === today ||
+      (!t.dueDate && !t.completed && t.category !== "nz")
   );
   const todayCompleted = todayTasks.filter((t) => t.completed).length;
   const todayProgress =
@@ -144,6 +152,7 @@ export default function TaskList() {
     { key: "week", label: "Semana" },
     { key: "all", label: "Todas" },
     { key: "overdue", label: "Vencidas" },
+    { key: "nz", label: "🇳🇿 NZ" },
   ];
 
   return (
@@ -232,7 +241,9 @@ export default function TaskList() {
                 ? "No hay tareas para hoy"
                 : filter === "overdue"
                   ? "No hay tareas vencidas"
-                  : "No hay tareas"}
+                  : filter === "nz"
+                    ? "No hay tareas de NZ/3D"
+                    : "No hay tareas"}
             </p>
             <Button
               variant="link"

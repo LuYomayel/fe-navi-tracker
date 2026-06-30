@@ -724,7 +724,8 @@ export type TaskCategory =
   | "health"
   | "finance"
   | "study"
-  | "other";
+  | "other"
+  | "nz";
 
 export interface Task {
   id: string;
