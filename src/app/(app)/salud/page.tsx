@@ -8,10 +8,13 @@ import {
   Plus,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
   Settings,
   Pencil,
   Trash2,
   Dumbbell,
+  User,
+  Ruler,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/ui/page-header";
@@ -37,7 +40,12 @@ import type {
 import { FoodAnalyzer } from "@/components/nutrition/NutritionAnalyzer";
 import { EditNutritionAnalysisDialog } from "@/components/nutrition/EditNutritionAnalysisDialog";
 import { CreatePhysicalActivityDialog } from "@/components/nutrition/CreatePhysicalActivityDialog";
+import { BodyAnalyzer } from "@/components/nutrition/BodyAnalyzer";
+import { SkinFoldDialog } from "@/components/nutrition/SkinFoldDialog";
+import { MealPrepView } from "@/components/nutrition/MealPrepView";
 import { api } from "@/lib/api-client";
+import { sumOfSkinfolds } from "@/lib/anthropometry";
+import type { SkinFoldRecord } from "@/types/skinFold";
 import { WeightChart } from "@/components/nutrition/WeightChart";
 import { WeightTracker } from "@/components/nutrition/WeightTracker";
 import HydrationCircularProgress from "@/components/hydration/HydrationCircularProgress";
@@ -52,7 +60,7 @@ const TAB_OPTIONS: { value: SaludTab; label: string }[] = [
   { value: "comidas", label: "Comidas" },
   { value: "ejercicio", label: "Ejercicio" },
   { value: "agua", label: "Agua" },
-  { value: "peso", label: "Peso" },
+  { value: "peso", label: "Cuerpo" },
 ];
 
 const isSaludTab = (v: string | null): v is SaludTab =>
@@ -79,6 +87,11 @@ export default function SaludPage() {
     getAllFoodAnalysis,
     deleteNutritionAnalysis,
     getAllPhysicalActivities,
+    skinFoldRecords,
+    getAllBodyAnalysis,
+    getAllSkinFoldRecords,
+    deleteBodyAnalysis,
+    deleteSkinFoldRecord,
     // hydration
     todayHydration,
     hydrationGoal,
@@ -98,6 +111,20 @@ export default function SaludPage() {
   // Tab de ejercicio (fecha navegable + dialog de registro)
   const [exerciseDate, setExerciseDate] = useState(new Date());
   const [showExerciseDialog, setShowExerciseDialog] = useState(false);
+
+  // Cuerpo (análisis corporal + pliegues) y meal prep
+  const [showBodyAnalyzer, setShowBodyAnalyzer] = useState(false);
+  const [showSkinFold, setShowSkinFold] = useState(false);
+  const [editingSkinFold, setEditingSkinFold] = useState<
+    SkinFoldRecord | undefined
+  >(undefined);
+  const [showMealPrep, setShowMealPrep] = useState(false);
+
+  // Cargar datos de composición corporal (para la tab Cuerpo)
+  useEffect(() => {
+    getAllBodyAnalysis();
+    getAllSkinFoldRecords();
+  }, [getAllBodyAnalysis, getAllSkinFoldRecords]);
 
   // Tab + log desde URL (?tab=comidas&log=1)
   useEffect(() => {
@@ -397,6 +424,35 @@ export default function SaludPage() {
             onEdit={(m) => setEditingMeal(m)}
             onDelete={(id) => deleteNutritionAnalysis(id)}
           />
+
+          {/* Meal prep semanal (migrado de /nutrition) */}
+          <div className="pt-2">
+            <button
+              onClick={() => setShowMealPrep((v) => !v)}
+              className="flex w-full items-center gap-3 rounded-lg border bg-card px-3.5 py-3 text-left transition-colors hover:bg-accent/50"
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-chart-3/15 text-chart-3">
+                <Utensils size={18} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-semibold">Plan de comidas semanal</div>
+                <div className="text-xs text-muted-foreground">
+                  Meal prep · importar plan o generar con IA
+                </div>
+              </div>
+              <ChevronDown
+                size={18}
+                className={`text-muted-foreground transition-transform ${
+                  showMealPrep ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+            {showMealPrep && (
+              <div className="mt-3">
+                <MealPrepView />
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -500,6 +556,168 @@ export default function SaludPage() {
             onEntryDeleted={(entryId) => deleteWeightEntry(entryId)}
             onEntryUpdated={() => refreshWeightEntries()}
           />
+
+          {/* Análisis corporal (migrado de /nutrition) */}
+          <div className="space-y-2 pt-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-[15px] font-semibold">Análisis corporal</h3>
+              <Button
+                onClick={() => setShowBodyAnalyzer(true)}
+                size="sm"
+                variant="outline"
+              >
+                <User className="mr-1.5 h-4 w-4" /> Nuevo
+              </Button>
+            </div>
+            {bodyAnalyses.length === 0 ? (
+              <Card className="rounded-lg border p-4 text-sm text-muted-foreground">
+                Sin análisis corporales todavía.
+              </Card>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {[...bodyAnalyses]
+                  .sort(
+                    (a, b) =>
+                      (b.createdAt ? new Date(b.createdAt).getTime() : 0) -
+                      (a.createdAt ? new Date(a.createdAt).getTime() : 0)
+                  )
+                  .map((a) => (
+                    <Card
+                      key={a.id}
+                      className="flex items-center gap-3 rounded-lg border p-3"
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-chart-2/15 text-chart-2">
+                        <User className="h-[18px] w-[18px]" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-semibold">
+                          {a.createdAt
+                            ? new Date(a.createdAt).toLocaleDateString("es-AR", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })
+                            : "Análisis"}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {a.measurements?.weight
+                            ? `${a.measurements.weight} kg`
+                            : ""}
+                          {a.measurements?.height
+                            ? ` · ${a.measurements.height} cm`
+                            : ""}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (
+                            typeof window !== "undefined" &&
+                            a.id &&
+                            window.confirm("¿Borrar este análisis corporal?")
+                          )
+                            deleteBodyAnalysis(a.id);
+                        }}
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                        aria-label="Borrar análisis"
+                      >
+                        <Trash2 className="h-[15px] w-[15px]" />
+                      </button>
+                    </Card>
+                  ))}
+              </div>
+            )}
+          </div>
+
+          {/* Pliegues cutáneos (migrado de /nutrition) */}
+          <div className="space-y-2 pt-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-[15px] font-semibold">Pliegues cutáneos</h3>
+              <Button
+                onClick={() => {
+                  setEditingSkinFold(undefined);
+                  setShowSkinFold(true);
+                }}
+                size="sm"
+                variant="outline"
+              >
+                <Ruler className="mr-1.5 h-4 w-4" /> Nueva
+              </Button>
+            </div>
+            {skinFoldRecords.length === 0 ? (
+              <Card className="rounded-lg border p-4 text-sm text-muted-foreground">
+                Sin mediciones de pliegues todavía.
+              </Card>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {[...skinFoldRecords]
+                  .sort(
+                    (a, b) =>
+                      (b.createdAt ? new Date(b.createdAt).getTime() : 0) -
+                      (a.createdAt ? new Date(a.createdAt).getTime() : 0)
+                  )
+                  .map((r) => {
+                    const total = sumOfSkinfolds(r);
+                    const sites = Object.values(r.values || {}).filter(
+                      (v) => typeof v === "number" && v > 0
+                    ).length;
+                    return (
+                      <Card
+                        key={r.id}
+                        className="flex items-center gap-3 rounded-lg border p-3"
+                      >
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-chart-4/15 text-chart-4">
+                          <Ruler className="h-[18px] w-[18px]" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-semibold">
+                            {r.date
+                              ? new Date(
+                                  r.date + "T12:00:00"
+                                ).toLocaleDateString("es-AR", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : r.createdAt
+                                ? new Date(r.createdAt).toLocaleDateString(
+                                    "es-AR"
+                                  )
+                                : "Medición"}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Σ {total} mm · {sites} sitios
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setEditingSkinFold(r);
+                            setShowSkinFold(true);
+                          }}
+                          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                          aria-label="Editar medición"
+                        >
+                          <Pencil className="h-[15px] w-[15px]" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (
+                              typeof window !== "undefined" &&
+                              r.id &&
+                              window.confirm("¿Borrar esta medición?")
+                            )
+                              deleteSkinFoldRecord(r.id);
+                          }}
+                          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                          aria-label="Borrar medición"
+                        >
+                          <Trash2 className="h-[15px] w-[15px]" />
+                        </button>
+                      </Card>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -532,6 +750,24 @@ export default function SaludPage() {
         onActivityCreated={() => {
           getAllPhysicalActivities();
         }}
+      />
+
+      {/* Análisis corporal (migrado de /nutrition) */}
+      <BodyAnalyzer
+        isOpen={showBodyAnalyzer}
+        onClose={() => setShowBodyAnalyzer(false)}
+        onAnalysisSaved={() => getAllBodyAnalysis()}
+      />
+
+      {/* Pliegues cutáneos (migrado de /nutrition) */}
+      <SkinFoldDialog
+        isOpen={showSkinFold}
+        onClose={() => {
+          setShowSkinFold(false);
+          setEditingSkinFold(undefined);
+          getAllSkinFoldRecords();
+        }}
+        editingRecord={editingSkinFold}
       />
     </div>
   );

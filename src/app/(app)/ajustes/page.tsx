@@ -25,6 +25,16 @@ import { Separator } from "@/components/ui/separator";
 import { IconWell } from "@/components/ui/icon-well";
 import { SummaryRow } from "@/components/ui/summary-row";
 import type { Tone } from "@/components/ui/tone";
+import { SetGoalsDialog } from "@/components/nutrition/SetGoalsDialog";
+
+// Guía de conexión del MCP (recuperada de la vieja /connect-claude).
+const CONNECT_STEPS: string[] = [
+  "Abrí Claude en la web o en la app (Ajustes → Conectores).",
+  'Tocá "Agregar conector personalizado".',
+  "Pegá la URL del connector (la de arriba).",
+  "Autorizá con tu email y contraseña de NaviTracker (se abre el login).",
+  "Listo: ya podés pedirle a Claude que registre y consulte tus datos.",
+];
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -93,6 +103,8 @@ export default function AjustesPage() {
   const [notif, setNotif] = useState(true);
   const [briefMail, setBriefMail] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [showGoals, setShowGoals] = useState(false);
+  const [showGuia, setShowGuia] = useState(false);
 
   useEffect(() => {
     setDark(document.documentElement.classList.contains("dark"));
@@ -192,11 +204,11 @@ export default function AjustesPage() {
             icon={Flame}
             tone="primary"
             label="Calorías diarias"
-            sub="Objetivo nutricional"
+            sub="Editar objetivo nutricional"
             value={
               calorieGoal ? `${calorieGoal.toLocaleString("es-AR")}` : "—"
             }
-            onClick={() => router.push("/salud?tab=comidas")}
+            onClick={() => setShowGoals(true)}
           />
           <SummaryRow
             icon={Droplets}
@@ -270,12 +282,34 @@ export default function AjustesPage() {
             variant="tonal"
             size="sm"
             className="w-full"
-            onClick={() => router.push("/connect-claude")}
+            onClick={() => setShowGuia((v) => !v)}
           >
-            <BookOpen className="mr-1.5 h-4 w-4" /> Ver guía de conexión
+            <BookOpen className="mr-1.5 h-4 w-4" />
+            {showGuia ? "Ocultar guía de conexión" : "Ver guía de conexión"}
           </Button>
+          {showGuia && (
+            <ol className="mt-3 space-y-2">
+              {CONNECT_STEPS.map((step, i) => (
+                <li key={i} className="flex gap-2.5 text-sm">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/12 text-[11px] font-semibold text-primary">
+                    {i + 1}
+                  </span>
+                  <span className="text-muted-foreground">{step}</span>
+                </li>
+              ))}
+            </ol>
+          )}
         </Card>
       </Section>
+
+      {/* Objetivos nutricionales (migrado de /nutrition) */}
+      <SetGoalsDialog
+        isOpen={showGoals}
+        onClose={() => setShowGoals(false)}
+        bodyAnalysis={null}
+        isManualMode
+        onGoalsSaved={() => setShowGoals(false)}
+      />
     </div>
   );
 }
