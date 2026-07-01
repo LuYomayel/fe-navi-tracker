@@ -36,7 +36,7 @@ export default function HydrationWidget() {
     <div className="bg-card rounded-lg border p-4">
       <div className="flex items-center justify-between mb-3">
         <Link
-          href="/hydration"
+          href="/salud?tab=agua"
           className="flex items-center gap-2 hover:text-primary transition-colors"
         >
           <Droplets className="h-4 w-4" style={{ color }} />

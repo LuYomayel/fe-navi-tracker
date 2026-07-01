@@ -356,7 +356,7 @@ export default function DailyAgenda() {
           </div>
 
           <Link
-            href="/hydration"
+            href="/salud?tab=agua"
             className="flex items-center gap-3 text-sm hover:bg-muted/50 rounded p-2 -m-2 transition"
           >
             <Droplets className="h-4 w-4 text-blue-500" />

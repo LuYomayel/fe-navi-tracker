@@ -204,7 +204,7 @@ export default function AjustesPage() {
             label="Meta de agua"
             sub="Vasos por día"
             value={`${waterGoal} vasos`}
-            onClick={() => router.push("/hydration")}
+            onClick={() => router.push("/salud?tab=agua")}
           />
           <SummaryRow
             icon={Scale}

@@ -318,7 +318,7 @@ export default function HoyPage() {
             waterRemaining === 1 ? "vaso" : "vasos"
           }`}
           value={`${glasses}/${waterGoal}`}
-          onClick={() => router.push("/hydration")}
+          onClick={() => router.push("/salud?tab=agua")}
         />
         <SummaryRow
           icon={ListChecks}
