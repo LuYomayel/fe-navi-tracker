@@ -53,15 +53,19 @@ export function PillToggle<T extends string = string>({
             aria-selected={on}
             onClick={() => onChange(o.value)}
             className={cn(
-              "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-[9px] px-3.5 py-[7px] text-[13px] font-semibold transition-all duration-fast active:scale-[0.98]",
-              fullWidth && "flex-1",
+              "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-[9px] py-[7px] font-semibold transition-all duration-fast active:scale-[0.98]",
+              // fullWidth: reparte en columnas iguales y permite encoger
+              // (min-w-0) para que N tabs entren sin desbordar el viewport.
+              fullWidth
+                ? "min-w-0 flex-1 px-2 text-[12.5px]"
+                : "px-3.5 text-[13px]",
               on
                 ? "bg-card text-primary shadow-xs"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
-            {Icon && <Icon size={15} strokeWidth={2} />}
-            {o.label}
+            {Icon && <Icon size={15} strokeWidth={2} className="shrink-0" />}
+            <span className="truncate">{o.label}</span>
           </button>
         );
       })}
