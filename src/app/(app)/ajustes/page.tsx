@@ -26,6 +26,7 @@ import { IconWell } from "@/components/ui/icon-well";
 import { SummaryRow } from "@/components/ui/summary-row";
 import type { Tone } from "@/components/ui/tone";
 import { SetGoalsDialog } from "@/components/nutrition/SetGoalsDialog";
+import { AICostWidget } from "@/components/nutrition/AICostWidget";
 
 // Guía de conexión del MCP (recuperada de la vieja /connect-claude).
 const CONNECT_STEPS: string[] = [
@@ -301,6 +302,9 @@ export default function AjustesPage() {
           )}
         </Card>
       </Section>
+
+      {/* Costos de IA (migrado de /nutrition) — se oculta solo si no hay llamadas */}
+      <AICostWidget />
 
       {/* Objetivos nutricionales (migrado de /nutrition) */}
       <SetGoalsDialog
