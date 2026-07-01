@@ -132,7 +132,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               variant="ghost"
               size="icon"
               onClick={toggleTheme}
-              className="h-9 w-9 rounded-full"
+              className="h-10 w-10 rounded-full"
               aria-label="Cambiar tema"
             >
               {darkMode ? (
@@ -223,11 +223,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   }`}
                 >
                   <Icon
-                    className="h-[22px] w-[22px]"
+                    className="h-6 w-6"
                     strokeWidth={active ? 2.5 : 2}
                   />
                   <span
-                    className={`text-[10px] ${active ? "font-bold" : "font-medium"}`}
+                    className={`text-[11px] ${active ? "font-bold" : "font-medium"}`}
                   >
                     {s.label}
                   </span>

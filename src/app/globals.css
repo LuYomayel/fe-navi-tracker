@@ -19,6 +19,17 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* Escala base en teléfonos: la app es mobile-first con tipografías chicas.
+   Como todo el design system usa rem, subir el font-size raíz agranda de
+   forma proporcional texto, paddings, alturas y gaps → menos apretado y
+   tap targets más grandes. La app nativa (iPhone) siempre entra acá; el
+   desktop queda igual. Las safe-areas usan px, no se ven afectadas. */
+@media (max-width: 480px) {
+  html {
+    font-size: 109%;
+  }
+}
+
 @layer base {
   /* NaviTracker Design System — shadcn/HSL. Light (:root) + dark (.dark).
      Tokens guardan "H S% L%" y se consumen con hsl(var(--token)). */
