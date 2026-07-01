@@ -1007,6 +1007,24 @@ function MealsList({
     });
   };
 
+  // Nombre real de la comida a partir de los alimentos detectados.
+  const foodNames = (m: NutritionAnalysis) =>
+    (m.foods || [])
+      .map((f) => f?.name?.trim())
+      .filter(Boolean)
+      .join(", ");
+
+  const mealTitle = (m: NutritionAnalysis) =>
+    foodNames(m) || mealTypeLabel(m.mealType);
+
+  // Detalle de macros compacto: HC (carbos) · P (proteína) · G (grasa).
+  const macroLine = (m: NutritionAnalysis) => {
+    const mac = m.macronutrients;
+    if (!mac) return null;
+    const g = (n: number) => Math.round(n || 0);
+    return `HC ${g(mac.carbs)}g · P ${g(mac.protein)}g · G ${g(mac.fat)}g`;
+  };
+
   const handleDelete = (m: NutritionAnalysis) => {
     if (
       typeof window !== "undefined" &&
@@ -1059,10 +1077,15 @@ function MealsList({
             <Utensils className="h-[18px] w-[18px]" />
           </span>
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold">{mealTypeLabel(m.mealType)}</div>
-            <div className="font-mono text-xs tabular-nums text-muted-foreground">
-              {formatTime(m)}
+            <div className="truncate text-sm font-semibold">{mealTitle(m)}</div>
+            <div className="truncate text-xs text-muted-foreground">
+              {mealTypeLabel(m.mealType)} · {formatTime(m)}
             </div>
+            {macroLine(m) && (
+              <div className="mt-0.5 font-mono text-[11px] tabular-nums text-muted-foreground">
+                {macroLine(m)}
+              </div>
+            )}
           </div>
           <div className="flex items-baseline gap-1">
             <span className="font-mono text-[15px] font-bold tabular-nums">
