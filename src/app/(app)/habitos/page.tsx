@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Target, BookOpen, Pencil, Plus } from "lucide-react";
+import { Target, BookOpen, Pencil, Plus, Sparkles } from "lucide-react";
 
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -18,6 +18,7 @@ import { getDateKey } from "@/lib/utils";
 import { HabitsWeekGrid } from "@/components/screens/habitos/HabitsWeekGrid";
 import { DailyReflection } from "@/components/calendar/DailyReflection";
 import { AddActivityModal } from "@/components/calendar/AddActivityModal";
+import { AIAssistant } from "@/components/ai/AIAssistant";
 
 const MOOD_EMOJIS = ["😣", "😟", "😐", "😊", "😄"];
 const MOOD_LABELS = ["Muy mal", "Mal", "Regular", "Bien", "Excelente"];
@@ -34,6 +35,8 @@ export default function HabitosPage() {
     selectedModalDate,
     setShowDailyReflection,
     setShowAddActivityModal,
+    showAIAssistant,
+    setShowAIAssistant,
   } = useNaviTrackerStore();
 
   const [reflectionOpen, setReflectionOpen] = useState(false);
@@ -175,6 +178,17 @@ export default function HabitosPage() {
         </p>
       </div>
 
+      {/* Asistente IA de hábitos (migrado de /habits) */}
+      <Button
+        variant="tonal"
+        size="sm"
+        className="w-full"
+        onClick={() => setShowAIAssistant(true)}
+      >
+        <Sparkles className="mr-1.5 h-4 w-4" />
+        Asistente IA de hábitos
+      </Button>
+
       {/* Modales (montados localmente para que los botones funcionen) */}
       <DailyReflection
         isOpen={showDailyReflection || reflectionOpen}
@@ -186,6 +200,11 @@ export default function HabitosPage() {
       />
 
       <AddActivityModal />
+
+      <AIAssistant
+        isOpen={showAIAssistant}
+        onClose={() => setShowAIAssistant(false)}
+      />
     </div>
   );
 }
