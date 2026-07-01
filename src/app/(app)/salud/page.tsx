@@ -11,6 +11,7 @@ import {
   Settings,
   Pencil,
   Trash2,
+  Dumbbell,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/ui/page-header";
@@ -25,11 +26,18 @@ import { useInitializeStore } from "@/hooks/useInitializeStore";
 import { useDateHelper } from "@/hooks/useDateHelper";
 import { getDateKey } from "@/lib/utils";
 
-import type { NutritionAnalysis, NutritionGoals, BodyAnalysis } from "@/types";
+import type {
+  NutritionAnalysis,
+  NutritionGoals,
+  BodyAnalysis,
+  PhysicalActivity,
+} from "@/types";
 
 // Componentes de dominio reusados
 import { FoodAnalyzer } from "@/components/nutrition/NutritionAnalyzer";
 import { EditNutritionAnalysisDialog } from "@/components/nutrition/EditNutritionAnalysisDialog";
+import { CreatePhysicalActivityDialog } from "@/components/nutrition/CreatePhysicalActivityDialog";
+import { api } from "@/lib/api-client";
 import { WeightChart } from "@/components/nutrition/WeightChart";
 import { WeightTracker } from "@/components/nutrition/WeightTracker";
 import HydrationCircularProgress from "@/components/hydration/HydrationCircularProgress";
@@ -37,17 +45,22 @@ import HydrationControls from "@/components/hydration/HydrationControls";
 import HydrationHistory from "@/components/hydration/HydrationHistory";
 import HydrationGoalDialog from "@/components/hydration/HydrationGoalDialog";
 
-type SaludTab = "resumen" | "comidas" | "agua" | "peso";
+type SaludTab = "resumen" | "comidas" | "ejercicio" | "agua" | "peso";
 
 const TAB_OPTIONS: { value: SaludTab; label: string }[] = [
   { value: "resumen", label: "Resumen" },
   { value: "comidas", label: "Comidas" },
+  { value: "ejercicio", label: "Ejercicio" },
   { value: "agua", label: "Agua" },
   { value: "peso", label: "Peso" },
 ];
 
 const isSaludTab = (v: string | null): v is SaludTab =>
-  v === "resumen" || v === "comidas" || v === "agua" || v === "peso";
+  v === "resumen" ||
+  v === "comidas" ||
+  v === "ejercicio" ||
+  v === "agua" ||
+  v === "peso";
 
 export default function SaludPage() {
   const searchParams = useSearchParams();
@@ -65,6 +78,7 @@ export default function SaludPage() {
     refreshWeightEntries,
     getAllFoodAnalysis,
     deleteNutritionAnalysis,
+    getAllPhysicalActivities,
     // hydration
     todayHydration,
     hydrationGoal,
@@ -80,6 +94,10 @@ export default function SaludPage() {
   // Fecha navegable para la tab de comidas (permite ver/editar días anteriores)
   const [mealsDate, setMealsDate] = useState(new Date());
   const [editingMeal, setEditingMeal] = useState<NutritionAnalysis | null>(null);
+
+  // Tab de ejercicio (fecha navegable + dialog de registro)
+  const [exerciseDate, setExerciseDate] = useState(new Date());
+  const [showExerciseDialog, setShowExerciseDialog] = useState(false);
 
   // Tab + log desde URL (?tab=comidas&log=1)
   useEffect(() => {
@@ -194,6 +212,15 @@ export default function SaludPage() {
   // Fecha navegada de la tab comidas
   const mealsKey = getDateKey(mealsDate);
   const isMealsToday = mealsKey === getTodayKey();
+
+  // Fecha navegada de la tab ejercicio
+  const exerciseKey = getDateKey(exerciseDate);
+  const isExerciseToday = exerciseKey === getTodayKey();
+
+  const handleDeleteActivity = async (id: string) => {
+    await api.physicalActivity.delete(id);
+    await getAllPhysicalActivities();
+  };
 
   if (isLoading) {
     return (
@@ -373,6 +400,59 @@ export default function SaludPage() {
         </div>
       )}
 
+      {tab === "ejercicio" && (
+        <div className="space-y-4">
+          {/* Navegador de días */}
+          <div className="flex items-center justify-between gap-2 rounded-lg border bg-card px-2 py-1.5">
+            <button
+              onClick={() => setExerciseDate((d) => addDays(d, -1))}
+              className="flex h-9 w-9 items-center justify-center rounded-md transition-colors hover:bg-muted"
+              aria-label="Día anterior"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <div className="flex flex-col items-center leading-tight">
+              <span className="text-sm font-semibold capitalize">
+                {mealsDateLabel(exerciseDate)}
+              </span>
+              {!isExerciseToday && (
+                <button
+                  onClick={() => setExerciseDate(new Date())}
+                  className="text-[11px] text-primary hover:underline"
+                >
+                  Volver a hoy
+                </button>
+              )}
+            </div>
+            <button
+              onClick={() => setExerciseDate((d) => addDays(d, 1))}
+              disabled={isExerciseToday}
+              className="flex h-9 w-9 items-center justify-center rounded-md transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-30"
+              aria-label="Día siguiente"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
+
+          <Button
+            variant="default"
+            size="xl"
+            className="w-full"
+            onClick={() => setShowExerciseDialog(true)}
+          >
+            <Plus className="mr-2 h-5 w-5" />
+            Registrar ejercicio
+          </Button>
+          <ExerciseList
+            activities={physicalActivities}
+            dateKey={exerciseKey}
+            isToday={isExerciseToday}
+            onEmptyAction={() => setShowExerciseDialog(true)}
+            onDelete={handleDeleteActivity}
+          />
+        </div>
+      )}
+
       {tab === "agua" && (
         <div className="space-y-4">
           <Card className="flex flex-col items-center gap-5 rounded-lg border p-5">
@@ -443,6 +523,16 @@ export default function SaludPage() {
           setEditingMeal(null);
         }}
       />
+
+      {/* Modal de registro de actividad física — usa el día navegado */}
+      <CreatePhysicalActivityDialog
+        open={showExerciseDialog}
+        onOpenChange={setShowExerciseDialog}
+        date={exerciseKey}
+        onActivityCreated={() => {
+          getAllPhysicalActivities();
+        }}
+      />
     </div>
   );
 }
@@ -504,6 +594,109 @@ function mealsDateLabel(date: Date): string {
     day: "numeric",
     month: "long",
   });
+}
+
+function ExerciseList({
+  activities,
+  dateKey,
+  isToday,
+  onEmptyAction,
+  onDelete,
+}: {
+  activities: PhysicalActivity[];
+  dateKey: string;
+  isToday: boolean;
+  onEmptyAction: () => void;
+  onDelete: (id: string) => void;
+}) {
+  const dayActivities = useMemo(
+    () =>
+      activities
+        .filter((a) => a.date === dateKey)
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt || b.date).getTime() -
+            new Date(a.createdAt || a.date).getTime()
+        ),
+    [activities, dateKey]
+  );
+
+  const summary = (a: PhysicalActivity) =>
+    [
+      a.exerciseMinutes ? `${a.exerciseMinutes} min` : null,
+      a.activeEnergyKcal ? `${a.activeEnergyKcal} kcal` : null,
+      a.steps ? `${a.steps.toLocaleString("es-AR")} pasos` : null,
+      a.distanceKm ? `${a.distanceKm} km` : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
+  const handleDelete = (a: PhysicalActivity) => {
+    if (
+      typeof window !== "undefined" &&
+      window.confirm("¿Borrar esta actividad física?")
+    ) {
+      onDelete(a.id);
+    }
+  };
+
+  if (dayActivities.length === 0) {
+    return (
+      <Card className="flex flex-col items-center gap-3 rounded-lg border p-8 text-center">
+        <span className="flex h-12 w-12 items-center justify-center rounded-md bg-muted">
+          <Dumbbell className="h-6 w-6 text-muted-foreground" />
+        </span>
+        <div>
+          <div className="text-base font-medium">
+            {isToday
+              ? "Sin actividad registrada hoy"
+              : "Sin actividad registrada este día"}
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {isToday
+              ? "Registrá tu entrenamiento del día · +60 XP"
+              : "No registraste ejercicio este día"}
+          </p>
+        </div>
+        {isToday && (
+          <Button onClick={onEmptyAction} size="sm">
+            <Plus className="mr-2 h-4 w-4" />
+            Registrar ejercicio
+          </Button>
+        )}
+      </Card>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {dayActivities.map((a) => (
+        <Card
+          key={a.id}
+          className="flex items-center gap-3 rounded-lg border p-3"
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-chart-4/15 text-chart-4">
+            <Dumbbell className="h-[18px] w-[18px]" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold">
+              {summary(a) || "Actividad física"}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {a.source === "image" ? "Desde captura" : "Manual"}
+            </div>
+          </div>
+          <button
+            onClick={() => handleDelete(a)}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+            aria-label="Borrar actividad"
+          >
+            <Trash2 className="h-[15px] w-[15px]" />
+          </button>
+        </Card>
+      ))}
+    </div>
+  );
 }
 
 function MealsList({

@@ -316,7 +316,7 @@ export default function DailyAgenda() {
         <h3 className="text-sm font-semibold mb-3">Registro del dia</h3>
         <div className="space-y-3">
           <Link
-            href="/nutrition"
+            href="/salud?tab=comidas"
             className="flex items-center gap-3 text-sm hover:bg-muted/50 rounded p-2 -m-2 transition"
           >
             <Utensils className="h-4 w-4 text-orange-500" />
@@ -331,7 +331,7 @@ export default function DailyAgenda() {
           </Link>
 
           <Link
-            href="/nutrition"
+            href="/salud?tab=ejercicio"
             className="flex items-center gap-3 text-sm hover:bg-muted/50 rounded p-2 -m-2 transition"
           >
             <Dumbbell className="h-4 w-4 text-purple-500" />
