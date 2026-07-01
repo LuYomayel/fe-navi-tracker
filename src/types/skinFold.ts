@@ -19,6 +19,8 @@ export interface SkinFoldRecord {
   // Thickness in mm; undefined if not measured
   values: Partial<Record<SkinFoldSite, number>>;
   aiConfidence?: number; // 0-1 when extracted by AI
+  pdfUrl?: string; // PDF de origen (base64) para ver de dónde salieron los datos
+  pdfFilename?: string; // Nombre original del PDF
 }
 
 // Nombres en español para la UI

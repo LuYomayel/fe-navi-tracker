@@ -308,7 +308,10 @@ export function SkinFoldDialog({
         ...formData,
         notes: notesContent,
         aiConfidence: aiConfidence || undefined,
-        ...(pdfFile && { pdfFilename: pdfFile.filename }),
+        ...(pdfFile && {
+          pdfFilename: pdfFile.filename,
+          pdfUrl: pdfFile.data,
+        }),
       };
 
       if (editingRecord) {
@@ -556,6 +559,24 @@ export function SkinFoldDialog({
                   automaticamente todos los pliegues, composicion corporal, somatotipo e indices.
                 </p>
               </div>
+
+              {/* PDF de origen persistido (al editar un registro cargado por PDF) */}
+              {editingRecord?.pdfUrl && (
+                <a
+                  href={editingRecord.pdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 rounded-xl border p-3 text-sm font-medium text-primary transition-colors hover:bg-accent/50"
+                >
+                  <FileText className="h-4 w-4 shrink-0" />
+                  <span className="truncate">
+                    Ver PDF original
+                    {editingRecord.pdfFilename
+                      ? ` — ${editingRecord.pdfFilename}`
+                      : ""}
+                  </span>
+                </a>
+              )}
 
               <input
                 ref={pdfInputRef}

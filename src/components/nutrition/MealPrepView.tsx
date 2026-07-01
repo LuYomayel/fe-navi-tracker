@@ -9,6 +9,8 @@ import {
   Archive,
   ChevronLeft,
   ChevronRight,
+  FileText,
+  Trash2,
 } from "lucide-react";
 import { MealPrepSlotCard } from "./MealPrepSlotCard";
 import { EditMealPrepSlotDialog } from "./EditMealPrepSlotDialog";
@@ -44,9 +46,11 @@ function getTodayDayKey(): DayKey {
 export function MealPrepView() {
   const {
     activeMealPrep,
+    activePlan,
     isLoading,
     loadActiveMealPrep,
     loadActivePlan,
+    deletePlan,
     eatSlot,
     archivePrep,
   } = useMealPrep();
@@ -107,9 +111,46 @@ export function MealPrepView() {
           </div>
         </div>
 
+        {/* Plan del nutricionista cargado (persiste: se ve y se puede eliminar) */}
+        {activePlan && (
+          <div className="flex items-center gap-3 rounded-xl border bg-card p-4">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/12 text-primary">
+              <FileText className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-semibold">
+                {activePlan.name}
+              </div>
+              <div className="truncate text-xs text-muted-foreground">
+                Plan del nutricionista cargado ✓
+                {activePlan.pdfFilename ? ` · ${activePlan.pdfFilename}` : ""}
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                if (
+                  activePlan.id &&
+                  typeof window !== "undefined" &&
+                  window.confirm(
+                    `¿Eliminar el plan "${activePlan.name}"? Vas a poder subir otro.`
+                  )
+                ) {
+                  deletePlan(activePlan.id);
+                }
+              }}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+              aria-label="Eliminar plan"
+            >
+              <Trash2 className="h-[17px] w-[17px]" />
+            </button>
+          </div>
+        )}
+
         <div className="text-center py-12 rounded-xl border border-dashed border-border">
           <Sparkles className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-          <h4 className="font-medium mb-1">Sin meal prep activo</h4>
+          <h4 className="font-medium mb-1">
+            {activePlan ? "Plan cargado — generá tu meal prep" : "Sin meal prep activo"}
+          </h4>
           <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">
             Genera tu plan semanal de comidas con IA basado en tus objetivos
             nutricionales y comidas guardadas.
@@ -121,7 +162,7 @@ export function MealPrepView() {
               onClick={() => setShowImportDialog(true)}
             >
               <FileUp className="h-4 w-4 mr-1.5" />
-              Importar plan nutri
+              {activePlan ? "Reemplazar plan" : "Importar plan nutri"}
             </Button>
             <Button size="sm" onClick={() => setShowGenerateDialog(true)}>
               <Sparkles className="h-4 w-4 mr-1.5" />
