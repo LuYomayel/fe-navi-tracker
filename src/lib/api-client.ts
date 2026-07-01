@@ -471,8 +471,20 @@ export const api = {
     create: (data: Omit<SavedMeal, "id" | "userId" | "timesUsed" | "lastUsedAt" | "createdAt" | "updatedAt">) =>
       apiClient.post("/saved-meals", data as any),
     use: (id: string) => apiClient.post(`/saved-meals/${id}/use`),
-    update: (id: string, data: { name?: string; description?: string }) =>
-      apiClient.put(`/saved-meals/${id}`, data),
+    update: (
+      id: string,
+      data: Partial<
+        Pick<
+          SavedMeal,
+          | "name"
+          | "description"
+          | "mealType"
+          | "foods"
+          | "totalCalories"
+          | "macronutrients"
+        >
+      >
+    ) => apiClient.put(`/saved-meals/${id}`, data),
     delete: (id: string) => apiClient.delete(`/saved-meals/${id}`),
   },
 

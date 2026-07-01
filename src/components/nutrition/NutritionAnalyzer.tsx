@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import {
   Camera,
   Upload,
@@ -11,6 +11,7 @@ import {
   Bot,
   Bookmark,
   Star,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -37,6 +38,14 @@ import {
 import { api } from "@/lib/api-client";
 import { getDateKey } from "@/lib/utils";
 import { toast } from "@/lib/toast-helper";
+
+// Normaliza texto para búsqueda sin acentos ni mayúsculas ("cafe" == "Café").
+const normalizeText = (s: string) =>
+  s
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .trim();
 
 interface FoodAnalyzerProps {
   isOpen: boolean;
@@ -99,6 +108,25 @@ export function FoodAnalyzer({
   const [templateName, setTemplateName] = useState("");
   const [savedMeals, setSavedMeals] = useState<SavedMeal[]>([]);
   const [_loadingSavedMeals, setLoadingSavedMeals] = useState(false);
+  const [savedQuery, setSavedQuery] = useState("");
+
+  // Más usadas primero (la comida que consumís siempre queda arriba),
+  // con lastUsedAt como desempate. Se muestran TODAS.
+  const orderedSavedMeals = useMemo(
+    () =>
+      [...savedMeals].sort(
+        (a, b) =>
+          (b.timesUsed ?? 0) - (a.timesUsed ?? 0) ||
+          new Date(b.lastUsedAt ?? 0).getTime() -
+            new Date(a.lastUsedAt ?? 0).getTime()
+      ),
+    [savedMeals]
+  );
+  const filteredSavedMeals = useMemo(() => {
+    const q = normalizeText(savedQuery);
+    if (!q) return orderedSavedMeals;
+    return orderedSavedMeals.filter((m) => normalizeText(m.name).includes(q));
+  }, [orderedSavedMeals, savedQuery]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -526,31 +554,59 @@ export function FoodAnalyzer({
                 </Button>
               </div>
 
-              {/* Saved meals quick-add */}
+              {/* Saved meals quick-add — muestra TODAS, ordenadas por más usadas */}
               {savedMeals.length > 0 && (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   <div className="flex items-center gap-2">
                     <Star className="h-4 w-4 text-amber-500" />
                     <h4 className="font-medium text-sm">Comidas guardadas</h4>
+                    <span className="text-xs text-muted-foreground">
+                      ({savedMeals.length})
+                    </span>
                   </div>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {savedMeals.map((meal) => (
+
+                  {/* Buscador: aparece cuando hay varias para encontrar cualquiera al instante */}
+                  {savedMeals.length > 5 && (
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <input
+                        type="text"
+                        value={savedQuery}
+                        onChange={(e) => setSavedQuery(e.target.value)}
+                        placeholder="Buscar (ej: café con leche)…"
+                        className="w-full rounded-xl border border-border bg-background py-2 pl-9 pr-3 text-sm outline-none transition focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
+                  )}
+
+                  <div className="grid max-h-80 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
+                    {filteredSavedMeals.map((meal) => (
                       <button
                         key={meal.id}
                         onClick={() => handleQuickAddSavedMeal(meal)}
-                        className="w-full flex items-center justify-between p-3 bg-secondary/50 hover:bg-secondary rounded-xl transition-colors text-left"
+                        className="flex w-full items-center justify-between rounded-xl bg-secondary/50 p-3 text-left transition-colors hover:bg-secondary"
                       >
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm truncate">{meal.name}</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-medium">
+                            {meal.name}
+                          </div>
                           <div className="text-xs text-muted-foreground">
-                            {meal.totalCalories} kcal · P:{meal.macronutrients.protein.toFixed(0)}g C:{meal.macronutrients.carbs.toFixed(0)}g G:{meal.macronutrients.fat.toFixed(0)}g
+                            {meal.totalCalories} kcal · P:
+                            {meal.macronutrients.protein.toFixed(0)}g C:
+                            {meal.macronutrients.carbs.toFixed(0)}g G:
+                            {meal.macronutrients.fat.toFixed(0)}g
                           </div>
                         </div>
-                        <div className="text-xs text-muted-foreground ml-2">
+                        <div className="ml-2 shrink-0 text-xs text-muted-foreground">
                           {meal.timesUsed}x
                         </div>
                       </button>
                     ))}
+                    {filteredSavedMeals.length === 0 && (
+                      <p className="col-span-full py-2 text-center text-xs text-muted-foreground">
+                        Sin resultados para “{savedQuery}”.
+                      </p>
+                    )}
                   </div>
                 </div>
               )}

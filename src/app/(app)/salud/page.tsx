@@ -15,6 +15,7 @@ import {
   Dumbbell,
   User,
   Ruler,
+  Star,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/ui/page-header";
@@ -43,6 +44,7 @@ import { CreatePhysicalActivityDialog } from "@/components/nutrition/CreatePhysi
 import { BodyAnalyzer } from "@/components/nutrition/BodyAnalyzer";
 import { SkinFoldDialog } from "@/components/nutrition/SkinFoldDialog";
 import { SkinFoldCharts } from "@/components/nutrition/SkinFoldCharts";
+import { SavedMealsManager } from "@/components/nutrition/SavedMealsManager";
 import { MealPrepView } from "@/components/nutrition/MealPrepView";
 import { api } from "@/lib/api-client";
 import { sumOfSkinfolds } from "@/lib/anthropometry";
@@ -103,6 +105,7 @@ export default function SaludPage() {
 
   const [tab, setTab] = useState<SaludTab>("resumen");
   const [showFoodAnalyzer, setShowFoodAnalyzer] = useState(false);
+  const [showSavedManager, setShowSavedManager] = useState(false);
   const [showHydrationGoal, setShowHydrationGoal] = useState(false);
 
   // Fecha navegable para la tab de comidas (permite ver/editar días anteriores)
@@ -416,6 +419,15 @@ export default function SaludPage() {
           >
             <Plus className="mr-2 h-5 w-5" />
             Registrar comida
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() => setShowSavedManager(true)}
+          >
+            <Star className="mr-1.5 h-4 w-4 text-amber-500" />
+            Gestionar comidas guardadas
           </Button>
           <MealsList
             analyses={nutritionAnalyses}
@@ -733,6 +745,12 @@ export default function SaludPage() {
         onAnalysisSaved={() => {
           getAllFoodAnalysis();
         }}
+      />
+
+      {/* Gestor de comidas guardadas (alta/edición/borrado sin loguear) */}
+      <SavedMealsManager
+        isOpen={showSavedManager}
+        onClose={() => setShowSavedManager(false)}
       />
 
       {/* Modal de edición de comida */}
