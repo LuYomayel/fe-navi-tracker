@@ -566,7 +566,7 @@ export function FoodAnalyzer({
                   </div>
 
                   {/* Buscador: aparece cuando hay varias para encontrar cualquiera al instante */}
-                  {savedMeals.length > 5 && (
+                  {savedMeals.length > 3 && (
                     <div className="relative">
                       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <input
