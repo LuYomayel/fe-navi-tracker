@@ -31,6 +31,7 @@ interface AnthropometryAnalysis {
     height: number | null;
     seatedHeight?: number | null;
     age?: number | null;
+    measurementDate?: string | null;
   };
   skinFolds: {
     triceps: number | null;
@@ -226,9 +227,14 @@ export function SkinFoldDialog({
           }));
         }
 
-        // Extract date from the analysis if available
-        if (analysis.basics?.age) {
-          // Keep user's selected date, don't override
+        // Autocompletar la fecha con la "Fecha de medición" del informe
+        const measurementDate =
+          record.date || analysis.basics?.measurementDate;
+        if (
+          measurementDate &&
+          /^\d{4}-\d{2}-\d{2}$/.test(measurementDate)
+        ) {
+          setFormData((prev) => ({ ...prev, date: measurementDate }));
         }
 
         setAiConfidence(record.aiConfidence ?? 0.9);
