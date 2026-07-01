@@ -527,11 +527,11 @@ export function FoodAnalyzer({
               <div className="grid grid-cols-1 gap-4">
                 <Button
                   onClick={() => handleMethodSelection("photo")}
-                  className="flex items-center gap-3 p-6 h-auto justify-start"
+                  className="flex w-full items-center gap-3 p-5 h-auto justify-start whitespace-normal"
                   variant="outline"
                 >
                   <Camera className="h-6 w-6" />
-                  <div className="text-left">
+                  <div className="min-w-0 text-left">
                     <div className="font-medium">Tomar/Subir foto</div>
                     <div className="text-sm text-muted-foreground">
                       Analiza platos de comida o recetas escritas con IA
@@ -541,11 +541,11 @@ export function FoodAnalyzer({
 
                 <Button
                   onClick={() => handleMethodSelection("manual")}
-                  className="flex items-center gap-3 p-6 h-auto justify-start"
+                  className="flex w-full items-center gap-3 p-5 h-auto justify-start whitespace-normal"
                   variant="outline"
                 >
                   <Calculator className="h-6 w-6" />
-                  <div className="text-left">
+                  <div className="min-w-0 text-left">
                     <div className="font-medium">Ingreso manual</div>
                     <div className="text-sm text-muted-foreground">
                       Escribe los valores nutricionales directamente
@@ -579,7 +579,7 @@ export function FoodAnalyzer({
                     </div>
                   )}
 
-                  <div className="grid max-h-80 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-2 sm:max-h-80 sm:grid-cols-2 sm:overflow-y-auto">
                     {filteredSavedMeals.map((meal) => (
                       <button
                         key={meal.id}
