@@ -2,7 +2,16 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { Apple, Utensils, Plus, ChevronRight, Settings } from "lucide-react";
+import {
+  Apple,
+  Utensils,
+  Plus,
+  ChevronRight,
+  ChevronLeft,
+  Settings,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 
 import { PageHeader } from "@/components/ui/page-header";
 import { PillToggle } from "@/components/ui/pill-toggle";
@@ -20,6 +29,7 @@ import type { NutritionAnalysis, NutritionGoals, BodyAnalysis } from "@/types";
 
 // Componentes de dominio reusados
 import { FoodAnalyzer } from "@/components/nutrition/NutritionAnalyzer";
+import { EditNutritionAnalysisDialog } from "@/components/nutrition/EditNutritionAnalysisDialog";
 import { WeightChart } from "@/components/nutrition/WeightChart";
 import { WeightTracker } from "@/components/nutrition/WeightTracker";
 import HydrationCircularProgress from "@/components/hydration/HydrationCircularProgress";
@@ -54,6 +64,7 @@ export default function SaludPage() {
     deleteWeightEntry,
     refreshWeightEntries,
     getAllFoodAnalysis,
+    deleteNutritionAnalysis,
     // hydration
     todayHydration,
     hydrationGoal,
@@ -66,7 +77,9 @@ export default function SaludPage() {
   const [showFoodAnalyzer, setShowFoodAnalyzer] = useState(false);
   const [showHydrationGoal, setShowHydrationGoal] = useState(false);
 
-  const [selectedDate] = useState(new Date());
+  // Fecha navegable para la tab de comidas (permite ver/editar días anteriores)
+  const [mealsDate, setMealsDate] = useState(new Date());
+  const [editingMeal, setEditingMeal] = useState<NutritionAnalysis | null>(null);
 
   // Tab + log desde URL (?tab=comidas&log=1)
   useEffect(() => {
@@ -177,6 +190,10 @@ export default function SaludPage() {
   const isWaterGoalReached = glasses >= waterGoal;
 
   const nf = (n: number) => n.toLocaleString("es-AR");
+
+  // Fecha navegada de la tab comidas
+  const mealsKey = getDateKey(mealsDate);
+  const isMealsToday = mealsKey === getTodayKey();
 
   if (isLoading) {
     return (
@@ -304,6 +321,38 @@ export default function SaludPage() {
 
       {tab === "comidas" && (
         <div className="space-y-4">
+          {/* Navegador de días: permite ver/editar comidas de días anteriores */}
+          <div className="flex items-center justify-between gap-2 rounded-lg border bg-card px-2 py-1.5">
+            <button
+              onClick={() => setMealsDate((d) => addDays(d, -1))}
+              className="flex h-9 w-9 items-center justify-center rounded-md transition-colors hover:bg-muted"
+              aria-label="Día anterior"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <div className="flex flex-col items-center leading-tight">
+              <span className="text-sm font-semibold capitalize">
+                {mealsDateLabel(mealsDate)}
+              </span>
+              {!isMealsToday && (
+                <button
+                  onClick={() => setMealsDate(new Date())}
+                  className="text-[11px] text-primary hover:underline"
+                >
+                  Volver a hoy
+                </button>
+              )}
+            </div>
+            <button
+              onClick={() => setMealsDate((d) => addDays(d, 1))}
+              disabled={isMealsToday}
+              className="flex h-9 w-9 items-center justify-center rounded-md transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-30"
+              aria-label="Día siguiente"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
+
           <Button
             variant="default"
             size="xl"
@@ -315,8 +364,11 @@ export default function SaludPage() {
           </Button>
           <MealsList
             analyses={nutritionAnalyses}
-            todayKey={getTodayKey()}
+            dateKey={mealsKey}
+            isToday={isMealsToday}
             onEmptyAction={() => setShowFoodAnalyzer(true)}
+            onEdit={(m) => setEditingMeal(m)}
+            onDelete={(id) => deleteNutritionAnalysis(id)}
           />
         </div>
       )}
@@ -371,13 +423,24 @@ export default function SaludPage() {
         </div>
       )}
 
-      {/* Modal de registro de comida (compartido) */}
+      {/* Modal de registro de comida (compartido) — registra en el día navegado */}
       <FoodAnalyzer
         isOpen={showFoodAnalyzer}
         onClose={() => setShowFoodAnalyzer(false)}
-        selectedDate={selectedDate}
+        selectedDate={mealsDate}
         onAnalysisSaved={() => {
           getAllFoodAnalysis();
+        }}
+      />
+
+      {/* Modal de edición de comida */}
+      <EditNutritionAnalysisDialog
+        isOpen={!!editingMeal}
+        analysis={editingMeal}
+        onClose={() => setEditingMeal(null)}
+        onAnalysisUpdated={() => {
+          getAllFoodAnalysis();
+          setEditingMeal(null);
         }}
       />
     </div>
@@ -426,25 +489,48 @@ function BalanceRow({
   );
 }
 
+function addDays(date: Date, n: number): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() + n);
+  return d;
+}
+
+function mealsDateLabel(date: Date): string {
+  const key = getDateKey(date);
+  if (key === getDateKey(new Date())) return "Hoy";
+  if (key === getDateKey(addDays(new Date(), -1))) return "Ayer";
+  return date.toLocaleDateString("es-AR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
+
 function MealsList({
   analyses,
-  todayKey,
+  dateKey,
+  isToday,
   onEmptyAction,
+  onEdit,
+  onDelete,
 }: {
   analyses: NutritionAnalysis[];
-  todayKey: string;
+  dateKey: string;
+  isToday: boolean;
   onEmptyAction: () => void;
+  onEdit: (meal: NutritionAnalysis) => void;
+  onDelete: (id: string) => void;
 }) {
-  const todayMeals = useMemo(
+  const dayMeals = useMemo(
     () =>
       analyses
-        .filter((a) => a.date === todayKey)
+        .filter((a) => a.date === dateKey)
         .sort(
           (a, b) =>
             new Date(b.createdAt || b.date).getTime() -
             new Date(a.createdAt || a.date).getTime()
         ),
-    [analyses, todayKey]
+    [analyses, dateKey]
   );
 
   const mealTypeLabel = (t: string) =>
@@ -470,29 +556,50 @@ function MealsList({
     });
   };
 
-  if (todayMeals.length === 0) {
+  const handleDelete = (m: NutritionAnalysis) => {
+    if (
+      typeof window !== "undefined" &&
+      window.confirm(
+        `¿Borrar ${mealTypeLabel(m.mealType)} (${Math.round(
+          m.totalCalories
+        )} kcal)?`
+      )
+    ) {
+      onDelete(m.id);
+    }
+  };
+
+  if (dayMeals.length === 0) {
     return (
       <Card className="flex flex-col items-center gap-3 rounded-lg border p-8 text-center">
         <span className="flex h-12 w-12 items-center justify-center rounded-md bg-muted">
           <Utensils className="h-6 w-6 text-muted-foreground" />
         </span>
         <div>
-          <div className="text-base font-medium">Sin comidas registradas hoy</div>
+          <div className="text-base font-medium">
+            {isToday
+              ? "Sin comidas registradas hoy"
+              : "Sin comidas registradas este día"}
+          </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Registrá tu primera comida del día
+            {isToday
+              ? "Registrá tu primera comida del día"
+              : "No anotaste comidas este día"}
           </p>
         </div>
-        <Button onClick={onEmptyAction} size="sm">
-          <Plus className="mr-2 h-4 w-4" />
-          Registrar comida
-        </Button>
+        {isToday && (
+          <Button onClick={onEmptyAction} size="sm">
+            <Plus className="mr-2 h-4 w-4" />
+            Registrar comida
+          </Button>
+        )}
       </Card>
     );
   }
 
   return (
     <div className="flex flex-col gap-2">
-      {todayMeals.map((m) => (
+      {dayMeals.map((m) => (
         <Card
           key={m.id}
           className="flex items-center gap-3 rounded-lg border p-3"
@@ -506,10 +613,28 @@ function MealsList({
               {formatTime(m)}
             </div>
           </div>
-          <span className="font-mono text-[15px] font-bold tabular-nums">
-            {Math.round(m.totalCalories)}
-          </span>
-          <span className="text-[11px] text-muted-foreground">kcal</span>
+          <div className="flex items-baseline gap-1">
+            <span className="font-mono text-[15px] font-bold tabular-nums">
+              {Math.round(m.totalCalories)}
+            </span>
+            <span className="text-[11px] text-muted-foreground">kcal</span>
+          </div>
+          <div className="flex items-center gap-0.5">
+            <button
+              onClick={() => onEdit(m)}
+              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              aria-label="Editar comida"
+            >
+              <Pencil className="h-[15px] w-[15px]" />
+            </button>
+            <button
+              onClick={() => handleDelete(m)}
+              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+              aria-label="Borrar comida"
+            >
+              <Trash2 className="h-[15px] w-[15px]" />
+            </button>
+          </div>
         </Card>
       ))}
     </div>
