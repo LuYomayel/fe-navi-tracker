@@ -42,6 +42,7 @@ import { EditNutritionAnalysisDialog } from "@/components/nutrition/EditNutritio
 import { CreatePhysicalActivityDialog } from "@/components/nutrition/CreatePhysicalActivityDialog";
 import { BodyAnalyzer } from "@/components/nutrition/BodyAnalyzer";
 import { SkinFoldDialog } from "@/components/nutrition/SkinFoldDialog";
+import { SkinFoldCharts } from "@/components/nutrition/SkinFoldCharts";
 import { MealPrepView } from "@/components/nutrition/MealPrepView";
 import { api } from "@/lib/api-client";
 import { sumOfSkinfolds } from "@/lib/anthropometry";
@@ -643,6 +644,9 @@ export default function SaludPage() {
                 <Ruler className="mr-1.5 h-4 w-4" /> Nueva
               </Button>
             </div>
+            {skinFoldRecords.length > 0 && (
+              <SkinFoldCharts records={skinFoldRecords} />
+            )}
             {skinFoldRecords.length === 0 ? (
               <Card className="rounded-lg border p-4 text-sm text-muted-foreground">
                 Sin mediciones de pliegues todavía.
