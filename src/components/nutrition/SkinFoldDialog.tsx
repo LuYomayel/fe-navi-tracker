@@ -158,7 +158,9 @@ export function SkinFoldDialog({
 
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
-      const viewport = page.getViewport({ scale: 2.0 });
+      // scale 3.0: los informes escaneados traen dígitos chicos en las tablas;
+      // a 2.0 la IA confundía 4↔6 en la columna de kg de masas
+      const viewport = page.getViewport({ scale: 3.0 });
       const canvas = document.createElement("canvas");
       canvas.height = viewport.height;
       canvas.width = viewport.width;
