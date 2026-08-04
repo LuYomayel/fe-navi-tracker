@@ -36,7 +36,11 @@ const DialogContent = React.forwardRef<
       ref={ref}
       className={cn(
         // Mobile: bottom-sheet anclado abajo, con safe-areas (isla / home indicator) y dvh.
-        "fixed inset-x-0 bottom-0 z-50 grid max-h-[92dvh] w-full gap-4 overflow-y-auto overflow-x-hidden rounded-t-2xl border-0 bg-card p-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom",
+        // [&>*]:min-w-0: los items de un grid tienen min-width:auto y NO se
+        // encogen — con textos largos (o letra grande de iOS) el contenido
+        // desbordaba a la derecha en el WebView. min-w-0 los hace encogibles
+        // y cada fila scrolleable maneja su propio overflow.
+        "fixed inset-x-0 bottom-0 z-50 grid max-h-[92dvh] w-full max-w-[100vw] gap-4 overflow-y-auto overflow-x-hidden rounded-t-2xl border-0 bg-card p-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl duration-200 [&>*]:min-w-0 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom",
         // Desktop: modal centrado.
         "sm:inset-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-h-[90vh] sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:p-6 sm:pb-6 sm:pt-6 sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95",
         className
