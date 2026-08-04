@@ -47,7 +47,6 @@ import { BodyAnalyzer } from "@/components/nutrition/BodyAnalyzer";
 import { SkinFoldDialog } from "@/components/nutrition/SkinFoldDialog";
 import { SkinFoldCharts } from "@/components/nutrition/SkinFoldCharts";
 import { SavedMealsManager } from "@/components/nutrition/SavedMealsManager";
-import { PlateBuilder } from "@/components/nutrition/PlateBuilder";
 import { MealPrepView } from "@/components/nutrition/MealPrepView";
 import { api } from "@/lib/api-client";
 import { sumOfSkinfolds } from "@/lib/anthropometry";
@@ -109,7 +108,6 @@ export default function SaludPage() {
   const [tab, setTab] = useState<SaludTab>("resumen");
   const [showFoodAnalyzer, setShowFoodAnalyzer] = useState(false);
   const [showSavedManager, setShowSavedManager] = useState(false);
-  const [showPlateBuilder, setShowPlateBuilder] = useState(false);
   const [showHydrationGoal, setShowHydrationGoal] = useState(false);
 
   // Fecha navegable para la tab de comidas (permite ver/editar días anteriores)
@@ -415,23 +413,15 @@ export default function SaludPage() {
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              variant="default"
-              size="xl"
-              onClick={() => setShowFoodAnalyzer(true)}
-            >
-              <Plus className="mr-1.5 h-5 w-5" />
-              Registrar
-            </Button>
-            <Button
-              variant="tonal"
-              size="xl"
-              onClick={() => setShowPlateBuilder(true)}
-            >
-              🍽️ Armar plato
-            </Button>
-          </div>
+          <Button
+            variant="default"
+            size="xl"
+            className="w-full"
+            onClick={() => setShowFoodAnalyzer(true)}
+          >
+            <Plus className="mr-2 h-5 w-5" />
+            Registrar comida
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -756,15 +746,6 @@ export default function SaludPage() {
         onClose={() => setShowFoodAnalyzer(false)}
         selectedDate={mealsDate}
         onAnalysisSaved={() => {
-          getAllFoodAnalysis();
-        }}
-      />
-
-      {/* Plato modular: componer proteína + carbo + verdura + bebida + fruta */}
-      <PlateBuilder
-        isOpen={showPlateBuilder}
-        onClose={() => setShowPlateBuilder(false)}
-        onLogged={() => {
           getAllFoodAnalysis();
         }}
       />
