@@ -26,18 +26,7 @@ import { ActionIconButton } from "@/components/ui/action-icon-button";
 import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
 import { MealType, type SavedMeal, type Macronutrients } from "@/types";
-
-const MEAL_TYPES: { value: string; label: string }[] = [
-  { value: MealType.BREAKFAST, label: "Desayuno" },
-  { value: MealType.LUNCH, label: "Almuerzo" },
-  { value: MealType.MERIENDA, label: "Merienda" },
-  { value: MealType.DINNER, label: "Cena" },
-  { value: MealType.SNACK, label: "Snack" },
-  { value: MealType.OTHER, label: "Otro" },
-];
-
-const mealTypeLabel = (v: string) =>
-  MEAL_TYPES.find((t) => t.value === v)?.label ?? v;
+import { MEAL_TYPE_OPTIONS, mealTypeLabel } from "@/lib/meal-types";
 
 interface FormState {
   name: string;
@@ -379,7 +368,7 @@ export function SavedMealsManager({
                 onChange={(e) => set("mealType", e.target.value)}
                 className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
               >
-                {MEAL_TYPES.map((t) => (
+                {MEAL_TYPE_OPTIONS.map((t) => (
                   <option key={t.value} value={t.value}>
                     {t.label}
                   </option>

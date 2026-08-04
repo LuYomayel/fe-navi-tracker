@@ -33,6 +33,7 @@ import { useNaviTrackerStore } from "@/store";
 import { useInitializeStore } from "@/hooks/useInitializeStore";
 import { useDateHelper } from "@/hooks/useDateHelper";
 import { getDateKey } from "@/lib/utils";
+import { mealTypeLabel } from "@/lib/meal-types";
 
 import type {
   NutritionAnalysis,
@@ -1086,16 +1087,6 @@ function MealsList({
         ),
     [analyses, dateKey]
   );
-
-  const mealTypeLabel = (t: string) =>
-    ({
-      breakfast: "Desayuno",
-      lunch: "Almuerzo",
-      merienda: "Merienda",
-      dinner: "Cena",
-      snack: "Snack",
-    })[t] ||
-    t.charAt(0).toUpperCase() + t.slice(1);
 
   const formatTime = (a: NutritionAnalysis) => {
     const ts = a.createdAt
