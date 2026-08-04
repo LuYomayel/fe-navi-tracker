@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Task, TaskPriority, TaskCategory } from "@/types";
 import {
   Dialog,
@@ -53,6 +53,20 @@ export default function AddTaskDialog({
     editingTask?.priority || "medium"
   );
   const [category, setCategory] = useState<TaskCategory | "">(editingTask?.category || "");
+
+  // Poblar/resetear el form CADA vez que el diálogo se abre: onOpenChange de
+  // Radix no se dispara cuando el padre abre por prop (open={isOpen}), así
+  // que editar una tarea mostraba el formulario vacío.
+  useEffect(() => {
+    if (isOpen) {
+      setTitle(editingTask?.title || "");
+      setDescription(editingTask?.description || "");
+      setDueDate(editingTask?.dueDate || "");
+      setDueTime(editingTask?.dueTime || "");
+      setPriority(editingTask?.priority || "medium");
+      setCategory(editingTask?.category || "");
+    }
+  }, [isOpen, editingTask]);
 
   const handleSave = () => {
     if (!title.trim()) return;
