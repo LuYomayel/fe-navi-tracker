@@ -716,12 +716,21 @@ export interface CreateWeightEntryManualDto {
 }
 
 // Saved Meal template
+export type PlateComponent =
+  | "protein"
+  | "carb"
+  | "veggie"
+  | "drink"
+  | "fruit"
+  | "other";
+
 export interface SavedMeal {
   id: string;
   userId: string;
   name: string;
   description?: string;
   mealType: string;
+  component?: PlateComponent | null;
   foods: DetectedFood[];
   totalCalories: number;
   macronutrients: Macronutrients;

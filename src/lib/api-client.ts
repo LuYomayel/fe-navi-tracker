@@ -557,6 +557,11 @@ export const api = {
     create: (data: Omit<SavedMeal, "id" | "userId" | "timesUsed" | "lastUsedAt" | "createdAt" | "updatedAt">) =>
       apiClient.post("/saved-meals", data as any),
     use: (id: string) => apiClient.post(`/saved-meals/${id}/use`),
+    logPlate: (data: {
+      componentIds: string[];
+      mealType: string;
+      date?: string;
+    }) => apiClient.post("/saved-meals/log-plate", data),
     update: (
       id: string,
       data: Partial<
@@ -565,6 +570,7 @@ export const api = {
           | "name"
           | "description"
           | "mealType"
+          | "component"
           | "foods"
           | "totalCalories"
           | "macronutrients"

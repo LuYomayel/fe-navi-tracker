@@ -41,6 +41,7 @@ interface FormState {
   name: string;
   description: string;
   mealType: string;
+  component: string;
   calories: string;
   protein: string;
   carbs: string;
@@ -54,6 +55,7 @@ const EMPTY_FORM: FormState = {
   name: "",
   description: "",
   mealType: MealType.BREAKFAST,
+  component: "",
   calories: "",
   protein: "",
   carbs: "",
@@ -62,6 +64,17 @@ const EMPTY_FORM: FormState = {
   sugar: "",
   sodium: "",
 };
+
+// Segmentos del plato modular
+const COMPONENT_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "Comida completa" },
+  { value: "protein", label: "🥩 Proteína" },
+  { value: "carb", label: "🍚 Carbohidrato" },
+  { value: "veggie", label: "🥗 Verdura / Ensalada" },
+  { value: "drink", label: "☕ Bebida" },
+  { value: "fruit", label: "🍌 Fruta" },
+  { value: "other", label: "🍽️ Otro" },
+];
 
 const num = (s: string) => {
   const n = parseFloat(s.replace(",", "."));
@@ -74,6 +87,7 @@ function fromMeal(m: SavedMeal): FormState {
     name: m.name ?? "",
     description: m.description ?? "",
     mealType: m.mealType ?? MealType.BREAKFAST,
+    component: m.component ?? "",
     calories: String(m.totalCalories ?? ""),
     protein: String(mn?.protein ?? ""),
     carbs: String(mn?.carbs ?? ""),
@@ -169,6 +183,7 @@ export function SavedMealsManager({
           name,
           description: form.description.trim(),
           mealType: form.mealType,
+          component: (form.component || null) as SavedMeal["component"],
           totalCalories,
           macronutrients,
           foods: existing?.foods ?? [],
@@ -179,6 +194,7 @@ export function SavedMealsManager({
           name,
           description: form.description.trim() || undefined,
           mealType: form.mealType,
+          component: (form.component || null) as SavedMeal["component"],
           foods: [],
           totalCalories,
           macronutrients,
@@ -328,6 +344,26 @@ export function SavedMealsManager({
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="sm-component">Componente del plato</Label>
+              <select
+                id="sm-component"
+                value={form.component}
+                onChange={(e) => set("component", e.target.value)}
+                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                {COMPONENT_OPTIONS.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-[11px] text-muted-foreground">
+                Clasificala para poder elegirla al armar un plato (proteína,
+                carbo, verdura…).
+              </p>
             </div>
 
             <div className="space-y-1.5">
