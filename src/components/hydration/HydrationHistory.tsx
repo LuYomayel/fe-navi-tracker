@@ -9,9 +9,11 @@ import { getDateKey } from "@/lib/utils";
 interface Props {
   selectedDate?: string;
   onSelectDate?: (date: string) => void;
+  /** Cambia cuando se edita un día: fuerza el refetch para que la barra se actualice. */
+  refreshKey?: string | number;
 }
 
-export default function HydrationHistory({ selectedDate, onSelectDate }: Props) {
+export default function HydrationHistory({ selectedDate, onSelectDate, refreshKey }: Props) {
   const { hydrationGoal } = useNaviTrackerStore();
   const [history, setHistory] = useState<HydrationLog[]>([]);
 
@@ -25,7 +27,7 @@ export default function HydrationHistory({ selectedDate, onSelectDate }: Props) 
     api.hydration.getRange(fromStr, toStr).then((res) => {
       if (res.data) setHistory(res.data as HydrationLog[]);
     });
-  }, []);
+  }, [refreshKey]);
 
   const goal = hydrationGoal.goalGlasses;
   const maxGlasses = Math.max(goal, ...history.map((h) => h.glassesConsumed), 1);

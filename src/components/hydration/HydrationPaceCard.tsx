@@ -45,32 +45,38 @@ export interface HydrationPace {
  */
 export default function HydrationPaceCard({
   mlConsumed,
+  date,
+  isToday = true,
 }: {
   mlConsumed: number;
+  /** Día a mostrar (YYYY-MM-DD). Sin date = hoy. */
+  date?: string;
+  isToday?: boolean;
 }) {
   const [pace, setPace] = useState<HydrationPace | null>(null);
   const [showBlocks, setShowBlocks] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const res = await api.hydration.getPace();
+      const res = await api.hydration.getPace(date);
       const p = res.data as HydrationPace;
       setPace(p);
       // Reprogramar los recordatorios del teléfono con el ritmo fresco
-      scheduleHydrationPaceReminders(p);
+      // (solo con el ritmo de HOY: un día pasado no debe tocar las notificaciones)
+      if (isToday) scheduleHydrationPaceReminders(p);
     } catch (error) {
       console.error("Error cargando ritmo de hidratación:", error);
     }
-  }, []);
+  }, [date, isToday]);
 
-  // Refresca cuando cambia el consumo (cada vaso registrado)
+  // Refresca cuando cambia el consumo (cada vaso registrado) o el día visto
   useEffect(() => {
     load();
   }, [load, mlConsumed]);
 
   const toggleTraining = async (value: boolean) => {
     try {
-      await api.hydration.setTrainingToday(value);
+      await api.hydration.setTrainingToday(value, date);
       await load();
       toast.success(
         value ? "Día de entrenamiento 💪" : "Día sin entrenamiento",
@@ -87,6 +93,10 @@ export default function HydrationPaceCard({
 
   const statusLabel = pace.goalReached
     ? "🎉 Meta del día cumplida"
+    : !isToday
+    ? pace.deficitMl > 0
+      ? `Faltaron ${pace.deficitMl}ml`
+      : "Meta cumplida"
     : pace.deficitMl > 0
     ? `${pace.deficitMl}ml abajo del ritmo`
     : pace.aheadMl > 0
@@ -97,7 +107,9 @@ export default function HydrationPaceCard({
     <Card className="space-y-3 rounded-lg border p-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold">Ritmo del día</h3>
+          <h3 className="text-sm font-semibold">
+            {isToday ? "Ritmo del día" : "Ritmo de ese día"}
+          </h3>
           <p
             className={`text-xs ${
               pace.goalReached
@@ -166,7 +178,7 @@ export default function HydrationPaceCard({
       <div className="flex items-center justify-between border-t pt-3">
         <span className="flex items-center gap-1.5 text-sm">
           <Dumbbell className="h-4 w-4 text-muted-foreground" />
-          Hoy entreno
+          {isToday ? "Hoy entreno" : "Ese día entrené"}
           {pace.trainingDayManual === null && pace.trainingActive && (
             <span className="text-[10px] text-muted-foreground">
               (auto: registraste actividad)
@@ -176,7 +188,7 @@ export default function HydrationPaceCard({
         <Switch
           checked={pace.trainingActive}
           onCheckedChange={toggleTraining}
-          aria-label="Hoy entreno"
+          aria-label={isToday ? "Hoy entreno" : "Ese día entrené"}
         />
       </div>
 

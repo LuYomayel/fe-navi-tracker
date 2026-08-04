@@ -153,12 +153,13 @@ export default function SaludPage() {
     }
   }, [searchParams]);
 
-  // Hidratación: cargar hoy
+  // Hidratación: día navegable (tocar una barra del historial edita ese día)
   const todayStr = getDateKey(new Date());
+  const [aguaDate, setAguaDate] = useState(todayStr);
   useEffect(() => {
-    fetchTodayHydration(todayStr);
+    fetchTodayHydration(aguaDate);
     fetchHydrationGoal();
-  }, [todayStr, fetchTodayHydration, fetchHydrationGoal]);
+  }, [aguaDate, fetchTodayHydration, fetchHydrationGoal]);
 
   // Objetivos nutricionales (preferencias del usuario -> análisis corporal -> default)
   const nutritionGoals = useMemo((): NutritionGoals => {
@@ -247,6 +248,12 @@ export default function SaludPage() {
   const waterGoal = hydrationGoal.goalGlasses;
   const waterPct = waterGoal > 0 ? Math.min(100, Math.round((glasses / waterGoal) * 100)) : 0;
   const isWaterGoalReached = glasses >= waterGoal;
+  const isAguaToday = aguaDate === todayStr;
+  const aguaDateLabel = new Date(`${aguaDate}T12:00:00`).toLocaleDateString("es-AR", {
+    weekday: "long",
+    day: "numeric",
+    month: "numeric",
+  });
 
   const nf = (n: number) => n.toLocaleString("es-AR");
 
@@ -537,13 +544,25 @@ export default function SaludPage() {
         <div className="space-y-4">
           <Card className="flex flex-col items-center gap-5 rounded-lg border p-5">
             <div className="flex w-full items-center justify-between">
-              <span className="text-[15px] font-semibold">Hidratación</span>
-              <button
-                onClick={() => setShowHydrationGoal(true)}
-                className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-muted"
-              >
-                <Settings className="h-4 w-4 text-muted-foreground" />
-              </button>
+              <span className="text-[15px] font-semibold">
+                {isAguaToday ? "Hidratación" : `Editando ${aguaDateLabel}`}
+              </span>
+              <div className="flex items-center gap-1">
+                {!isAguaToday && (
+                  <button
+                    onClick={() => setAguaDate(todayStr)}
+                    className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+                  >
+                    Volver a hoy
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowHydrationGoal(true)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-muted"
+                >
+                  <Settings className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </div>
             </div>
             <HydrationCircularProgress
               glasses={glasses}
@@ -554,15 +573,23 @@ export default function SaludPage() {
             />
             <HydrationControls
               glasses={glasses}
-              date={todayStr}
+              date={aguaDate}
               onAdjust={adjustHydration}
             />
           </Card>
 
           {/* Ritmo por tramos: 1L a la mañana, 1L a la tarde, extra si entrena */}
-          <HydrationPaceCard mlConsumed={todayHydration?.mlConsumed ?? 0} />
+          <HydrationPaceCard
+            date={aguaDate}
+            isToday={isAguaToday}
+            mlConsumed={todayHydration?.mlConsumed ?? 0}
+          />
 
-          <HydrationHistory selectedDate={todayStr} onSelectDate={() => {}} />
+          <HydrationHistory
+            selectedDate={aguaDate}
+            onSelectDate={setAguaDate}
+            refreshKey={`${aguaDate}:${glasses}`}
+          />
 
           <HydrationGoalDialog
             open={showHydrationGoal}
