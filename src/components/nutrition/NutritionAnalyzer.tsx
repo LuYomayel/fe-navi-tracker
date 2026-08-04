@@ -508,60 +508,24 @@ export function FoodAnalyzer({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            Análisis Nutricional - {selectedDate.toLocaleDateString("es-ES")}
+            Registrar comida · {selectedDate.toLocaleDateString("es-ES")}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
           {step === "method_selection" && (
-            <div className="text-center space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">
-                  ¿Cómo quieres analizar tu comida?
-                </h3>
-                <p className="text-muted-foreground">
-                  Elige el método que mejor se adapte a tu situación
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4">
-                <Button
-                  onClick={() => handleMethodSelection("photo")}
-                  className="flex w-full items-center gap-3 p-5 h-auto justify-start whitespace-normal"
-                  variant="outline"
-                >
-                  <Camera className="h-6 w-6" />
-                  <div className="min-w-0 text-left">
-                    <div className="font-medium">Tomar/Subir foto</div>
-                    <div className="text-sm text-muted-foreground">
-                      Analiza platos de comida o recetas escritas con IA
-                    </div>
-                  </div>
-                </Button>
-
-                <Button
-                  onClick={() => handleMethodSelection("manual")}
-                  className="flex w-full items-center gap-3 p-5 h-auto justify-start whitespace-normal"
-                  variant="outline"
-                >
-                  <Calculator className="h-6 w-6" />
-                  <div className="min-w-0 text-left">
-                    <div className="font-medium">Ingreso manual</div>
-                    <div className="text-sm text-muted-foreground">
-                      Escribe los valores nutricionales directamente
-                    </div>
-                  </div>
-                </Button>
-              </div>
-
-              {/* Saved meals quick-add — muestra TODAS, ordenadas por más usadas */}
+            <div className="text-center space-y-5">
+              {/* Lo más frecuente PRIMERO: re-loguear una guardada es 1 toque.
+                  Los métodos de análisis quedan compactos abajo. */}
               {savedMeals.length > 0 && (
-                <div className="space-y-2.5">
-                  <div className="flex items-center gap-2">
-                    <Star className="h-4 w-4 text-amber-500" />
-                    <h4 className="font-medium text-sm">Comidas guardadas</h4>
-                    <span className="text-xs text-muted-foreground">
-                      ({savedMeals.length})
+                <div className="space-y-2.5 text-left">
+                  <div className="flex items-center gap-1.5">
+                    <Star className="h-4 w-4 shrink-0 text-amber-500" />
+                    <h4 className="whitespace-nowrap text-sm font-medium">
+                      Tus comidas de siempre
+                    </h4>
+                    <span className="truncate text-xs text-muted-foreground">
+                      · 1 toque y listo
                     </span>
                   </div>
 
@@ -610,6 +574,43 @@ export function FoodAnalyzer({
                   </div>
                 </div>
               )}
+
+              <div className="space-y-2.5">
+                {savedMeals.length > 0 && (
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-xs text-muted-foreground">
+                      ¿Comida nueva?
+                    </span>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-2.5">
+                  <Button
+                    onClick={() => handleMethodSelection("photo")}
+                    className="flex h-auto w-full flex-col items-center gap-1.5 whitespace-normal p-4"
+                    variant="outline"
+                  >
+                    <Camera className="h-6 w-6" />
+                    <div className="font-medium">Foto con IA</div>
+                    <div className="text-xs font-normal text-muted-foreground">
+                      Sacale foto al plato
+                    </div>
+                  </Button>
+
+                  <Button
+                    onClick={() => handleMethodSelection("manual")}
+                    className="flex h-auto w-full flex-col items-center gap-1.5 whitespace-normal p-4"
+                    variant="outline"
+                  >
+                    <Calculator className="h-6 w-6" />
+                    <div className="font-medium">Describirla</div>
+                    <div className="text-xs font-normal text-muted-foreground">
+                      La IA calcula los macros
+                    </div>
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
 
