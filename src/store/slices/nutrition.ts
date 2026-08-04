@@ -89,7 +89,6 @@ export const createNutritionSlice = (set: StoreSet, get: StoreGet): NutritionSli
 
       set((state) => ({
         nutritionAnalyses: [...state.nutritionAnalyses, newAnalysis],
-        isLoading: false,
       }));
 
       setTimeout(() => {
@@ -102,11 +101,14 @@ export const createNutritionSlice = (set: StoreSet, get: StoreGet): NutritionSli
       );
     } catch (error) {
       console.error("Error guardando análisis nutricional:", error);
-      set({ isLoading: false });
       toast.error(
         "Error",
         "No se pudo guardar el análisis nutricional. Inténtalo de nuevo."
       );
+    } finally {
+      // El `return` temprano de `success: false` se saltaba este reset y
+      // dejaba la app cargando para siempre.
+      set({ isLoading: false });
     }
   },
 
