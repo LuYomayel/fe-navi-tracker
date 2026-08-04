@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
 import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
 import { MealType, type SavedMeal, type Macronutrients } from "@/types";
@@ -111,6 +112,7 @@ export function SavedMealsManager({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [classifying, setClassifying] = useState(false);
+  const confirmDelete = useConfirm<SavedMeal>();
 
   const handleClassify = async () => {
     setClassifying(true);
@@ -238,11 +240,7 @@ export function SavedMealsManager({
   };
 
   const handleDelete = async (m: SavedMeal) => {
-    if (
-      typeof window !== "undefined" &&
-      !window.confirm(`¿Borrar la plantilla "${m.name}"?`)
-    )
-      return;
+    if (!(await confirmDelete.confirm(m))) return;
     try {
       await api.savedMeals.delete(m.id);
       setMeals((prev) => prev.filter((x) => x.id !== m.id));
@@ -497,6 +495,19 @@ export function SavedMealsManager({
           </div>
         )}
       </DialogContent>
+
+      <ConfirmDialog
+        open={confirmDelete.open}
+        onOpenChange={confirmDelete.onOpenChange}
+        onConfirm={confirmDelete.onConfirm}
+        title={
+          confirmDelete.payload
+            ? `¿Borrar la plantilla "${confirmDelete.payload.name}"?`
+            : "¿Borrar la plantilla?"
+        }
+        confirmLabel="Borrar"
+        destructive
+      />
     </Dialog>
   );
 }

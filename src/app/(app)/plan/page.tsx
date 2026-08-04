@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { PillToggle } from "@/components/ui/pill-toggle";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
 
 import TaskList from "@/components/tasks/TaskList";
 import ShoppingListCard from "@/components/shopping/ShoppingListCard";
@@ -274,6 +275,7 @@ function NotasSection() {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
+  const confirmDelete = useConfirm<{ id: string; content: string }>();
 
   const sorted = useMemo(
     () =>
@@ -321,13 +323,9 @@ function NotasSection() {
     setEditDraft("");
   };
 
-  const handleDelete = (id: string, content: string) => {
-    if (
-      typeof window !== "undefined" &&
-      window.confirm(`¿Borrar la nota "${content.slice(0, 60)}…"?`)
-    ) {
-      deleteNoteById(id);
-    }
+  const handleDelete = async (id: string, content: string) => {
+    const ok = await confirmDelete.confirm({ id, content });
+    if (ok) deleteNoteById(id);
   };
 
   let lastDate = "";
@@ -424,6 +422,18 @@ function NotasSection() {
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmDelete.open}
+        onOpenChange={confirmDelete.onOpenChange}
+        onConfirm={confirmDelete.onConfirm}
+        title={`¿Borrar la nota "${(confirmDelete.payload?.content || "").slice(
+          0,
+          60
+        )}…"?`}
+        confirmLabel="Borrar"
+        destructive
+      />
     </div>
   );
 }

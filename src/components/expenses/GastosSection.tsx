@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
 import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
 import { getDateKey, getMonthKey } from "@/lib/utils";
@@ -83,6 +84,10 @@ export default function GastosSection() {
   // solo con la respuesta del ultimo pedido: si no, los datos de un mes
   // podian terminar pintados bajo el titulo de otro.
   const reloadSeq = useRef(0);
+
+  // Confirmaciones tokenizadas (reemplazan window.confirm)
+  const confirmExpense = useConfirm<Expense>();
+  const confirmIncome = useConfirm<Income>();
 
   const reload = useCallback(async () => {
     const requestId = ++reloadSeq.current;
@@ -156,11 +161,7 @@ export default function GastosSection() {
   }, [summary]);
 
   const handleDeleteExpense = async (e: Expense) => {
-    if (
-      typeof window !== "undefined" &&
-      !window.confirm(`¿Borrar "${e.description}" (${fmtARS(e.amount)})?`)
-    )
-      return;
+    if (!(await confirmExpense.confirm(e))) return;
     try {
       await api.expenses.delete(e.id);
       toast.success("Gasto borrado", "");
@@ -500,10 +501,7 @@ export default function GastosSection() {
                   </span>
                   <button
                     onClick={async () => {
-                      if (
-                        typeof window !== "undefined" &&
-                        window.confirm(`¿Borrar el ingreso "${inc.description}"?`)
-                      ) {
+                      if (await confirmIncome.confirm(inc)) {
                         try {
                           await api.expenses.incomes.delete(inc.id);
                           reload();
@@ -578,6 +576,34 @@ export default function GastosSection() {
         recurring={recurring}
         categories={categories}
         onChanged={reload}
+      />
+
+      <ConfirmDialog
+        open={confirmExpense.open}
+        onOpenChange={confirmExpense.onOpenChange}
+        onConfirm={confirmExpense.onConfirm}
+        title={
+          confirmExpense.payload
+            ? `¿Borrar "${confirmExpense.payload.description}" (${fmtARS(
+                confirmExpense.payload.amount
+              )})?`
+            : "¿Borrar el gasto?"
+        }
+        confirmLabel="Borrar"
+        destructive
+      />
+
+      <ConfirmDialog
+        open={confirmIncome.open}
+        onOpenChange={confirmIncome.onOpenChange}
+        onConfirm={confirmIncome.onConfirm}
+        title={
+          confirmIncome.payload
+            ? `¿Borrar el ingreso "${confirmIncome.payload.description}"?`
+            : "¿Borrar el ingreso?"
+        }
+        confirmLabel="Borrar"
+        destructive
       />
     </div>
   );
@@ -895,6 +921,7 @@ function CategoriesDialog({
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("");
   const [budget, setBudget] = useState("");
+  const confirmDelete = useConfirm<ExpenseCategory>();
 
   const handleCreate = async () => {
     if (!name.trim()) return;
@@ -926,13 +953,7 @@ function CategoriesDialog({
   };
 
   const handleDelete = async (cat: ExpenseCategory) => {
-    if (
-      typeof window !== "undefined" &&
-      !window.confirm(
-        `¿Borrar la categoría "${cat.name}"? Los gastos quedan sin categoría.`
-      )
-    )
-      return;
+    if (!(await confirmDelete.confirm(cat))) return;
     try {
       await api.expenses.categories.delete(cat.id);
       toast.success("Categoría borrada", "");
@@ -1031,6 +1052,20 @@ function CategoriesDialog({
           </div>
         </div>
       </DialogContent>
+
+      <ConfirmDialog
+        open={confirmDelete.open}
+        onOpenChange={confirmDelete.onOpenChange}
+        onConfirm={confirmDelete.onConfirm}
+        title={
+          confirmDelete.payload
+            ? `¿Borrar la categoría "${confirmDelete.payload.name}"?`
+            : "¿Borrar la categoría?"
+        }
+        description="Los gastos quedan sin categoría."
+        confirmLabel="Borrar"
+        destructive
+      />
     </Dialog>
   );
 }
@@ -1057,6 +1092,7 @@ function RecurringDialog({
     "subscription"
   );
   const [categoryId, setCategoryId] = useState("");
+  const confirmDelete = useConfirm<RecurringExpense>();
 
   const handleCreate = async () => {
     const monto = parseFloat(amount);
@@ -1092,11 +1128,7 @@ function RecurringDialog({
   };
 
   const handleDelete = async (r: RecurringExpense) => {
-    if (
-      typeof window !== "undefined" &&
-      !window.confirm(`¿Borrar "${r.description}"?`)
-    )
-      return;
+    if (!(await confirmDelete.confirm(r))) return;
     try {
       await api.expenses.recurring.delete(r.id);
       onChanged();
@@ -1227,6 +1259,19 @@ function RecurringDialog({
           </div>
         </div>
       </DialogContent>
+
+      <ConfirmDialog
+        open={confirmDelete.open}
+        onOpenChange={confirmDelete.onOpenChange}
+        onConfirm={confirmDelete.onConfirm}
+        title={
+          confirmDelete.payload
+            ? `¿Borrar "${confirmDelete.payload.description}"?`
+            : "¿Borrar el recurrente?"
+        }
+        confirmLabel="Borrar"
+        destructive
+      />
     </Dialog>
   );
 }

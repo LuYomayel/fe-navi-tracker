@@ -26,6 +26,7 @@ import { CircularProgressRing } from "@/components/ui/circular-progress-ring";
 import { MacroProgressBar } from "@/components/ui/macro-progress-bar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
 
 import { useNaviTrackerStore } from "@/store";
 import { useInitializeStore } from "@/hooks/useInitializeStore";
@@ -125,6 +126,10 @@ export default function SaludPage() {
     SkinFoldRecord | undefined
   >(undefined);
   const [showMealPrep, setShowMealPrep] = useState(false);
+
+  // Confirmaciones tokenizadas (reemplazan window.confirm)
+  const confirmBodyAnalysis = useConfirm<string>();
+  const confirmSkinFold = useConfirm<string>();
 
   // Cargar datos de composición corporal (para la tab Cuerpo)
   useEffect(() => {
@@ -625,12 +630,9 @@ export default function SaludPage() {
                         </div>
                       </div>
                       <button
-                        onClick={() => {
-                          if (
-                            typeof window !== "undefined" &&
-                            a.id &&
-                            window.confirm("¿Borrar este análisis corporal?")
-                          )
+                        onClick={async () => {
+                          if (!a.id) return;
+                          if (await confirmBodyAnalysis.confirm(a.id))
                             deleteBodyAnalysis(a.id);
                         }}
                         className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
@@ -718,12 +720,9 @@ export default function SaludPage() {
                           <Pencil className="h-[15px] w-[15px]" />
                         </button>
                         <button
-                          onClick={() => {
-                            if (
-                              typeof window !== "undefined" &&
-                              r.id &&
-                              window.confirm("¿Borrar esta medición?")
-                            )
+                          onClick={async () => {
+                            if (!r.id) return;
+                            if (await confirmSkinFold.confirm(r.id))
                               deleteSkinFoldRecord(r.id);
                           }}
                           className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
@@ -793,6 +792,24 @@ export default function SaludPage() {
           getAllSkinFoldRecords();
         }}
         editingRecord={editingSkinFold}
+      />
+
+      <ConfirmDialog
+        open={confirmBodyAnalysis.open}
+        onOpenChange={confirmBodyAnalysis.onOpenChange}
+        onConfirm={confirmBodyAnalysis.onConfirm}
+        title="¿Borrar este análisis corporal?"
+        confirmLabel="Borrar"
+        destructive
+      />
+
+      <ConfirmDialog
+        open={confirmSkinFold.open}
+        onOpenChange={confirmSkinFold.onOpenChange}
+        onConfirm={confirmSkinFold.onConfirm}
+        title="¿Borrar esta medición?"
+        confirmLabel="Borrar"
+        destructive
       />
     </div>
   );
@@ -870,6 +887,8 @@ function ExerciseList({
   onEmptyAction: () => void;
   onDelete: (id: string) => void;
 }) {
+  const confirmDelete = useConfirm<string>();
+
   const dayActivities = useMemo(
     () =>
       activities
@@ -892,13 +911,8 @@ function ExerciseList({
       .filter(Boolean)
       .join(" · ");
 
-  const handleDelete = (a: PhysicalActivity) => {
-    if (
-      typeof window !== "undefined" &&
-      window.confirm("¿Borrar esta actividad física?")
-    ) {
-      onDelete(a.id);
-    }
+  const handleDelete = async (a: PhysicalActivity) => {
+    if (await confirmDelete.confirm(a.id)) onDelete(a.id);
   };
 
   if (dayActivities.length === 0) {
@@ -956,6 +970,15 @@ function ExerciseList({
           </button>
         </Card>
       ))}
+
+      <ConfirmDialog
+        open={confirmDelete.open}
+        onOpenChange={confirmDelete.onOpenChange}
+        onConfirm={confirmDelete.onConfirm}
+        title="¿Borrar esta actividad física?"
+        confirmLabel="Borrar"
+        destructive
+      />
     </div>
   );
 }
@@ -1033,6 +1056,7 @@ function MealsList({
   onDelete: (id: string) => void;
 }) {
   const { setMealCompliance } = useNaviTrackerStore();
+  const confirmDelete = useConfirm<NutritionAnalysis>();
 
   const toggleCompliance = (
     m: NutritionAnalysis,
@@ -1108,17 +1132,8 @@ function MealsList({
     return `HC ${g(mac.carbs)}g · P ${g(mac.protein)}g · G ${g(mac.fat)}g`;
   };
 
-  const handleDelete = (m: NutritionAnalysis) => {
-    if (
-      typeof window !== "undefined" &&
-      window.confirm(
-        `¿Borrar ${mealTypeLabel(m.mealType)} (${Math.round(
-          m.totalCalories
-        )} kcal)?`
-      )
-    ) {
-      onDelete(m.id);
-    }
+  const handleDelete = async (m: NutritionAnalysis) => {
+    if (await confirmDelete.confirm(m)) onDelete(m.id);
   };
 
   if (dayMeals.length === 0) {
@@ -1225,6 +1240,21 @@ function MealsList({
           </div>
         </Card>
       ))}
+
+      <ConfirmDialog
+        open={confirmDelete.open}
+        onOpenChange={confirmDelete.onOpenChange}
+        onConfirm={confirmDelete.onConfirm}
+        title={
+          confirmDelete.payload
+            ? `¿Borrar ${mealTypeLabel(
+                confirmDelete.payload.mealType
+              )} (${Math.round(confirmDelete.payload.totalCalories)} kcal)?`
+            : "¿Borrar esta comida?"
+        }
+        confirmLabel="Borrar"
+        destructive
+      />
     </div>
   );
 }

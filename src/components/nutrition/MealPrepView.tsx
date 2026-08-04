@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
 import {
   Sparkles,
   FileUp,
@@ -59,6 +60,7 @@ export function MealPrepView() {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [selectedDay, setSelectedDay] = useState<DayKey>(getTodayDayKey());
   const [viewMode, setViewMode] = useState<"today" | "week">("today");
+  const confirmDeletePlan = useConfirm<{ id: string; name: string }>();
 
   // Edit slot state
   const [editingSlot, setEditingSlot] = useState<{
@@ -127,16 +129,13 @@ export function MealPrepView() {
               </div>
             </div>
             <button
-              onClick={() => {
-                if (
-                  activePlan.id &&
-                  typeof window !== "undefined" &&
-                  window.confirm(
-                    `¿Eliminar el plan "${activePlan.name}"? Vas a poder subir otro.`
-                  )
-                ) {
-                  deletePlan(activePlan.id);
-                }
+              onClick={async () => {
+                if (!activePlan.id) return;
+                const ok = await confirmDeletePlan.confirm({
+                  id: activePlan.id,
+                  name: activePlan.name,
+                });
+                if (ok) deletePlan(activePlan.id);
               }}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
               aria-label="Eliminar plan"
@@ -178,6 +177,20 @@ export function MealPrepView() {
         <ImportNutritionistPlanDialog
           isOpen={showImportDialog}
           onClose={() => setShowImportDialog(false)}
+        />
+
+        <ConfirmDialog
+          open={confirmDeletePlan.open}
+          onOpenChange={confirmDeletePlan.onOpenChange}
+          onConfirm={confirmDeletePlan.onConfirm}
+          title={
+            confirmDeletePlan.payload
+              ? `¿Eliminar el plan "${confirmDeletePlan.payload.name}"?`
+              : "¿Eliminar el plan?"
+          }
+          description="Vas a poder subir otro."
+          confirmLabel="Eliminar"
+          destructive
         />
       </div>
     );
