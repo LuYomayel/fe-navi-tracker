@@ -125,7 +125,7 @@ export function PlateBuilder({
   }, [allSelected]);
 
   const pickerMeals = useMemo(() => {
-    if (!pickerZone) return { matching: [], unclassified: [] };
+    if (!pickerZone) return { matching: [], unclassified: [], others: [] };
     const q = search.trim().toLowerCase();
     const bySearch = (m: SavedMeal) =>
       !q || m.name.toLowerCase().includes(q);
@@ -134,6 +134,12 @@ export function PlateBuilder({
     return {
       matching: avail.filter((m) => m.component === pickerZone),
       unclassified: avail.filter((m) => !m.component),
+      // Comidas "completas/mixtas" (other): visibles en cualquier zona para
+      // poder sumarlas al plato sin re-clasificarlas
+      others:
+        pickerZone === "other"
+          ? []
+          : avail.filter((m) => m.component === "other"),
     };
   }, [pickerZone, meals, search, allSelected]);
 
@@ -390,8 +396,23 @@ export function PlateBuilder({
                     ))}
                   </>
                 )}
+                {pickerMeals.others.length > 0 && (
+                  <>
+                    <div className="pt-1 text-[11px] font-semibold uppercase text-muted-foreground">
+                      Completas / mixtas
+                    </div>
+                    {pickerMeals.others.map((m) => (
+                      <PickerRow
+                        key={m.id}
+                        meal={m}
+                        onPick={() => addToZone(m, pickerZone)}
+                      />
+                    ))}
+                  </>
+                )}
                 {pickerMeals.matching.length === 0 &&
-                  pickerMeals.unclassified.length === 0 && (
+                  pickerMeals.unclassified.length === 0 &&
+                  pickerMeals.others.length === 0 && (
                     <p className="py-2 text-center text-sm text-muted-foreground">
                       No hay comidas guardadas para esta zona. Creá una desde
                       &quot;Gestionar comidas guardadas&quot;.
