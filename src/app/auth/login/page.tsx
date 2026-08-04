@@ -1,13 +1,10 @@
 import LoginForm from "@/modules/auth/components/LoginForm";
 
 export default function LoginPage() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <LoginForm />
-      </div>
-    </div>
-  );
+  // LoginForm ya es una pantalla completa (min-h-screen bg-background con los
+  // tokens del design system). El wrapper con gradiente hardcodeado de antes
+  // generaba una franja oscura angosta sobre fondo claro en desktop.
+  return <LoginForm />;
 }
 
 export const metadata = {

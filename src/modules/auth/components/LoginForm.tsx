@@ -34,7 +34,7 @@ export default function LoginForm() {
         </div>
 
         {/* Login Card */}
-        <div className="rounded-2xl bg-card p-6 shadow-sm">
+        <div className="rounded-2xl border bg-card p-6 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-3">
               <div>
@@ -102,16 +102,6 @@ export default function LoginForm() {
           </form>
         </div>
 
-        {/* Register link */}
-        <p className="text-center text-sm text-muted-foreground mt-6">
-          No tenes cuenta?{" "}
-          <a
-            href="/auth/register"
-            className="text-primary font-medium hover:underline"
-          >
-            Registrate
-          </a>
-        </p>
       </div>
     </div>
   );
