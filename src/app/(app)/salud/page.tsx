@@ -16,6 +16,8 @@ import {
   User,
   Ruler,
   Star,
+  CheckCircle2,
+  Pizza,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/ui/page-header";
@@ -429,6 +431,7 @@ export default function SaludPage() {
             <Star className="mr-1.5 h-4 w-4 text-amber-500" />
             Gestionar comidas guardadas
           </Button>
+          <AdherenceSummary analyses={nutritionAnalyses} />
           <MealsList
             analyses={nutritionAnalyses}
             dateKey={mealsKey}
@@ -957,6 +960,67 @@ function ExerciseList({
   );
 }
 
+// Resumen de adherencia de la semana actual (lunes a domingo), calculado
+// sobre el store: solo cuenta comidas marcadas manualmente.
+function AdherenceSummary({ analyses }: { analyses: NutritionAnalysis[] }) {
+  const { monday, sunday } = useMemo(() => {
+    const now = new Date();
+    const day = now.getDay(); // 0=domingo
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    const mon = new Date(now);
+    mon.setDate(now.getDate() + diffToMonday);
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+    const key = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+        d.getDate()
+      ).padStart(2, "0")}`;
+    return { monday: key(mon), sunday: key(sun) };
+  }, []);
+
+  const stats = useMemo(() => {
+    const weekMeals = analyses.filter(
+      (a) => a.date >= monday && a.date <= sunday
+    );
+    const onDiet = weekMeals.filter(
+      (a) => a.dietCompliance === "on_diet"
+    ).length;
+    const offDiet = weekMeals.filter(
+      (a) => a.dietCompliance === "off_diet"
+    ).length;
+    const marked = onDiet + offDiet;
+    return {
+      onDiet,
+      offDiet,
+      marked,
+      pct: marked > 0 ? Math.round((onDiet / marked) * 100) : null,
+    };
+  }, [analyses, monday, sunday]);
+
+  if (stats.marked === 0) return null;
+
+  return (
+    <Card className="flex items-center justify-between gap-3 rounded-lg border p-3">
+      <div className="flex items-center gap-2">
+        <span className="flex h-8 w-8 items-center justify-center rounded-md bg-success/12 text-success">
+          <CheckCircle2 className="h-4 w-4" />
+        </span>
+        <div className="leading-tight">
+          <div className="text-sm font-semibold">
+            Adherencia de la semana
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {stats.onDiet} en dieta · {stats.offDiet} fuera
+          </div>
+        </div>
+      </div>
+      <span className="font-mono text-lg font-bold tabular-nums">
+        {stats.pct}%
+      </span>
+    </Card>
+  );
+}
+
 function MealsList({
   analyses,
   dateKey,
@@ -972,6 +1036,29 @@ function MealsList({
   onEdit: (meal: NutritionAnalysis) => void;
   onDelete: (id: string) => void;
 }) {
+  const { setMealCompliance } = useNaviTrackerStore();
+
+  const toggleCompliance = (
+    m: NutritionAnalysis,
+    target: "on_diet" | "off_diet"
+  ) => {
+    if (m.dietCompliance === target) {
+      // Tocar el chip activo lo desmarca
+      setMealCompliance(m.id, null);
+      return;
+    }
+    let note: string | undefined;
+    if (target === "off_diet" && typeof window !== "undefined") {
+      const answer = window.prompt(
+        "¿Contexto? (opcional — ej: cumple, salida con amigos)",
+        m.complianceNote || ""
+      );
+      if (answer === null) return; // canceló
+      note = answer.trim() || undefined;
+    }
+    setMealCompliance(m.id, target, note);
+  };
+
   const dayMeals = useMemo(
     () =>
       analyses
@@ -1086,6 +1173,37 @@ function MealsList({
                 {macroLine(m)}
               </div>
             )}
+            <div className="mt-1.5 flex items-center gap-1.5">
+              <button
+                onClick={() => toggleCompliance(m, "on_diet")}
+                className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                  m.dietCompliance === "on_diet"
+                    ? "bg-success/15 text-success"
+                    : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                }`}
+                aria-label="Marcar dentro de dieta"
+              >
+                <CheckCircle2 className="h-3 w-3" />
+                En dieta
+              </button>
+              <button
+                onClick={() => toggleCompliance(m, "off_diet")}
+                className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                  m.dietCompliance === "off_diet"
+                    ? "bg-warning/15 text-warning"
+                    : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                }`}
+                aria-label="Marcar fuera de dieta"
+              >
+                <Pizza className="h-3 w-3" />
+                Fuera
+              </button>
+              {m.dietCompliance === "off_diet" && m.complianceNote && (
+                <span className="truncate text-[11px] italic text-muted-foreground">
+                  {m.complianceNote}
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex items-baseline gap-1">
             <span className="font-mono text-[15px] font-bold tabular-nums">

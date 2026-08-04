@@ -25,6 +25,11 @@ export interface NutritionSlice {
     id: string,
     updates: Partial<NutritionAnalysis>
   ) => Promise<void>;
+  setMealCompliance: (
+    id: string,
+    compliance: "on_diet" | "off_diet" | null,
+    note?: string
+  ) => Promise<void>;
   addBodyAnalysis: (
     analysis: Omit<BodyAnalysis, "id" | "createdAt" | "updatedAt">
   ) => Promise<void>;
@@ -155,6 +160,29 @@ export const createNutritionSlice = (set: StoreSet, get: StoreGet): NutritionSli
         "Error",
         "No se pudo actualizar el análisis. Inténtalo de nuevo."
       );
+    }
+  },
+
+  setMealCompliance: async (id, compliance, note) => {
+    // Optimistic: el chip responde al toque, si falla se revierte
+    const prev = get().nutritionAnalyses;
+    set((state) => ({
+      nutritionAnalyses: state.nutritionAnalyses.map((a) =>
+        a.id === id
+          ? {
+              ...a,
+              dietCompliance: compliance,
+              complianceNote: compliance === null ? null : note ?? null,
+            }
+          : a
+      ),
+    }));
+    try {
+      await api.nutrition.setCompliance(id, compliance, note);
+    } catch (error) {
+      console.error("Error marcando adherencia:", error);
+      set({ nutritionAnalyses: prev });
+      toast.error("Error", "No se pudo marcar la comida. Probá de nuevo.");
     }
   },
 

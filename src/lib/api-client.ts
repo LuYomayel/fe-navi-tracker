@@ -205,6 +205,17 @@ export const apiClient = {
       headers,
     }),
 
+  patch: <T = unknown>(
+    endpoint: string,
+    data?: Record<string, any>,
+    headers?: Record<string, string>
+  ) =>
+    fetchAPI<ApiResponse<T>>(endpoint, {
+      method: "PATCH",
+      body: data ? JSON.stringify(data) : undefined,
+      headers,
+    }),
+
   delete: <T = unknown>(endpoint: string, headers?: Record<string, string>) =>
     fetchAPI<ApiResponse<T>>(endpoint, { method: "DELETE", headers }),
 
@@ -269,6 +280,17 @@ export const api = {
     updateAnalysis: (id: string, data: any) =>
       apiClient.put(`/nutrition/${id}`, data),
     deleteAnalysis: (id: string) => apiClient.delete(`/nutrition/${id}`),
+    setCompliance: (
+      id: string,
+      compliance: "on_diet" | "off_diet" | null,
+      note?: string
+    ) =>
+      apiClient.patch<NutritionAnalysis>(`/nutrition/${id}/compliance`, {
+        compliance,
+        note,
+      }),
+    getComplianceStats: (from: string, to: string) =>
+      apiClient.get(`/nutrition/compliance-stats?from=${from}&to=${to}`),
     getDailyBalance: (date?: string) =>
       apiClient.get<DailyNutritionBalance>(
         `/nutrition/daily-balance${date ? `?date=${date}` : ""}`

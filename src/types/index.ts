@@ -172,8 +172,26 @@ export interface NutritionAnalysis {
   context?: string;
   aiCostUsd?: number;
   savedMealId?: string;
+  dietCompliance?: "on_diet" | "off_diet" | null;
+  complianceNote?: string | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface ComplianceStats {
+  from: string;
+  to: string;
+  total: number;
+  onDiet: number;
+  offDiet: number;
+  unmarked: number;
+  adherencePct: number | null;
+  offDietMeals: {
+    id: string;
+    date: string;
+    mealType: string;
+    note: string | null;
+  }[];
 }
 
 export enum MealType {
