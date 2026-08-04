@@ -413,6 +413,7 @@ export const api = {
 
   // Completions
   completions: {
+    getAll: () => apiClient.get("/completions"),
     toggle: (data: Record<string, any>) =>
       apiClient.post("/completions", data),
     update: (id: string, data: Record<string, any>) =>

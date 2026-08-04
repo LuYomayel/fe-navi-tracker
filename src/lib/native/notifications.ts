@@ -10,7 +10,18 @@ export interface DailyReminder {
   body: string;
   hour: number; // 0-23
   minute: number; // 0-59
+  /** Acciones dentro de la notificación: registrar sin abrir la app. */
+  actionTypeId?: string;
 }
+
+/**
+ * Ids de los grupos de acciones (declarados acá arriba porque los usan los
+ * recordatorios por defecto; se registran en `registerNotificationActions`).
+ */
+export const ACTION_TYPE_HYDRATION = "HYDRATION_ACTIONS";
+export const ACTION_TYPE_WORKOUT = "WORKOUT_ACTIONS";
+export const ACTION_TYPE_MEAL = "MEAL_ACTIONS";
+export const ACTION_TYPE_HABITS = "HABITS_ACTIONS";
 
 /** Días de handball (0=dom … 6=sáb): lun, mar, jue y dom. */
 export const TRAINING_WEEKDAYS = [1, 2, 4, 0];
@@ -24,16 +35,34 @@ export const DEFAULT_REMINDERS: DailyReminder[] = [
   {
     id: 1002,
     title: "🧉 Merienda",
-    body: "Momento de la merienda. Registrala en NaviTracker.",
+    body: "Tocá \"La de siempre\" y queda registrada, sin abrir la app.",
     hour: 17,
     minute: 0,
+    actionTypeId: ACTION_TYPE_MEAL,
   },
   {
     id: 1003,
     title: "🎯 Hábitos del día",
-    body: "Repasá tus hábitos antes de cerrar el día.",
+    body: "Si los cumpliste, marcalos todos desde acá.",
     hour: 21,
     minute: 30,
+    actionTypeId: ACTION_TYPE_HABITS,
+  },
+  {
+    id: 1004,
+    title: "🍽️ Almuerzo",
+    body: "Tocá \"La de siempre\" y queda registrado.",
+    hour: 14,
+    minute: 0,
+    actionTypeId: ACTION_TYPE_MEAL,
+  },
+  {
+    id: 1005,
+    title: "🍽️ Cena",
+    body: "Tocá \"La de siempre\" y queda registrada.",
+    hour: 22,
+    minute: 0,
+    actionTypeId: ACTION_TYPE_MEAL,
   },
 ];
 
@@ -42,9 +71,6 @@ export const DEFAULT_REMINDERS: DailyReminder[] = [
  * La fricción de "abrir app → navegar → cargar" es lo que hace que se dejen
  * de registrar las cosas; desde la pantalla bloqueada es un solo toque.
  */
-export const ACTION_TYPE_HYDRATION = "HYDRATION_ACTIONS";
-export const ACTION_TYPE_WORKOUT = "WORKOUT_ACTIONS";
-
 export async function registerNotificationActions(): Promise<void> {
   if (!isNative()) return;
   try {
@@ -66,6 +92,20 @@ export async function registerNotificationActions(): Promise<void> {
           actions: [
             { id: "workout_yes", title: "Sí, entrené" },
             { id: "dismiss", title: "Hoy no", destructive: true },
+          ],
+        },
+        {
+          id: ACTION_TYPE_MEAL,
+          actions: [
+            { id: "meal_usual", title: "La de siempre" },
+            { id: "dismiss", title: "Después", destructive: true },
+          ],
+        },
+        {
+          id: ACTION_TYPE_HABITS,
+          actions: [
+            { id: "habits_all", title: "Los hice todos" },
+            { id: "dismiss", title: "Después", destructive: true },
           ],
         },
       ],
@@ -116,6 +156,7 @@ export async function scheduleDailyReminders(
         id: r.id,
         title: r.title,
         body: r.body,
+        ...(r.actionTypeId ? { actionTypeId: r.actionTypeId } : {}),
         schedule: { on: { hour: r.hour, minute: r.minute }, allowWhileIdle: true },
       })),
     });

@@ -61,9 +61,97 @@ async function runAction(action: PendingAction): Promise<boolean> {
         });
         return !!res?.success;
       }
+      case "meal_usual":
+        return logUsualMeal(action.date);
+      case "habits_all":
+        return completeTodayHabits(action.date);
       default:
         return true; // "dismiss" y desconocidas: nada que hacer
     }
+  } catch {
+    return false;
+  }
+}
+
+/** Tipo de comida según la hora, para elegir qué plantilla repetir. */
+function currentMealType(): string {
+  const h = new Date().getHours();
+  if (h < 11) return "breakfast";
+  if (h < 16) return "lunch";
+  if (h < 20) return "snack";
+  return "dinner";
+}
+
+/**
+ * Registra la comida guardada que más usa para ese momento del día. Es el
+ * mismo camino que el quick-add de la app, pero disparado desde la notificación.
+ */
+async function logUsualMeal(date: string): Promise<boolean> {
+  const { api } = await import("@/lib/api-client");
+  try {
+    const res = await api.savedMeals.getAll();
+    const meals = (res?.data ?? []) as {
+      id: string;
+      name: string;
+      mealType: string;
+      foods: unknown[];
+      totalCalories: number;
+      macronutrients: unknown;
+      timesUsed?: number;
+    }[];
+    if (!meals.length) return true; // nada que repetir: no reintentar
+
+    const type = currentMealType();
+    const pool = meals.filter((m) => m.mealType === type);
+    const candidatos = pool.length ? pool : meals;
+    const elegida = [...candidatos].sort(
+      (a, b) => (b.timesUsed ?? 0) - (a.timesUsed ?? 0),
+    )[0];
+
+    const created = await api.nutrition.createAnalysis({
+      date,
+      mealType: elegida.mealType,
+      foods: elegida.foods,
+      totalCalories: elegida.totalCalories,
+      macronutrients: elegida.macronutrients,
+      aiConfidence: 1,
+      savedMealId: elegida.id,
+    } as never);
+    if (!created?.success) return false;
+    await api.savedMeals.use(elegida.id);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Marca como completos todos los hábitos activos programados para hoy. */
+async function completeTodayHabits(date: string): Promise<boolean> {
+  const { api } = await import("@/lib/api-client");
+  try {
+    const [actsRes, compsRes] = await Promise.all([
+      api.activities.getAll(),
+      api.completions.getAll(),
+    ]);
+    const weekday = (new Date(`${date}T12:00:00`).getDay() + 6) % 7; // 0 = lunes
+    const activities = ((actsRes?.data ?? []) as {
+      id: string;
+      days?: boolean[];
+      isArchived?: boolean;
+    }[]).filter((a) => !a.isArchived && (a.days ? a.days[weekday] : true));
+
+    const yaHechos = new Set(
+      ((compsRes as { data?: { activityId: string; date: string; completed: boolean }[] })
+        ?.data ?? [])
+        .filter((c) => c.date === date && c.completed)
+        .map((c) => c.activityId),
+    );
+
+    for (const a of activities) {
+      if (yaHechos.has(a.id)) continue;
+      await api.completions.toggle({ activityId: a.id, date });
+    }
+    return true;
   } catch {
     return false;
   }
