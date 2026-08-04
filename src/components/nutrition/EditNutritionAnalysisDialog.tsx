@@ -12,8 +12,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { MealType, NutritionAnalysis, Macronutrients } from "@/types";
-import { api } from "@/lib/api-client";
-import { toast } from "@/lib/toast-helper";
 import { useNaviTrackerStore } from "@/store";
 
 interface EditNutritionAnalysisDialogProps {
@@ -102,27 +100,14 @@ export function EditNutritionAnalysisDialog({
 
     setIsLoading(true);
     try {
-      // Actualizar la fecha de modificación
-      const analysisToUpdate = {
+      // UNA sola llamada: la acción del store pega a la API con el análisis
+      // completo (incluidos foods) y refresca el estado local. Antes se
+      // llamaba dos veces al mismo endpoint y la segunda, al mandar un
+      // parcial sin foods, reventaba en el backend.
+      await updateNutritionAnalysis(editableAnalysis.id, {
         ...editableAnalysis,
         updatedAt: new Date(),
-      };
-
-      // Llamar a la API para actualizar
-      const response = await api.nutrition.updateAnalysis(
-        editableAnalysis.id,
-        analysisToUpdate
-      );
-
-      // Actualizar también en el store local para refrescar la UI inmediatamente
-      await updateNutritionAnalysis(editableAnalysis.id, {
-        mealType: editableAnalysis.mealType,
-        totalCalories: editableAnalysis.totalCalories,
-        macronutrients: editableAnalysis.macronutrients,
-        updatedAt: new Date(),
       });
-
-      toast.success("Análisis actualizado correctamente");
 
       // Notificar que el análisis fue actualizado
       onAnalysisUpdated();
@@ -130,8 +115,9 @@ export function EditNutritionAnalysisDialog({
       // Cerrar el diálogo
       onClose();
     } catch (error) {
+      // El toast de error ya lo muestra el store; acá solo evitamos cerrar
+      // el diálogo para no perder lo que el usuario venía editando.
       console.error("Error actualizando análisis:", error);
-      toast.error("Error al actualizar el análisis");
     } finally {
       setIsLoading(false);
     }

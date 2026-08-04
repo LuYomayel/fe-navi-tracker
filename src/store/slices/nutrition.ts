@@ -160,6 +160,9 @@ export const createNutritionSlice = (set: StoreSet, get: StoreGet): NutritionSli
         "Error",
         "No se pudo actualizar el análisis. Inténtalo de nuevo."
       );
+      // Propagar para que el llamador sepa que fallo y no cierre el dialogo
+      // dando la impresion de que se guardo.
+      throw error;
     }
   },
 
