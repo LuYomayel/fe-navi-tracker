@@ -404,14 +404,14 @@ function NotasSection() {
                     <div className="flex shrink-0 items-center gap-0.5">
                       <button
                         onClick={() => startEdit(n.id, n.content)}
-                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         aria-label="Editar nota"
                       >
                         <Pencil className="h-[15px] w-[15px]" />
                       </button>
                       <button
                         onClick={() => handleDelete(n.id, n.content)}
-                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                        className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                         aria-label="Borrar nota"
                       >
                         <Trash2 className="h-[15px] w-[15px]" />

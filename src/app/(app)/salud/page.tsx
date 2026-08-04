@@ -643,7 +643,7 @@ export default function SaludPage() {
                           )
                             deleteBodyAnalysis(a.id);
                         }}
-                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                        className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                         aria-label="Borrar análisis"
                       >
                         <Trash2 className="h-[15px] w-[15px]" />
@@ -722,7 +722,7 @@ export default function SaludPage() {
                             setEditingSkinFold(r);
                             setShowSkinFold(true);
                           }}
-                          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                          className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                           aria-label="Editar medición"
                         >
                           <Pencil className="h-[15px] w-[15px]" />
@@ -736,7 +736,7 @@ export default function SaludPage() {
                             )
                               deleteSkinFoldRecord(r.id);
                           }}
-                          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                          className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                           aria-label="Borrar medición"
                         >
                           <Trash2 className="h-[15px] w-[15px]" />
@@ -968,7 +968,7 @@ function ExerciseList({
           </div>
           <button
             onClick={() => handleDelete(a)}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+            className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
             aria-label="Borrar actividad"
           >
             <Trash2 className="h-[15px] w-[15px]" />
@@ -1233,14 +1233,14 @@ function MealsList({
           <div className="flex items-center gap-0.5">
             <button
               onClick={() => onEdit(m)}
-              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               aria-label="Editar comida"
             >
               <Pencil className="h-[15px] w-[15px]" />
             </button>
             <button
               onClick={() => handleDelete(m)}
-              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+              className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
               aria-label="Borrar comida"
             >
               <Trash2 className="h-[15px] w-[15px]" />

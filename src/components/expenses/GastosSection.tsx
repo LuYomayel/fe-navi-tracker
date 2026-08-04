@@ -397,14 +397,14 @@ export default function GastosSection() {
                         setEditingExpense(e);
                         setShowExpenseDialog(true);
                       }}
-                      className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                       aria-label="Editar gasto"
                     >
                       <Pencil className="h-[15px] w-[15px]" />
                     </button>
                     <button
                       onClick={() => handleDeleteExpense(e)}
-                      className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                      className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                       aria-label="Borrar gasto"
                     >
                       <Trash2 className="h-[15px] w-[15px]" />
@@ -980,7 +980,7 @@ function CategoriesDialog({
                 />
                 <button
                   onClick={() => handleDelete(c)}
-                  className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                   aria-label={`Borrar categoría ${c.name}`}
                 >
                   <Trash2 className="h-[15px] w-[15px]" />
@@ -1150,7 +1150,7 @@ function RecurringDialog({
                 />
                 <button
                   onClick={() => handleDelete(r)}
-                  className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                   aria-label={`Borrar ${r.description}`}
                 >
                   <Trash2 className="h-[15px] w-[15px]" />
