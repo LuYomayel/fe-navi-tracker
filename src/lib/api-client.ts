@@ -587,6 +587,8 @@ export const api = {
       mealType: string;
       date?: string;
     }) => apiClient.post("/saved-meals/log-plate", data),
+    classifyComponents: () =>
+      apiClient.post("/saved-meals/classify-components"),
     update: (
       id: string,
       data: Partial<

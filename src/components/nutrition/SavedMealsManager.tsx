@@ -110,6 +110,31 @@ export function SavedMealsManager({
   const [meals, setMeals] = useState<SavedMeal[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [classifying, setClassifying] = useState(false);
+
+  const handleClassify = async () => {
+    setClassifying(true);
+    try {
+      const res = await api.savedMeals.classifyComponents();
+      const data = res.data as {
+        total: number;
+        classified: number;
+        results: { name: string; component: string }[];
+      };
+      toast.success(
+        `${data.classified} de ${data.total} clasificadas`,
+        data.results
+          .slice(0, 4)
+          .map((r) => r.name)
+          .join(", ") + (data.results.length > 4 ? "…" : "")
+      );
+      await load();
+    } catch {
+      toast.error("No se pudieron clasificar las comidas");
+    } finally {
+      setClassifying(false);
+    }
+  };
   const [mode, setMode] = useState<"list" | "form">("list");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -264,6 +289,24 @@ export function SavedMealsManager({
             <Button onClick={openNew} className="w-full" variant="tonal">
               <Plus className="mr-1.5 h-4 w-4" /> Nueva plantilla
             </Button>
+
+            {meals.some((m) => !m.component) && (
+              <Button
+                onClick={handleClassify}
+                variant="outline"
+                size="sm"
+                className="w-full"
+                disabled={classifying}
+              >
+                {classifying ? (
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                ) : (
+                  <span className="mr-1.5">✨</span>
+                )}
+                Clasificar {meals.filter((m) => !m.component).length} sin
+                componente con IA
+              </Button>
+            )}
 
             {loading ? (
               <div className="flex items-center justify-center py-8 text-muted-foreground">
