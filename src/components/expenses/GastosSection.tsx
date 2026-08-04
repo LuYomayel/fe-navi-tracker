@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -87,7 +87,13 @@ export default function GastosSection() {
   const [showRecurringDialog, setShowRecurringDialog] = useState(false);
   const [showIncomeDialog, setShowIncomeDialog] = useState(false);
 
+  // Navegar meses rapido dispara varios reload() en paralelo. Nos quedamos
+  // solo con la respuesta del ultimo pedido: si no, los datos de un mes
+  // podian terminar pintados bajo el titulo de otro.
+  const reloadSeq = useRef(0);
+
   const reload = useCallback(async () => {
+    const requestId = ++reloadSeq.current;
     try {
       const [expRes, sumRes, catRes, recRes, incRes, bizRes] =
         await Promise.all([
@@ -98,6 +104,7 @@ export default function GastosSection() {
           api.expenses.incomes.list(month),
           api.expenses.businessSummary(),
         ]);
+      if (requestId !== reloadSeq.current) return;
       setExpenses((expRes.data as Expense[]) || []);
       setSummary(sumRes.data as ExpenseSummary);
       setCategories((catRes.data as ExpenseCategory[]) || []);
@@ -105,10 +112,11 @@ export default function GastosSection() {
       setIncomes((incRes.data as Income[]) || []);
       setBusiness(bizRes.data as BusinessSummary);
     } catch (error) {
+      if (requestId !== reloadSeq.current) return;
       console.error("Error cargando gastos:", error);
       toast.error("Error", "No se pudieron cargar los gastos");
     } finally {
-      setLoading(false);
+      if (requestId === reloadSeq.current) setLoading(false);
     }
   }, [month]);
 
