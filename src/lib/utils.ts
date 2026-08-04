@@ -14,6 +14,19 @@ export function getDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+/** Número con separadores es-AR (1234 -> "1.234"). */
+export function fmtNumber(
+  n: number,
+  options?: Intl.NumberFormatOptions
+): string {
+  return n.toLocaleString("es-AR", options);
+}
+
+/** Monto en dólares del dominio objetivo/goal (1234 -> "USD 1.234"). */
+export function fmtUSD(n: number, options?: Intl.NumberFormatOptions): string {
+  return `USD ${fmtNumber(n, options)}`;
+}
+
 // Función helper para obtener la clave de mes en formato YYYY-MM (zona horaria local)
 export function getMonthKey(date: Date): string {
   const year = date.getFullYear();

@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CircularProgressRing } from "@/components/ui/circular-progress-ring";
 import { useGoals } from "@/hooks/useGoals";
+import { fmtNumber, fmtUSD } from "@/lib/utils";
 import AddContributionDialog from "@/components/goal/AddContributionDialog";
 import GoalContributionsList from "@/components/goal/GoalContributionsList";
 
@@ -93,9 +94,9 @@ export default function ObjetivoPage() {
             sublabel="del fondo"
           />
           <p className="font-mono text-lg font-bold tabular-nums">
-            USD {current.toLocaleString("es-AR")}{" "}
+            {fmtUSD(current)}{" "}
             <span className="text-sm font-normal text-muted-foreground">
-              / {target.toLocaleString("es-AR")}
+              / {fmtNumber(target)}
             </span>
           </p>
           <button
@@ -110,15 +111,13 @@ export default function ObjetivoPage() {
 
       {/* Stats: faltan / días / ritmo mensual */}
       <div className="grid grid-cols-3 gap-2.5">
-        <Stat value={`USD ${remaining.toLocaleString("es-AR")}`} label="faltan" />
+        <Stat value={fmtUSD(remaining)} label="faltan" />
         <Stat
           value={daysRemaining != null ? `${daysRemaining}` : "—"}
           label="días"
         />
         <Stat
-          value={
-            monthlyRate != null ? `USD ${monthlyRate.toLocaleString("es-AR")}` : "—"
-          }
+          value={monthlyRate != null ? fmtUSD(monthlyRate) : "—"}
           label="por mes"
         />
       </div>

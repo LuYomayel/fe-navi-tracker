@@ -6,6 +6,7 @@ import { Plane, ChevronRight } from "lucide-react";
 import { CircularProgressRing } from "@/components/ui/circular-progress-ring";
 import { Card } from "@/components/ui/card";
 import { useGoals } from "@/hooks/useGoals";
+import { fmtNumber, fmtUSD } from "@/lib/utils";
 
 /** Widget chico del fondo de ahorro para el dashboard (/hoy). Linkea a /objetivo. */
 export default function GoalWidget() {
@@ -39,9 +40,9 @@ export default function GoalWidget() {
               </span>
             </div>
             <p className="mt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
-              USD {Math.round(goal.currentUsd).toLocaleString("es-AR")} /{" "}
-              {Math.round(goal.targetUsd).toLocaleString("es-AR")} · faltan USD{" "}
-              {Math.round(remainingUsd).toLocaleString("es-AR")}
+              {fmtUSD(Math.round(goal.currentUsd))} /{" "}
+              {fmtNumber(Math.round(goal.targetUsd))} · faltan{" "}
+              {fmtUSD(Math.round(remainingUsd))}
             </p>
           </div>
           <ChevronRight className="h-[18px] w-[18px] shrink-0 text-muted-foreground" />

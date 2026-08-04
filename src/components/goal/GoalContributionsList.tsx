@@ -1,4 +1,5 @@
 import type { GoalContribution } from "@/types";
+import { fmtUSD } from "@/lib/utils";
 
 function formatDate(d: string): string {
   // d = YYYY-MM-DD
@@ -46,10 +47,8 @@ export default function GoalContributionsList({
                 positive ? "text-success" : "text-destructive"
               }`}
             >
-              {positive ? "+" : "−"}USD{" "}
-              {Math.abs(c.amountUsd).toLocaleString("es-AR", {
-                maximumFractionDigits: 2,
-              })}
+              {positive ? "+" : "−"}
+              {fmtUSD(Math.abs(c.amountUsd), { maximumFractionDigits: 2 })}
             </span>
           </li>
         );
