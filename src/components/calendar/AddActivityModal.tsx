@@ -25,7 +25,7 @@ export function AddActivityModal() {
     name: "",
     description: "",
     time: "",
-    days: [false, false, false, false, false, false, false], // L, M, X, J, V, S, D
+    days: [true, true, true, true, true, true, true], // L-D: default todos los días (el caso más común)
     color: getRandomColor(),
     category: "",
   });
@@ -60,7 +60,7 @@ export function AddActivityModal() {
       name: "",
       description: "",
       time: "",
-      days: [false, false, false, false, false, false, false],
+      days: [true, true, true, true, true, true, true],
       color: getRandomColor(),
       category: "",
     });
@@ -75,7 +75,7 @@ export function AddActivityModal() {
       name: "",
       description: "",
       time: "",
-      days: [false, false, false, false, false, false, false],
+      days: [true, true, true, true, true, true, true],
       color: getRandomColor(),
       category: "",
     });
@@ -108,7 +108,7 @@ export function AddActivityModal() {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            Agregar Nueva Actividad
+            Nuevo hábito
             <Button
               variant="ghost"
               size="sm"
@@ -121,10 +121,10 @@ export function AddActivityModal() {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Nombre de la actividad */}
+          {/* Nombre del hábito */}
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              Nombre de la actividad *
+              Nombre del hábito *
             </label>
             <input
               type="text"
@@ -272,7 +272,7 @@ export function AddActivityModal() {
               Cancelar
             </Button>
             <Button type="submit" className="flex-1">
-              Agregar Actividad
+              Crear hábito
             </Button>
           </div>
         </form>
