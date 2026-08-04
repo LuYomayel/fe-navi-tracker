@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { EmptyState } from "@/components/ui/empty-state";
 import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
+import { getDateKey, getMonthKey } from "@/lib/utils";
 import type {
   BusinessSummary,
   Expense,
@@ -51,9 +52,6 @@ const CHART_TOKENS = ["chart-1", "chart-2", "chart-3", "chart-4", "chart-5"];
 const tokenColor = (token?: string | null, index = 0) =>
   `hsl(var(--${token || CHART_TOKENS[index % CHART_TOKENS.length]}))`;
 
-const monthKey = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-
 const monthLabel = (key: string) => {
   const [y, m] = key.split("-").map(Number);
   return new Date(y, m - 1, 1).toLocaleDateString("es-AR", {
@@ -62,16 +60,10 @@ const monthLabel = (key: string) => {
   });
 };
 
-const todayKey = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
-    2,
-    "0"
-  )}-${String(now.getDate()).padStart(2, "0")}`;
-};
+const todayKey = () => getDateKey(new Date());
 
 export default function GastosSection() {
-  const [month, setMonth] = useState(() => monthKey(new Date()));
+  const [month, setMonth] = useState(() => getMonthKey(new Date()));
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [summary, setSummary] = useState<ExpenseSummary | null>(null);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
@@ -139,10 +131,10 @@ export default function GastosSection() {
 
   const shiftMonth = (delta: number) => {
     const [y, m] = month.split("-").map(Number);
-    setMonth(monthKey(new Date(y, m - 1 + delta, 1)));
+    setMonth(getMonthKey(new Date(y, m - 1 + delta, 1)));
   };
 
-  const isCurrentMonth = month === monthKey(new Date());
+  const isCurrentMonth = month === getMonthKey(new Date());
 
   const pieData = useMemo(() => {
     if (!summary) return [];
@@ -206,7 +198,7 @@ export default function GastosSection() {
           </span>
           {!isCurrentMonth && (
             <button
-              onClick={() => setMonth(monthKey(new Date()))}
+              onClick={() => setMonth(getMonthKey(new Date()))}
               className="text-[11px] text-primary hover:underline"
             >
               Volver al mes actual

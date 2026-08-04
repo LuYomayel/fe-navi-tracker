@@ -8,6 +8,7 @@ import type {
 } from "@/types";
 import { toast } from "@/lib/toast-helper";
 import { api } from "@/lib/api-client";
+import { getDateKey } from "@/lib/utils";
 import type { StoreSet, StoreGet } from "../types";
 
 export interface NutritionSlice {
@@ -340,10 +341,7 @@ export const createNutritionSlice = (set: StoreSet, get: StoreGet): NutritionSli
 
   getDailyCalorieBalance: (date: Date) => {
     const state = get();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const dateKey = `${year}-${month}-${day}`;
+    const dateKey = getDateKey(date);
 
     const dayNutrition = state.nutritionAnalyses.filter(
       (analysis) => analysis.date === dateKey

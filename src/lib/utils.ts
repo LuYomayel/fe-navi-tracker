@@ -14,6 +14,13 @@ export function getDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+// Función helper para obtener la clave de mes en formato YYYY-MM (zona horaria local)
+export function getMonthKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+}
+
 // Función helper para obtener la clave de fecha en UTC (para compatibilidad con backend)
 export function getDateKeyUTC(date: Date): string {
   return date.toISOString().split("T")[0];

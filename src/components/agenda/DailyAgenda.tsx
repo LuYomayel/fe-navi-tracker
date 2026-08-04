@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
+import { getDateKey } from "@/lib/utils";
 import AddEventDialog from "./AddEventDialog";
 
 const dayNames = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
@@ -39,7 +40,7 @@ export default function DailyAgenda() {
     deleteCalendarEvent,
   } = useNaviTrackerStore();
 
-  const dateKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
+  const dateKey = getDateKey(selectedDate);
 
   useEffect(() => {
     refreshActivities();
@@ -55,7 +56,7 @@ export default function DailyAgenda() {
   };
 
   const today = new Date();
-  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const todayKey = getDateKey(today);
   const isToday = dateKey === todayKey;
 
   // Day of week for habits (0=Mon in our system)

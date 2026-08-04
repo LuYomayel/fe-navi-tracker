@@ -4,6 +4,7 @@ import { api } from "@/lib/api-client";
 import { XpAction } from "@/types/xp";
 import type { StoreSet, StoreGet } from "../types";
 import { hapticSuccess } from "@/lib/native/haptics";
+import { getDateKey } from "@/lib/utils";
 
 const getRandomColor = () => {
   const colors = [
@@ -263,10 +264,7 @@ export const createActivitiesSlice = (set: StoreSet, get: StoreGet): ActivitiesS
   },
 
   toggleCompletion: async (activityId, date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const dateKey = `${year}-${month}-${day}`;
+    const dateKey = getDateKey(date);
 
     try {
       const response = await api.completions.toggle({
@@ -356,10 +354,7 @@ export const createActivitiesSlice = (set: StoreSet, get: StoreGet): ActivitiesS
   },
 
   getCompletion: (activityId, date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const dateKey = `${year}-${month}-${day}`;
+    const dateKey = getDateKey(date);
     const state = get();
     return (
       state.activities

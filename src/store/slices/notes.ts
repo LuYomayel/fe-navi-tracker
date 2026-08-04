@@ -2,6 +2,7 @@ import type { DailyNote } from "@/types";
 import { toast } from "@/lib/toast-helper";
 import { api } from "@/lib/api-client";
 import { XpAction } from "@/types/xp";
+import { getDateKey } from "@/lib/utils";
 import type { StoreSet, StoreGet } from "../types";
 
 const extractPatternsFromNote = (note: DailyNote): string[] => {
@@ -83,10 +84,7 @@ export const createNotesSlice = (set: StoreSet, get: StoreGet): NotesSlice => ({
   dailyNotes: [],
 
   addOrUpdateNote: async (date, content, mood) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const dateKey = `${year}-${month}-${day}`;
+    const dateKey = getDateKey(date);
 
     try {
       const state = get();
@@ -143,11 +141,7 @@ export const createNotesSlice = (set: StoreSet, get: StoreGet): NotesSlice => ({
 
   createNote: async (content, date) => {
     // Fecha LOCAL (no toISOString, que en ART corre el día después de las 21)
-    const now = new Date();
-    const localKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
-      2,
-      "0"
-    )}-${String(now.getDate()).padStart(2, "0")}`;
+    const localKey = getDateKey(new Date());
     const dateKey = date || localKey;
     try {
       const response = await api.notes.create({
@@ -202,10 +196,7 @@ export const createNotesSlice = (set: StoreSet, get: StoreGet): NotesSlice => ({
   },
 
   deleteNote: async (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const dateKey = `${year}-${month}-${day}`;
+    const dateKey = getDateKey(date);
 
     try {
       const state = get();
@@ -238,10 +229,7 @@ export const createNotesSlice = (set: StoreSet, get: StoreGet): NotesSlice => ({
   },
 
   getNote: (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const dateKey = `${year}-${month}-${day}`;
+    const dateKey = getDateKey(date);
     const state = get();
     return state.dailyNotes.find((note) => note.date === dateKey);
   },
@@ -252,10 +240,7 @@ export const createNotesSlice = (set: StoreSet, get: StoreGet): NotesSlice => ({
     customComment,
     mood
   ) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const dateKey = `${year}-${month}-${day}`;
+    const dateKey = getDateKey(date);
 
     try {
       const noteToSave: any = {

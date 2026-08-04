@@ -971,11 +971,7 @@ function AdherenceSummary({ analyses }: { analyses: NutritionAnalysis[] }) {
     mon.setDate(now.getDate() + diffToMonday);
     const sun = new Date(mon);
     sun.setDate(mon.getDate() + 6);
-    const key = (d: Date) =>
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-        d.getDate()
-      ).padStart(2, "0")}`;
-    return { monday: key(mon), sunday: key(sun) };
+    return { monday: getDateKey(mon), sunday: getDateKey(sun) };
   }, []);
 
   const stats = useMemo(() => {

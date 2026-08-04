@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useNaviTrackerStore } from "@/store";
 import { DayScore } from "@/types";
-import { getDateKey } from "@/lib/utils";
+import { getDateKey, getMonthKey } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DayDetailDialog from "./DayDetailDialog";
@@ -31,7 +31,7 @@ export default function MonthlyCalendar() {
   const { dayScores, dayScoresLoading, monthlyStats, fetchDayScoreRange, fetchMonthlyStats } =
     useNaviTrackerStore();
 
-  const monthKey = `${year}-${String(month + 1).padStart(2, "0")}`;
+  const monthKey = getMonthKey(new Date(year, month, 1));
 
   useEffect(() => {
     const lastDay = new Date(year, month + 1, 0).getDate();
