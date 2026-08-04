@@ -479,29 +479,6 @@ export const api = {
   aiSuggestions: {
     generate: (data: Record<string, any>) =>
       apiClient.post("/ai-suggestions", data),
-    getAll: () => apiClient.get("/ai-suggestions"),
-    dismiss: (id: string) => apiClient.delete(`/ai-suggestions/${id}`),
-  },
-
-  // Analysis
-  analysis: {
-    getRecent: (days: number) =>
-      apiClient.get(`/ai-suggestions/analysis/recent?days=${days}`),
-    getPatterns: () => apiClient.get("/analysis/patterns"),
-    getBookRecommendations: (data: {
-      availableTime: string;
-      preferredMood: string;
-      includeUserPatterns?: boolean;
-    }) => apiClient.post("/analysis/book-recommendations", data),
-    getContentRecommendations: (data: {
-      availableTime: string;
-      preferredMood: string;
-      contentType: string;
-      topic?: string;
-      genre: string;
-      includeUserPatterns?: boolean;
-    }) => apiClient.post("/analysis/content-recommendations", data),
-    getStatus: () => apiClient.get("/analysis/status"),
   },
 
   // Analyze Food
