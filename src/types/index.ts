@@ -589,6 +589,7 @@ export interface PhysicalActivity {
   screenshotUrl?: string;
   source: string;
   aiConfidence?: number;
+  context?: string; // qué actividad fue (existe en el modelo Prisma)
   createdAt: Date;
   updatedAt: Date;
 }

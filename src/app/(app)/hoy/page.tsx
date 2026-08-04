@@ -12,6 +12,7 @@ import { api } from "@/lib/api-client";
 import { getDateKey } from "@/lib/utils";
 
 import { PageHeader } from "@/components/ui/page-header";
+import NotificationsOffBanner from "@/components/notifications/NotificationsOffBanner";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,7 +32,9 @@ import {
   ListChecks,
   CalendarCheck,
   ChevronRight,
+  Plus,
 } from "lucide-react";
+import { toast } from "@/lib/toast-helper";
 
 // Map del status del backend (won/partial/lost/no_data) al de DayStatusPill.
 function toPillStatus(status?: string): DayStatus {
@@ -80,9 +83,47 @@ export default function HoyPage() {
     hydrationGoal,
     fetchTodayHydration,
     fetchHydrationGoal,
+    adjustHydration,
+    getAllPhysicalActivities,
   } = useNaviTrackerStore();
 
   const today = getDateKey(new Date());
+
+  // Entrenamiento sugerido según la rutina: handball lun/mar/jue y dom.
+  // El registro manual pide 5 campos numéricos que nadie recuerda después de
+  // jugar, así que acá se registra de una con la duración típica.
+  const [loggingWorkout, setLoggingWorkout] = useState(false);
+  const weekday = new Date().getDay();
+  const suggestedWorkout =
+    [1, 2, 4, 0].includes(weekday)
+      ? { name: "Handball", minutes: 120, kcalPerHour: 500 }
+      : { name: "Entrenamiento", minutes: 60, kcalPerHour: 400 };
+
+  const logSuggestedWorkout = async () => {
+    setLoggingWorkout(true);
+    try {
+      const res = await api.physicalActivity.create({
+        date: today,
+        exerciseMinutes: suggestedWorkout.minutes,
+        activeEnergyKcal: Math.round(
+          (suggestedWorkout.kcalPerHour * suggestedWorkout.minutes) / 60
+        ),
+        source: "quick",
+        context: `${suggestedWorkout.name} (calorías estimadas)`,
+      });
+      if (!res.success) throw new Error();
+      await Promise.all([getAllPhysicalActivities(), fetchDayScore(today)]);
+      window.dispatchEvent(new Event("xp-updated"));
+      toast.success(
+        `${suggestedWorkout.name} registrado`,
+        `${suggestedWorkout.minutes} min · +60 XP`
+      );
+    } catch {
+      toast.error("Error", "No se pudo registrar el entrenamiento");
+    } finally {
+      setLoggingWorkout(false);
+    }
+  };
 
   // Briefing narrativo (hero IA)
   const [narrative, setNarrative] = useState<string | null>(null);
@@ -170,9 +211,14 @@ export default function HoyPage() {
     .reduce((sum, n) => sum + (n.totalCalories || 0), 0);
 
   // Calorías quemadas hoy (actividad física)
-  const burnedKcal = physicalActivities
-    .filter((a) => a.date === today)
-    .reduce((sum, a) => sum + (a.activeEnergyKcal || 0), 0);
+  const todayActivities = physicalActivities.filter((a) => a.date === today);
+  const burnedKcal = todayActivities.reduce(
+    (sum, a) => sum + (a.activeEnergyKcal || 0),
+    0
+  );
+  const trainedToday = todayActivities.length > 0;
+  const todayActivityName =
+    todayActivities[0]?.context?.split(" (")[0] || "Actividad";
 
   // Gamificación
   const level = xpStats?.level ?? user.level ?? 1;
@@ -192,6 +238,9 @@ export default function HoyPage() {
     <div className="space-y-4">
       {/* (1) Header */}
       <PageHeader title={`Hola, ${user.name}`} subtitle={dateLabel} />
+
+      {/* Sin permiso de notificaciones no llega ningún recordatorio: avisarlo */}
+      <NotificationsOffBanner />
 
       {/* (2) Briefing hero — el valor IA, promovido */}
       <Card className="border-primary/20 bg-primary/[0.06] p-4">
@@ -319,6 +368,33 @@ export default function HoyPage() {
           }`}
           value={`${glasses}/${waterGoal}`}
           onClick={() => router.push("/salud?tab=agua")}
+          quickAction={{
+            label: "Sumar un vaso",
+            icon: Plus,
+            onClick: () => adjustHydration(today, 1),
+          }}
+        />
+        <SummaryRow
+          icon={Dumbbell}
+          tone="warning"
+          label="Entrenamiento"
+          sub={
+            trainedToday
+              ? `${todayActivityName} · registrado`
+              : "Registralo de una con el botón"
+          }
+          value={trainedToday ? "✓" : undefined}
+          onClick={() => router.push("/salud?tab=ejercicio")}
+          quickAction={
+            trainedToday
+              ? undefined
+              : {
+                  label: `Registrar ${suggestedWorkout.name}`,
+                  icon: Plus,
+                  onClick: logSuggestedWorkout,
+                  disabled: loggingWorkout,
+                }
+          }
         />
         <SummaryRow
           icon={ListChecks}

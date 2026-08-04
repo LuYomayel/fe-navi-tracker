@@ -9,8 +9,12 @@ import { isNative, isAndroid } from "./platform";
 import {
   scheduleDailyReminders,
   scheduleHydrationPaceReminders,
+  scheduleHydrationRecurringReminders,
+  scheduleWorkoutReminders,
+  registerNotificationActions,
   HydrationPaceLike,
 } from "./notifications";
+import { setupNotificationActionHandler } from "./notification-actions";
 import { registerPush } from "./push";
 
 export interface NativeInitOptions {
@@ -30,7 +34,11 @@ export async function initNativeApp(opts: NativeInitOptions): Promise<void> {
   await hideSplash();
   await setupBackButton(opts.navigate);
   await setupDeepLinks(opts);
+  // Acciones dentro de la notificación: hay que registrarlas ANTES de agendar.
+  await registerNotificationActions();
+  await setupNotificationActionHandler();
   await scheduleDailyReminders();
+  await scheduleWorkoutReminders();
   await registerPush();
   await scheduleHydrationFromServer();
 }
@@ -44,7 +52,11 @@ async function scheduleHydrationFromServer(): Promise<void> {
     const { api } = await import("@/lib/api-client");
     const res = await api.hydration.getPace();
     if (res?.success && res.data) {
-      await scheduleHydrationPaceReminders(res.data as HydrationPaceLike);
+      const pace = res.data as HydrationPaceLike;
+      // Piso recurrente (sigue avisando aunque pasen días sin abrir la app)
+      // + ajuste fino del día en curso.
+      await scheduleHydrationRecurringReminders(pace.blocks);
+      await scheduleHydrationPaceReminders(pace);
     }
   } catch {
     /* sin sesión o sin red: los recordatorios se agendan al entrar a Agua */

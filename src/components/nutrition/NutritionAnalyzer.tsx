@@ -521,6 +521,51 @@ export function FoodAnalyzer({
                 }}
               />
 
+              {/* Repetir algo ya cargado: 1 tap y queda registrado. Es el
+                  camino más corto y por eso va antes del alta de comida nueva. */}
+              {savedMeals.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-xs text-muted-foreground">
+                      o repetí una que ya cargaste
+                    </span>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+
+                  {savedMeals.length > 6 && (
+                    <Input
+                      value={savedQuery}
+                      onChange={(e) => setSavedQuery(e.target.value)}
+                      placeholder="Buscar comida guardada…"
+                      className="h-9"
+                    />
+                  )}
+
+                  <div className="max-h-52 space-y-1.5 overflow-y-auto text-left">
+                    {filteredSavedMeals.map((meal) => (
+                      <button
+                        key={meal.id}
+                        onClick={() => handleQuickAddSavedMeal(meal)}
+                        className="flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left transition-colors hover:bg-muted/60 active:scale-[0.99]"
+                      >
+                        <span className="min-w-0 flex-1 truncate text-sm">
+                          {meal.name}
+                        </span>
+                        <span className="whitespace-nowrap text-xs text-muted-foreground">
+                          {Math.round(meal.totalCalories)} kcal
+                        </span>
+                      </button>
+                    ))}
+                    {filteredSavedMeals.length === 0 && (
+                      <p className="py-2 text-center text-xs text-muted-foreground">
+                        No hay comidas con ese nombre
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2.5">
                 {savedMeals.length > 0 && (
                   <div className="flex items-center gap-3">

@@ -12,6 +12,11 @@ export interface DailyReminder {
   minute: number; // 0-59
 }
 
+/** Días de handball (0=dom … 6=sáb): lun, mar, jue y dom. */
+export const TRAINING_WEEKDAYS = [1, 2, 4, 0];
+/** Recordatorio post-entrenamiento, con acción "Sí, entrené" en la notificación. */
+const WORKOUT_REMINDER_ID_BASE = 1200;
+
 /** Recordatorios por defecto de NaviTracker. */
 export const DEFAULT_REMINDERS: DailyReminder[] = [
   // (el recordatorio fijo de hidratación fue reemplazado por los graduales
@@ -31,6 +36,44 @@ export const DEFAULT_REMINDERS: DailyReminder[] = [
     minute: 30,
   },
 ];
+
+/**
+ * Acciones sobre la propia notificación: registrar sin abrir la app.
+ * La fricción de "abrir app → navegar → cargar" es lo que hace que se dejen
+ * de registrar las cosas; desde la pantalla bloqueada es un solo toque.
+ */
+export const ACTION_TYPE_HYDRATION = "HYDRATION_ACTIONS";
+export const ACTION_TYPE_WORKOUT = "WORKOUT_ACTIONS";
+
+export async function registerNotificationActions(): Promise<void> {
+  if (!isNative()) return;
+  try {
+    const { LocalNotifications } = await import(
+      "@capacitor/local-notifications"
+    );
+    await LocalNotifications.registerActionTypes({
+      types: [
+        {
+          id: ACTION_TYPE_HYDRATION,
+          actions: [
+            { id: "water_glass", title: "Tomé un vaso" },
+            { id: "water_two", title: "Tomé dos" },
+            { id: "dismiss", title: "Después", destructive: true },
+          ],
+        },
+        {
+          id: ACTION_TYPE_WORKOUT,
+          actions: [
+            { id: "workout_yes", title: "Sí, entrené" },
+            { id: "dismiss", title: "Hoy no", destructive: true },
+          ],
+        },
+      ],
+    });
+  } catch {
+    /* sin soporte de acciones */
+  }
+}
 
 export async function ensureNotificationPermissions(): Promise<boolean> {
   if (!isNative()) return false;
@@ -81,6 +124,52 @@ export async function scheduleDailyReminders(
   }
 }
 
+/**
+ * Aviso al terminar el handball (lun/mar/jue 22:45 y dom 18:15) con la acción
+ * "Sí, entrené" en la propia notificación: registra sin abrir la app.
+ */
+export async function scheduleWorkoutReminders(): Promise<void> {
+  if (!isNative()) return;
+  const granted = await ensureNotificationPermissions();
+  if (!granted) return;
+
+  try {
+    const { LocalNotifications } = await import(
+      "@capacitor/local-notifications"
+    );
+
+    const pending = await LocalNotifications.getPending();
+    const ours = pending.notifications.filter(
+      (n) =>
+        n.id >= WORKOUT_REMINDER_ID_BASE && n.id < WORKOUT_REMINDER_ID_BASE + 10,
+    );
+    if (ours.length) {
+      await LocalNotifications.cancel({
+        notifications: ours.map((n) => ({ id: n.id })),
+      });
+    }
+
+    let nextId = WORKOUT_REMINDER_ID_BASE;
+    await LocalNotifications.schedule({
+      notifications: TRAINING_WEEKDAYS.map((weekday) => ({
+        id: nextId++,
+        title: "🤾 ¿Jugaste hoy?",
+        body: "Tocá acá y queda registrado (+60 XP), sin abrir la app.",
+        actionTypeId: ACTION_TYPE_WORKOUT,
+        schedule: {
+          // `on` con weekday repite todas las semanas ese día.
+          on: weekday === 0
+            ? { weekday: 1, hour: 18, minute: 15 }
+            : { weekday: weekday + 1, hour: 22, minute: 45 },
+          allowWhileIdle: true,
+        },
+      })),
+    });
+  } catch {
+    /* no-op */
+  }
+}
+
 export async function cancelAllReminders(): Promise<void> {
   if (!isNative()) return;
   try {
@@ -125,11 +214,69 @@ export interface HydrationPaceLike {
 }
 
 const HYDRATION_ID_BASE = 2001;
+/** Piso recurrente por tramo (2101+): sobrevive sin abrir la app. */
+const HYDRATION_RECURRING_BASE = 2101;
 
 const minutesOf = (hhmm: string) => {
   const [h, m] = hhmm.split(":").map(Number);
   return h * 60 + m;
 };
+
+/**
+ * Piso de recordatorios por tramo, agendados como repetición diaria nativa
+ * (`on: {hour, minute}`). Los graduales de abajo usan `at: Date`, que dispara
+ * una sola vez: sin esto, un día que no se abre la app no llega ningún aviso.
+ * Los tramos que dependen de entrenar quedan afuera (no son todos los días).
+ */
+export async function scheduleHydrationRecurringReminders(
+  blocks: { label: string; start: string; end: string; targetMl: number; requiresTraining?: boolean }[],
+): Promise<void> {
+  if (!isNative()) return;
+  const granted = await ensureNotificationPermissions();
+  if (!granted) return;
+
+  try {
+    const { LocalNotifications } = await import(
+      "@capacitor/local-notifications"
+    );
+
+    const pending = await LocalNotifications.getPending();
+    const ours = pending.notifications.filter(
+      (n) =>
+        n.id >= HYDRATION_RECURRING_BASE && n.id < HYDRATION_RECURRING_BASE + 19,
+    );
+    if (ours.length) {
+      await LocalNotifications.cancel({
+        notifications: ours.map((n) => ({ id: n.id })),
+      });
+    }
+
+    let nextId = HYDRATION_RECURRING_BASE;
+    const notifications = blocks
+      .filter((b) => !b.requiresTraining)
+      .flatMap((b) => {
+        const start = minutesOf(b.start);
+        const end = minutesOf(b.end);
+        const mid = Math.floor((start + end) / 2);
+        return [start + 5, mid].map((minute) => ({
+          id: nextId++,
+          title: `💧 ${b.label}`,
+          body: `${(b.targetMl / 1000).toFixed(1).replace(".0", "")}L hasta las ${b.end}. Tomate un vaso.`,
+          actionTypeId: ACTION_TYPE_HYDRATION,
+          schedule: {
+            on: { hour: Math.floor(minute / 60), minute: minute % 60 },
+            allowWhileIdle: true,
+          },
+        }));
+      });
+
+    if (notifications.length) {
+      await LocalNotifications.schedule({ notifications });
+    }
+  } catch {
+    /* no-op fuera de nativo */
+  }
+}
 
 export async function scheduleHydrationPaceReminders(
   pace: HydrationPaceLike,
@@ -162,6 +309,7 @@ export async function scheduleHydrationPaceReminders(
       id: number;
       title: string;
       body: string;
+      actionTypeId?: string;
       schedule: { at: Date; allowWhileIdle: boolean };
     }[] = [];
     let nextId = HYDRATION_ID_BASE;
@@ -188,6 +336,7 @@ export async function scheduleHydrationPaceReminders(
           id: nextId++,
           title: `💧 ${b.label}: hora de un vaso`,
           body: `Para ir a ritmo del tramo (${b.targetMl}ml hasta las ${b.end}) tomate ~${pace.mlPerGlass}ml.`,
+          actionTypeId: ACTION_TYPE_HYDRATION,
           schedule: { at: atTime(fireAt), allowWhileIdle: true },
         });
       }
@@ -202,6 +351,7 @@ export async function scheduleHydrationPaceReminders(
           id: nextId++,
           title: `💧 Arranca ${b.label}`,
           body: `${(b.targetMl / 1000).toFixed(1).replace(".0", "")}L hasta las ${b.end}. ¡Vaso en mano!`,
+          actionTypeId: ACTION_TYPE_HYDRATION,
           schedule: { at: atTime(start + 5), allowWhileIdle: true },
         });
       }
