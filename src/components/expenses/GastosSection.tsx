@@ -17,9 +17,11 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
 import type {
+  BusinessSummary,
   Expense,
   ExpenseCategory,
   ExpenseSummary,
+  Income,
   RecurringExpense,
 } from "@/types/expenses";
 import {
@@ -33,6 +35,7 @@ import {
   Tags,
   TrendingDown,
   TrendingUp,
+  Printer,
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
@@ -73,25 +76,34 @@ export default function GastosSection() {
   const [summary, setSummary] = useState<ExpenseSummary | null>(null);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [recurring, setRecurring] = useState<RecurringExpense[]>([]);
+  const [incomes, setIncomes] = useState<Income[]>([]);
+  const [business, setBusiness] = useState<BusinessSummary | null>(null);
+  const [activeGoalId, setActiveGoalId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [showExpenseDialog, setShowExpenseDialog] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [showCategoriesDialog, setShowCategoriesDialog] = useState(false);
   const [showRecurringDialog, setShowRecurringDialog] = useState(false);
+  const [showIncomeDialog, setShowIncomeDialog] = useState(false);
 
   const reload = useCallback(async () => {
     try {
-      const [expRes, sumRes, catRes, recRes] = await Promise.all([
-        api.expenses.list(month),
-        api.expenses.summary(month),
-        api.expenses.categories.list(),
-        api.expenses.recurring.list(),
-      ]);
+      const [expRes, sumRes, catRes, recRes, incRes, bizRes] =
+        await Promise.all([
+          api.expenses.list(month),
+          api.expenses.summary(month),
+          api.expenses.categories.list(),
+          api.expenses.recurring.list(),
+          api.expenses.incomes.list(month),
+          api.expenses.businessSummary(),
+        ]);
       setExpenses((expRes.data as Expense[]) || []);
       setSummary(sumRes.data as ExpenseSummary);
       setCategories((catRes.data as ExpenseCategory[]) || []);
       setRecurring((recRes.data as RecurringExpense[]) || []);
+      setIncomes((incRes.data as Income[]) || []);
+      setBusiness(bizRes.data as BusinessSummary);
     } catch (error) {
       console.error("Error cargando gastos:", error);
       toast.error("Error", "No se pudieron cargar los gastos");
@@ -99,6 +111,18 @@ export default function GastosSection() {
       setLoading(false);
     }
   }, [month]);
+
+  // Objetivo activo (fondo NZ) para linkear inversiones — una sola vez
+  useEffect(() => {
+    api.goals
+      .getAll()
+      .then((res) => {
+        const goals = (res.data as { id: string; status: string }[]) || [];
+        const active = goals.find((g) => g.status === "active") || goals[0];
+        setActiveGoalId(active?.id || null);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -361,6 +385,7 @@ export default function GastosSection() {
                     <div className="truncate text-xs text-muted-foreground">
                       {e.category?.name || "Sin categoría"}
                       {e.source === "recurring" && " · recurrente"}
+                      {e.goalId && " · 🖨️ inversión 3D"}
                     </div>
                   </div>
                   <span className="font-mono text-sm font-bold tabular-nums">
@@ -392,6 +417,121 @@ export default function GastosSection() {
         </div>
       )}
 
+      {/* Negocio 3D: inversión vs ganancia (linkeado al objetivo NZ) */}
+      {(business &&
+        (business.invested > 0 || business.incomesCount > 0)) ||
+      incomes.length > 0 ? (
+        <Card className="space-y-3 rounded-lg border p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="flex items-center gap-1.5 text-sm font-semibold">
+              <Printer className="h-4 w-4 text-primary" />
+              Negocio 3D
+            </h3>
+            <Button size="sm" onClick={() => setShowIncomeDialog(true)}>
+              <Plus className="mr-1 h-4 w-4" />
+              Ingreso
+            </Button>
+          </div>
+          {business && (
+            <>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-md bg-muted/50 p-2">
+                  <div className="text-[11px] text-muted-foreground">
+                    Invertido
+                  </div>
+                  <div className="font-mono text-sm font-bold tabular-nums">
+                    {fmtARS(business.invested)}
+                  </div>
+                </div>
+                <div className="rounded-md bg-success/10 p-2">
+                  <div className="text-[11px] text-muted-foreground">
+                    Ganancia
+                  </div>
+                  <div className="font-mono text-sm font-bold tabular-nums text-success">
+                    {fmtARS(business.profit)}
+                  </div>
+                </div>
+                <div
+                  className={`rounded-md p-2 ${
+                    business.balance >= 0 ? "bg-success/10" : "bg-warning/10"
+                  }`}
+                >
+                  <div className="text-[11px] text-muted-foreground">
+                    Balance
+                  </div>
+                  <div
+                    className={`font-mono text-sm font-bold tabular-nums ${
+                      business.balance >= 0 ? "text-success" : "text-warning"
+                    }`}
+                  >
+                    {fmtARS(business.balance)}
+                  </div>
+                </div>
+              </div>
+              {business.toRecover > 0 && (
+                <div className="text-xs text-muted-foreground">
+                  Para recuperar la inversión faltan{" "}
+                  <span className="font-semibold">
+                    {fmtARS(business.toRecover)}
+                  </span>{" "}
+                  de ganancia.
+                </div>
+              )}
+            </>
+          )}
+          {incomes.length > 0 && (
+            <div className="space-y-1.5 border-t pt-2">
+              <div className="text-[11px] font-semibold uppercase text-muted-foreground">
+                Ingresos del mes
+              </div>
+              {incomes.map((inc) => (
+                <div
+                  key={inc.id}
+                  className="flex items-center gap-2 text-sm"
+                >
+                  <span className="min-w-0 flex-1 truncate">
+                    {inc.description}
+                  </span>
+                  <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                    costo {fmtARS(inc.cost)}
+                  </span>
+                  <span className="font-mono text-sm font-bold tabular-nums text-success">
+                    +{fmtARS(inc.amount - inc.cost)}
+                  </span>
+                  <button
+                    onClick={async () => {
+                      if (
+                        typeof window !== "undefined" &&
+                        window.confirm(`¿Borrar el ingreso "${inc.description}"?`)
+                      ) {
+                        try {
+                          await api.expenses.incomes.delete(inc.id);
+                          reload();
+                        } catch {
+                          toast.error("Error", "No se pudo borrar");
+                        }
+                      }
+                    }}
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    aria-label={`Borrar ingreso ${inc.description}`}
+                  >
+                    <Trash2 className="h-[14px] w-[14px]" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      ) : (
+        <button
+          onClick={() => setShowIncomeDialog(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground transition-colors hover:bg-muted/50"
+        >
+          <Printer className="h-4 w-4" />
+          Registrar ingreso del negocio 3D
+        </button>
+      )}
+
       {/* Accesos: recurrentes + categorías */}
       <div className="grid grid-cols-2 gap-2">
         <Button
@@ -417,6 +557,13 @@ export default function GastosSection() {
         onClose={() => setShowExpenseDialog(false)}
         categories={categories}
         editing={editingExpense}
+        activeGoalId={activeGoalId}
+        onSaved={reload}
+      />
+      <IncomeDialog
+        open={showIncomeDialog}
+        onClose={() => setShowIncomeDialog(false)}
+        activeGoalId={activeGoalId}
         onSaved={reload}
       />
       <CategoriesDialog
@@ -443,18 +590,21 @@ function ExpenseDialog({
   onClose,
   categories,
   editing,
+  activeGoalId,
   onSaved,
 }: {
   open: boolean;
   onClose: () => void;
   categories: ExpenseCategory[];
   editing: Expense | null;
+  activeGoalId: string | null;
   onSaved: () => void;
 }) {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [date, setDate] = useState(todayKey());
+  const [isInvestment, setIsInvestment] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -463,6 +613,7 @@ function ExpenseDialog({
       setDescription(editing?.description || "");
       setCategoryId(editing?.categoryId || "");
       setDate(editing?.date || todayKey());
+      setIsInvestment(!!editing?.goalId);
     }
   }, [open, editing]);
 
@@ -483,6 +634,7 @@ function ExpenseDialog({
         amount: monto,
         description: description.trim(),
         categoryId: categoryId || null,
+        goalId: isInvestment ? activeGoalId : null,
       };
       if (editing) {
         await api.expenses.update(editing.id, payload);
@@ -560,12 +712,165 @@ function ExpenseDialog({
               />
             </div>
           </div>
+          {activeGoalId && (
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border bg-muted/30 p-3 text-sm">
+              <input
+                type="checkbox"
+                checked={isInvestment}
+                onChange={(e) => setIsInvestment(e.target.checked)}
+                className="h-4 w-4 accent-[hsl(var(--primary))]"
+              />
+              <span>
+                🖨️ Inversión del negocio 3D
+                <span className="block text-xs text-muted-foreground">
+                  Filamento, repuestos, muestras… cuenta en el balance del
+                  objetivo NZ
+                </span>
+              </span>
+            </label>
+          )}
           <div className="flex justify-end gap-2 border-t pt-4">
             <Button variant="outline" onClick={onClose} disabled={saving}>
               Cancelar
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? "Guardando..." : editing ? "Actualizar" : "Guardar"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Dialog de ingreso del negocio 3D ────────────────────────
+
+function IncomeDialog({
+  open,
+  onClose,
+  activeGoalId,
+  onSaved,
+}: {
+  open: boolean;
+  onClose: () => void;
+  activeGoalId: string | null;
+  onSaved: () => void;
+}) {
+  const [amount, setAmount] = useState("");
+  const [cost, setCost] = useState("");
+  const [description, setDescription] = useState("");
+  const [date, setDate] = useState(todayKey());
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setAmount("");
+      setCost("");
+      setDescription("");
+      setDate(todayKey());
+    }
+  }, [open]);
+
+  const monto = parseFloat(amount) || 0;
+  const costo = parseFloat(cost) || 0;
+  const ganancia = monto - costo;
+
+  const handleSave = async () => {
+    if (!monto || monto <= 0) {
+      toast.error("Error", "Ingresá el monto cobrado");
+      return;
+    }
+    if (costo < 0 || costo > monto) {
+      toast.error("Error", "El costo no puede superar el monto");
+      return;
+    }
+    if (!description.trim()) {
+      toast.error("Error", "Ingresá una descripción");
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.expenses.incomes.create({
+        date,
+        description: description.trim(),
+        amount: monto,
+        cost: costo,
+        goalId: activeGoalId,
+      });
+      toast.success("Ingreso registrado", `Ganancia ${fmtARS(ganancia)}`);
+      onClose();
+      onSaved();
+    } catch {
+      toast.error("Error", "No se pudo registrar el ingreso");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Registrar ingreso 3D</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="inc-desc">Descripción</Label>
+            <Input
+              id="inc-desc"
+              placeholder='Ej: "Tetris x2 vendidos por Marcelito"'
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="inc-amount">Monto cobrado</Label>
+              <Input
+                id="inc-amount"
+                type="number"
+                inputMode="decimal"
+                placeholder="0"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="inc-cost">Parte que es costo</Label>
+              <Input
+                id="inc-cost"
+                type="number"
+                inputMode="decimal"
+                placeholder="0"
+                value={cost}
+                onChange={(e) => setCost(e.target.value)}
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="inc-date">Fecha</Label>
+            <Input
+              id="inc-date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
+          {monto > 0 && (
+            <div className="flex items-center justify-between rounded-lg bg-success/10 p-3">
+              <span className="text-sm font-medium">Ganancia limpia</span>
+              <span className="font-mono text-lg font-bold tabular-nums text-success">
+                {fmtARS(ganancia)}
+              </span>
+            </div>
+          )}
+          <div className="flex justify-end gap-2 border-t pt-4">
+            <Button variant="outline" onClick={onClose} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? "Guardando..." : "Registrar"}
             </Button>
           </div>
         </div>

@@ -19,8 +19,34 @@ export interface Expense {
   category?: ExpenseCategory | null;
   source: "manual" | "recurring";
   recurringExpenseId?: string | null;
+  goalId?: string | null; // inversión para un objetivo (negocio 3D → NZ)
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Income {
+  id: string;
+  userId: string;
+  date: string;
+  description: string;
+  amount: number; // cobrado
+  cost: number; // porción costo; ganancia = amount - cost
+  source: string;
+  goalId?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BusinessSummary {
+  invested: number;
+  investmentsCount: number;
+  incomeTotal: number;
+  costRecovered: number;
+  profit: number;
+  balance: number;
+  toRecover: number;
+  incomesCount: number;
 }
 
 export interface RecurringExpense {

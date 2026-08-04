@@ -249,6 +249,7 @@ export const api = {
       amount: number;
       description: string;
       categoryId?: string | null;
+      goalId?: string | null;
     }) => apiClient.post("/expenses", data),
     update: (
       id: string,
@@ -257,11 +258,35 @@ export const api = {
         amount: number;
         description: string;
         categoryId: string | null;
+        goalId: string | null;
       }>
     ) => apiClient.put(`/expenses/${id}`, data),
     delete: (id: string) => apiClient.delete(`/expenses/${id}`),
     summary: (month?: string) =>
       apiClient.get(`/expenses/summary${month ? `?month=${month}` : ""}`),
+    businessSummary: () => apiClient.get("/expenses/business-summary"),
+    incomes: {
+      list: (month?: string) =>
+        apiClient.get(`/expenses/incomes${month ? `?month=${month}` : ""}`),
+      create: (data: {
+        date?: string;
+        description: string;
+        amount: number;
+        cost?: number;
+        goalId?: string | null;
+      }) => apiClient.post("/expenses/incomes", data),
+      update: (
+        id: string,
+        data: Partial<{
+          date: string;
+          description: string;
+          amount: number;
+          cost: number;
+          goalId: string | null;
+        }>
+      ) => apiClient.put(`/expenses/incomes/${id}`, data),
+      delete: (id: string) => apiClient.delete(`/expenses/incomes/${id}`),
+    },
     categories: {
       list: () => apiClient.get("/expenses/categories"),
       create: (data: {
