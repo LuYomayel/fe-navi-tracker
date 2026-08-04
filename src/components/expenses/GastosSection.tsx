@@ -1,0 +1,927 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { EmptyState } from "@/components/ui/empty-state";
+import { api } from "@/lib/api-client";
+import { toast } from "@/lib/toast-helper";
+import type {
+  Expense,
+  ExpenseCategory,
+  ExpenseSummary,
+  RecurringExpense,
+} from "@/types/expenses";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Pencil,
+  Trash2,
+  Wallet,
+  Repeat,
+  Tags,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+
+const fmtARS = (n: number) =>
+  new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    maximumFractionDigits: 0,
+  }).format(n);
+
+const CHART_TOKENS = ["chart-1", "chart-2", "chart-3", "chart-4", "chart-5"];
+
+const tokenColor = (token?: string | null, index = 0) =>
+  `hsl(var(--${token || CHART_TOKENS[index % CHART_TOKENS.length]}))`;
+
+const monthKey = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+
+const monthLabel = (key: string) => {
+  const [y, m] = key.split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString("es-AR", {
+    month: "long",
+    year: "numeric",
+  });
+};
+
+const todayKey = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
+    2,
+    "0"
+  )}-${String(now.getDate()).padStart(2, "0")}`;
+};
+
+export default function GastosSection() {
+  const [month, setMonth] = useState(() => monthKey(new Date()));
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [summary, setSummary] = useState<ExpenseSummary | null>(null);
+  const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+  const [recurring, setRecurring] = useState<RecurringExpense[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [showExpenseDialog, setShowExpenseDialog] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [showCategoriesDialog, setShowCategoriesDialog] = useState(false);
+  const [showRecurringDialog, setShowRecurringDialog] = useState(false);
+
+  const reload = useCallback(async () => {
+    try {
+      const [expRes, sumRes, catRes, recRes] = await Promise.all([
+        api.expenses.list(month),
+        api.expenses.summary(month),
+        api.expenses.categories.list(),
+        api.expenses.recurring.list(),
+      ]);
+      setExpenses((expRes.data as Expense[]) || []);
+      setSummary(sumRes.data as ExpenseSummary);
+      setCategories((catRes.data as ExpenseCategory[]) || []);
+      setRecurring((recRes.data as RecurringExpense[]) || []);
+    } catch (error) {
+      console.error("Error cargando gastos:", error);
+      toast.error("Error", "No se pudieron cargar los gastos");
+    } finally {
+      setLoading(false);
+    }
+  }, [month]);
+
+  useEffect(() => {
+    setLoading(true);
+    reload();
+  }, [reload]);
+
+  const shiftMonth = (delta: number) => {
+    const [y, m] = month.split("-").map(Number);
+    setMonth(monthKey(new Date(y, m - 1 + delta, 1)));
+  };
+
+  const isCurrentMonth = month === monthKey(new Date());
+
+  const pieData = useMemo(() => {
+    if (!summary) return [];
+    const data = summary.byCategory
+      .filter((c) => c.amount > 0)
+      .map((c, i) => ({
+        name: `${c.icon ? c.icon + " " : ""}${c.name}`,
+        value: c.amount,
+        fill: tokenColor(c.color, i),
+      }));
+    if (summary.uncategorized > 0) {
+      data.push({
+        name: "Sin categoría",
+        value: summary.uncategorized,
+        fill: "hsl(var(--muted-foreground) / 0.35)",
+      });
+    }
+    return data;
+  }, [summary]);
+
+  const handleDeleteExpense = async (e: Expense) => {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(`¿Borrar "${e.description}" (${fmtARS(e.amount)})?`)
+    )
+      return;
+    try {
+      await api.expenses.delete(e.id);
+      toast.success("Gasto borrado", "");
+      reload();
+    } catch {
+      toast.error("Error", "No se pudo borrar el gasto");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  // Gastos agrupados por fecha (ya vienen ordenados desc del backend)
+  let lastDate = "";
+
+  return (
+    <div className="space-y-4 animate-fade-in">
+      {/* Navegador de mes */}
+      <div className="flex items-center justify-between gap-2 rounded-lg border bg-card px-2 py-1.5">
+        <button
+          onClick={() => shiftMonth(-1)}
+          className="flex h-9 w-9 items-center justify-center rounded-md transition-colors hover:bg-muted"
+          aria-label="Mes anterior"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <div className="flex flex-col items-center leading-tight">
+          <span className="text-sm font-semibold capitalize">
+            {monthLabel(month)}
+          </span>
+          {!isCurrentMonth && (
+            <button
+              onClick={() => setMonth(monthKey(new Date()))}
+              className="text-[11px] text-primary hover:underline"
+            >
+              Volver al mes actual
+            </button>
+          )}
+        </div>
+        <button
+          onClick={() => shiftMonth(1)}
+          disabled={isCurrentMonth}
+          className="flex h-9 w-9 items-center justify-center rounded-md transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-30"
+          aria-label="Mes siguiente"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Total del mes + insights */}
+      <Card className="space-y-3 rounded-lg border p-4">
+        <div className="flex items-end justify-between">
+          <div>
+            <div className="text-xs text-muted-foreground">
+              Total gastado en {monthLabel(month).split(" ")[0]}
+            </div>
+            <div className="font-mono text-3xl font-bold tabular-nums">
+              {fmtARS(summary?.total || 0)}
+            </div>
+          </div>
+          {summary?.deltaPct !== null && summary?.deltaPct !== undefined && (
+            <Badge
+              variant={summary.deltaPct > 0 ? "warning" : "success"}
+              className="flex items-center gap-1"
+            >
+              {summary.deltaPct > 0 ? (
+                <TrendingUp className="h-3 w-3" />
+              ) : (
+                <TrendingDown className="h-3 w-3" />
+              )}
+              {summary.deltaPct > 0 ? "+" : ""}
+              {summary.deltaPct}% vs mes anterior
+            </Badge>
+          )}
+        </div>
+
+        {(summary?.overBudget.length || 0) > 0 && (
+          <div className="rounded-md bg-warning/12 px-3 py-2 text-xs font-medium text-warning">
+            ⚠️ Sobre budget: {summary!.overBudget.join(", ")}
+          </div>
+        )}
+        {(summary?.subscriptionsMonthly || 0) > 0 && (
+          <div className="text-xs text-muted-foreground">
+            Suscripciones activas: {fmtARS(summary!.subscriptionsMonthly)}/mes
+          </div>
+        )}
+      </Card>
+
+      <Button
+        variant="default"
+        size="xl"
+        className="w-full"
+        onClick={() => {
+          setEditingExpense(null);
+          setShowExpenseDialog(true);
+        }}
+      >
+        <Plus className="mr-2 h-5 w-5" />
+        Agregar gasto
+      </Button>
+
+      {/* Donut + desglose por categoría */}
+      {pieData.length > 0 && (
+        <Card className="rounded-lg border p-4">
+          <h3 className="mb-2 text-sm font-semibold">Por categoría</h3>
+          <div className="h-44">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius="55%"
+                  outerRadius="85%"
+                  paddingAngle={2}
+                  stroke="none"
+                >
+                  {pieData.map((d, i) => (
+                    <Cell key={i} fill={d.fill} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(v) => fmtARS(Number(v))}
+                  contentStyle={{
+                    background: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 12,
+                    color: "hsl(var(--popover-foreground))",
+                    fontSize: 12,
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-3 space-y-2.5">
+            {summary?.byCategory.map((c, i) => (
+              <div key={c.categoryId}>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ background: tokenColor(c.color, i) }}
+                    />
+                    {c.icon} {c.name}
+                  </span>
+                  <span className="font-mono text-xs tabular-nums">
+                    {fmtARS(c.amount)}
+                    {c.budget ? (
+                      <span className="text-muted-foreground">
+                        {" "}
+                        / {fmtARS(c.budget)}
+                      </span>
+                    ) : null}
+                  </span>
+                </div>
+                {c.budget ? (
+                  <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={`h-full rounded-full ${
+                        (c.budgetPct || 0) > 100
+                          ? "bg-destructive"
+                          : (c.budgetPct || 0) > 80
+                          ? "bg-warning"
+                          : "bg-success"
+                      }`}
+                      style={{
+                        width: `${Math.min(c.budgetPct || 0, 100)}%`,
+                      }}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            ))}
+            {(summary?.uncategorized || 0) > 0 && (
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/35" />
+                  Sin categoría
+                </span>
+                <span className="font-mono text-xs tabular-nums">
+                  {fmtARS(summary!.uncategorized)}
+                </span>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+
+      {/* Lista de gastos del mes */}
+      {expenses.length === 0 ? (
+        <EmptyState
+          icon={Wallet}
+          title="Sin gastos este mes"
+          description="Registrá tu primer gasto para empezar a trackear."
+        />
+      ) : (
+        <div className="space-y-1.5">
+          {expenses.map((e) => {
+            const showDate = e.date !== lastDate;
+            lastDate = e.date;
+            const [, m, d] = e.date.split("-");
+            return (
+              <div key={e.id}>
+                {showDate && (
+                  <div className="mb-1 mt-3 text-xs font-semibold text-muted-foreground first:mt-0">
+                    {d}/{m}
+                  </div>
+                )}
+                <Card className="flex items-center gap-3 rounded-lg border p-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-base">
+                    {e.category?.icon || "💸"}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold">
+                      {e.description}
+                    </div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      {e.category?.name || "Sin categoría"}
+                      {e.source === "recurring" && " · recurrente"}
+                    </div>
+                  </div>
+                  <span className="font-mono text-sm font-bold tabular-nums">
+                    {fmtARS(e.amount)}
+                  </span>
+                  <div className="flex items-center gap-0.5">
+                    <button
+                      onClick={() => {
+                        setEditingExpense(e);
+                        setShowExpenseDialog(true);
+                      }}
+                      className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      aria-label="Editar gasto"
+                    >
+                      <Pencil className="h-[15px] w-[15px]" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteExpense(e)}
+                      className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                      aria-label="Borrar gasto"
+                    >
+                      <Trash2 className="h-[15px] w-[15px]" />
+                    </button>
+                  </div>
+                </Card>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Accesos: recurrentes + categorías */}
+      <div className="grid grid-cols-2 gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowRecurringDialog(true)}
+        >
+          <Repeat className="mr-1.5 h-4 w-4" />
+          Recurrentes ({recurring.filter((r) => r.active).length})
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowCategoriesDialog(true)}
+        >
+          <Tags className="mr-1.5 h-4 w-4" />
+          Categorías
+        </Button>
+      </div>
+
+      <ExpenseDialog
+        open={showExpenseDialog}
+        onClose={() => setShowExpenseDialog(false)}
+        categories={categories}
+        editing={editingExpense}
+        onSaved={reload}
+      />
+      <CategoriesDialog
+        open={showCategoriesDialog}
+        onClose={() => setShowCategoriesDialog(false)}
+        categories={categories}
+        onChanged={reload}
+      />
+      <RecurringDialog
+        open={showRecurringDialog}
+        onClose={() => setShowRecurringDialog(false)}
+        recurring={recurring}
+        categories={categories}
+        onChanged={reload}
+      />
+    </div>
+  );
+}
+
+// ── Dialog de alta/edición de gasto ─────────────────────────
+
+function ExpenseDialog({
+  open,
+  onClose,
+  categories,
+  editing,
+  onSaved,
+}: {
+  open: boolean;
+  onClose: () => void;
+  categories: ExpenseCategory[];
+  editing: Expense | null;
+  onSaved: () => void;
+}) {
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [date, setDate] = useState(todayKey());
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setAmount(editing ? String(editing.amount) : "");
+      setDescription(editing?.description || "");
+      setCategoryId(editing?.categoryId || "");
+      setDate(editing?.date || todayKey());
+    }
+  }, [open, editing]);
+
+  const handleSave = async () => {
+    const monto = parseFloat(amount);
+    if (!monto || monto <= 0) {
+      toast.error("Error", "Ingresá un monto válido");
+      return;
+    }
+    if (!description.trim()) {
+      toast.error("Error", "Ingresá una descripción");
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload = {
+        date,
+        amount: monto,
+        description: description.trim(),
+        categoryId: categoryId || null,
+      };
+      if (editing) {
+        await api.expenses.update(editing.id, payload);
+        toast.success("Gasto actualizado", "");
+      } else {
+        await api.expenses.create(payload);
+        toast.success("Gasto registrado", fmtARS(monto));
+      }
+      onClose();
+      onSaved();
+    } catch {
+      toast.error("Error", "No se pudo guardar el gasto");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {editing ? "Editar gasto" : "Registrar gasto"}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="exp-amount">Monto (ARS)</Label>
+            <Input
+              id="exp-amount"
+              type="number"
+              inputMode="decimal"
+              min="0"
+              placeholder="0"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="text-lg font-semibold"
+              autoFocus
+            />
+          </div>
+          <div>
+            <Label htmlFor="exp-desc">Descripción</Label>
+            <Input
+              id="exp-desc"
+              placeholder="¿En qué gastaste?"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="exp-cat">Categoría</Label>
+              <select
+                id="exp-cat"
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+              >
+                <option value="">Sin categoría</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.icon ? `${c.icon} ` : ""}
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="exp-date">Fecha</Label>
+              <Input
+                id="exp-date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 border-t pt-4">
+            <Button variant="outline" onClick={onClose} disabled={saving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? "Guardando..." : editing ? "Actualizar" : "Guardar"}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Dialog de categorías (crear / editar budget / borrar) ───
+
+function CategoriesDialog({
+  open,
+  onClose,
+  categories,
+  onChanged,
+}: {
+  open: boolean;
+  onClose: () => void;
+  categories: ExpenseCategory[];
+  onChanged: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [icon, setIcon] = useState("");
+  const [budget, setBudget] = useState("");
+
+  const handleCreate = async () => {
+    if (!name.trim()) return;
+    try {
+      await api.expenses.categories.create({
+        name: name.trim(),
+        icon: icon.trim() || undefined,
+        color: CHART_TOKENS[categories.length % CHART_TOKENS.length],
+        monthlyBudget: budget ? parseFloat(budget) : undefined,
+      });
+      setName("");
+      setIcon("");
+      setBudget("");
+      toast.success("Categoría creada", "");
+      onChanged();
+    } catch {
+      toast.error("Error", "¿La categoría ya existe?");
+    }
+  };
+
+  const handleBudgetChange = async (cat: ExpenseCategory, value: string) => {
+    const monthlyBudget = value ? parseFloat(value) : null;
+    try {
+      await api.expenses.categories.update(cat.id, { monthlyBudget });
+      onChanged();
+    } catch {
+      toast.error("Error", "No se pudo actualizar el budget");
+    }
+  };
+
+  const handleDelete = async (cat: ExpenseCategory) => {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        `¿Borrar la categoría "${cat.name}"? Los gastos quedan sin categoría.`
+      )
+    )
+      return;
+    try {
+      await api.expenses.categories.delete(cat.id);
+      toast.success("Categoría borrada", "");
+      onChanged();
+    } catch {
+      toast.error("Error", "No se pudo borrar");
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Categorías y budgets</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            {categories.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Creá categorías para organizar tus gastos y ponerles budget
+                mensual.
+              </p>
+            )}
+            {categories.map((c) => (
+              <div
+                key={c.id}
+                className="flex items-center gap-2 rounded-lg border p-2.5"
+              >
+                <span className="text-base">{c.icon || "🏷️"}</span>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                  {c.name}
+                </span>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  placeholder="Budget"
+                  defaultValue={c.monthlyBudget ?? ""}
+                  onBlur={(e) => {
+                    const v = e.target.value;
+                    if (v !== String(c.monthlyBudget ?? "")) {
+                      handleBudgetChange(c, v);
+                    }
+                  }}
+                  className="h-8 w-28 text-right text-xs"
+                />
+                <button
+                  onClick={() => handleDelete(c)}
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  aria-label={`Borrar categoría ${c.name}`}
+                >
+                  <Trash2 className="h-[15px] w-[15px]" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+            <div className="text-xs font-semibold text-muted-foreground">
+              Nueva categoría
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="🍔"
+                value={icon}
+                onChange={(e) => setIcon(e.target.value)}
+                className="w-14 text-center"
+                maxLength={4}
+              />
+              <Input
+                placeholder="Nombre"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="flex-1"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                inputMode="numeric"
+                placeholder="Budget mensual (opcional)"
+                value={budget}
+                onChange={(e) => setBudget(e.target.value)}
+                className="flex-1"
+              />
+              <Button size="sm" onClick={handleCreate} disabled={!name.trim()}>
+                <Plus className="mr-1 h-4 w-4" />
+                Crear
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex justify-end border-t pt-3">
+            <Button variant="outline" onClick={onClose}>
+              Listo
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Dialog de recurrentes / suscripciones ───────────────────
+
+function RecurringDialog({
+  open,
+  onClose,
+  recurring,
+  categories,
+  onChanged,
+}: {
+  open: boolean;
+  onClose: () => void;
+  recurring: RecurringExpense[];
+  categories: ExpenseCategory[];
+  onChanged: () => void;
+}) {
+  const [description, setDescription] = useState("");
+  const [amount, setAmount] = useState("");
+  const [day, setDay] = useState("1");
+  const [kind, setKind] = useState<"recurring" | "subscription">(
+    "subscription"
+  );
+  const [categoryId, setCategoryId] = useState("");
+
+  const handleCreate = async () => {
+    const monto = parseFloat(amount);
+    if (!description.trim() || !monto || monto <= 0) {
+      toast.error("Error", "Completá descripción y monto");
+      return;
+    }
+    try {
+      await api.expenses.recurring.create({
+        description: description.trim(),
+        amount: monto,
+        dayOfMonth: parseInt(day) || 1,
+        kind,
+        categoryId: categoryId || null,
+      });
+      setDescription("");
+      setAmount("");
+      setDay("1");
+      toast.success("Recurrente creado", "Se registra solo cada mes");
+      onChanged();
+    } catch {
+      toast.error("Error", "No se pudo crear");
+    }
+  };
+
+  const handleToggle = async (r: RecurringExpense) => {
+    try {
+      await api.expenses.recurring.update(r.id, { active: !r.active });
+      onChanged();
+    } catch {
+      toast.error("Error", "No se pudo actualizar");
+    }
+  };
+
+  const handleDelete = async (r: RecurringExpense) => {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(`¿Borrar "${r.description}"?`)
+    )
+      return;
+    try {
+      await api.expenses.recurring.delete(r.id);
+      onChanged();
+    } catch {
+      toast.error("Error", "No se pudo borrar");
+    }
+  };
+
+  const monthlyTotal = recurring
+    .filter((r) => r.active)
+    .reduce((a, r) => a + r.amount, 0);
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Recurrentes y suscripciones</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          {recurring.length > 0 && (
+            <div className="text-xs text-muted-foreground">
+              Total activo: {fmtARS(monthlyTotal)}/mes. Se registran solos el
+              día indicado.
+            </div>
+          )}
+          <div className="space-y-2">
+            {recurring.map((r) => (
+              <div
+                key={r.id}
+                className={`flex items-center gap-2 rounded-lg border p-2.5 ${
+                  !r.active ? "opacity-50" : ""
+                }`}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 text-sm font-medium">
+                    <span className="truncate">{r.description}</span>
+                    {r.kind === "subscription" && (
+                      <Badge variant="info" className="shrink-0 text-[10px]">
+                        sub
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {fmtARS(r.amount)}/mes · día {r.dayOfMonth}
+                  </div>
+                </div>
+                <Switch
+                  checked={r.active}
+                  onCheckedChange={() => handleToggle(r)}
+                  aria-label={`Activar/desactivar ${r.description}`}
+                />
+                <button
+                  onClick={() => handleDelete(r)}
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  aria-label={`Borrar ${r.description}`}
+                >
+                  <Trash2 className="h-[15px] w-[15px]" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+            <div className="text-xs font-semibold text-muted-foreground">
+              Nuevo recurrente
+            </div>
+            <Input
+              placeholder="Netflix, alquiler, gimnasio…"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                inputMode="decimal"
+                placeholder="Monto/mes"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="flex-1"
+              />
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={28}
+                value={day}
+                onChange={(e) => setDay(e.target.value)}
+                className="w-20"
+                aria-label="Día del mes"
+              />
+            </div>
+            <div className="flex gap-2">
+              <select
+                value={kind}
+                onChange={(e) =>
+                  setKind(e.target.value as "recurring" | "subscription")
+                }
+                className="h-9 flex-1 rounded-md border bg-background px-2 text-sm"
+                aria-label="Tipo"
+              >
+                <option value="subscription">Suscripción</option>
+                <option value="recurring">Pago fijo</option>
+              </select>
+              <select
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+                className="h-9 flex-1 rounded-md border bg-background px-2 text-sm"
+                aria-label="Categoría"
+              >
+                <option value="">Sin categoría</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.icon ? `${c.icon} ` : ""}
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <Button size="sm" onClick={handleCreate}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex justify-end border-t pt-3">
+            <Button variant="outline" onClick={onClose}>
+              Listo
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

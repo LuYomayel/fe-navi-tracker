@@ -17,6 +17,7 @@ import ShoppingListDetail from "@/components/shopping/ShoppingListDetail";
 import CreateListDialog from "@/components/shopping/CreateListDialog";
 import GenerateListDialog from "@/components/shopping/GenerateListDialog";
 import DailyAgenda from "@/components/agenda/DailyAgenda";
+import GastosSection from "@/components/expenses/GastosSection";
 import MonthlyCalendar from "@/components/calendar/MonthlyCalendar";
 import WinStreakWidget from "@/components/calendar/WinStreakWidget";
 import GoogleCalendarSync from "@/components/calendar/GoogleCalendarSync";
@@ -32,13 +33,15 @@ import {
   StickyNote,
   Pencil,
   Trash2,
+  Wallet,
 } from "lucide-react";
 
-type Tab = "tareas" | "compras" | "calendario" | "notas";
+type Tab = "tareas" | "compras" | "calendario" | "notas" | "gastos";
 type CalView = "dia" | "mes";
 
 const TAB_OPTIONS = [
   { value: "tareas" as const, label: "Tareas", icon: ListChecks },
+  { value: "gastos" as const, label: "Gastos", icon: Wallet },
   { value: "compras" as const, label: "Compras", icon: ShoppingCart },
   { value: "calendario" as const, label: "Calendario", icon: CalendarIcon },
   { value: "notas" as const, label: "Notas", icon: StickyNote },
@@ -56,7 +59,10 @@ export default function PlanPage() {
 
   const tabParam = searchParams.get("tab");
   const initialTab: Tab =
-    tabParam === "compras" || tabParam === "calendario" || tabParam === "notas"
+    tabParam === "compras" ||
+    tabParam === "calendario" ||
+    tabParam === "notas" ||
+    tabParam === "gastos"
       ? tabParam
       : "tareas";
 
@@ -118,6 +124,8 @@ export default function PlanPage() {
       {tab === "compras" && <ComprasSection />}
 
       {tab === "notas" && <NotasSection />}
+
+      {tab === "gastos" && <GastosSection />}
 
       {tab === "calendario" && (
         <div className="space-y-4">

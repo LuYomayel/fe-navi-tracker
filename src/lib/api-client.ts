@@ -241,6 +241,70 @@ export const apiClient = {
 // Funciones de conveniencia para endpoints específicos
 export const api = {
   // Notes
+  expenses: {
+    list: (month?: string) =>
+      apiClient.get(`/expenses${month ? `?month=${month}` : ""}`),
+    create: (data: {
+      date: string;
+      amount: number;
+      description: string;
+      categoryId?: string | null;
+    }) => apiClient.post("/expenses", data),
+    update: (
+      id: string,
+      data: Partial<{
+        date: string;
+        amount: number;
+        description: string;
+        categoryId: string | null;
+      }>
+    ) => apiClient.put(`/expenses/${id}`, data),
+    delete: (id: string) => apiClient.delete(`/expenses/${id}`),
+    summary: (month?: string) =>
+      apiClient.get(`/expenses/summary${month ? `?month=${month}` : ""}`),
+    categories: {
+      list: () => apiClient.get("/expenses/categories"),
+      create: (data: {
+        name: string;
+        icon?: string;
+        color?: string;
+        monthlyBudget?: number | null;
+      }) => apiClient.post("/expenses/categories", data),
+      update: (
+        id: string,
+        data: Partial<{
+          name: string;
+          icon: string | null;
+          color: string | null;
+          monthlyBudget: number | null;
+        }>
+      ) => apiClient.put(`/expenses/categories/${id}`, data),
+      delete: (id: string) => apiClient.delete(`/expenses/categories/${id}`),
+    },
+    recurring: {
+      list: () => apiClient.get("/expenses/recurring"),
+      create: (data: {
+        description: string;
+        amount: number;
+        dayOfMonth: number;
+        kind?: "recurring" | "subscription";
+        categoryId?: string | null;
+      }) => apiClient.post("/expenses/recurring", data),
+      update: (
+        id: string,
+        data: Partial<{
+          description: string;
+          amount: number;
+          dayOfMonth: number;
+          kind: "recurring" | "subscription";
+          categoryId: string | null;
+          active: boolean;
+        }>
+      ) => apiClient.put(`/expenses/recurring/${id}`, data),
+      delete: (id: string) => apiClient.delete(`/expenses/recurring/${id}`),
+    },
+  },
+
   notes: {
     getAll: () => apiClient.get("/notes"),
     create: (data: Omit<DailyNote, "id" | "createdAt" | "updatedAt">) =>
