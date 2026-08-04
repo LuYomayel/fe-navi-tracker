@@ -13,6 +13,11 @@ export interface HydrationSlice {
   fetchHydrationGoal: () => Promise<void>;
 }
 
+// Dos taps rapidos disparan dos adjust en paralelo. Si la respuesta del
+// primero llega ultima, pisa el estado con un valor viejo y el contador
+// RETROCEDE. Nos quedamos solo con la respuesta del ultimo pedido.
+let adjustSeq = 0;
+
 export const createHydrationSlice = (set: StoreSet, get: StoreGet): HydrationSlice => ({
   todayHydration: null,
   hydrationGoal: { goalGlasses: 8, mlPerGlass: 250 },
@@ -42,13 +47,17 @@ export const createHydrationSlice = (set: StoreSet, get: StoreGet): HydrationSli
         mlConsumed: newGlasses * goal.mlPerGlass,
       } as HydrationLog,
     });
+    const requestId = ++adjustSeq;
     try {
       const res = await api.hydration.adjust({ date, delta });
+      // Llego una respuesta vieja: ya hay otro ajuste en curso, la ignoramos.
+      if (requestId !== adjustSeq) return;
       if (res.data) {
         set({ todayHydration: res.data as HydrationLog });
       }
     } catch (e) {
       console.error("Error adjusting hydration:", e);
+      if (requestId !== adjustSeq) return;
       set({ todayHydration: prev });
       toast.error("Error al actualizar hidratacion");
     }
