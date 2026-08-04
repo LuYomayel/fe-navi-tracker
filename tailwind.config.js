@@ -70,19 +70,6 @@ module.exports = {
           4: "hsl(var(--chart-4) / <alpha-value>)",
           5: "hsl(var(--chart-5) / <alpha-value>)",
         },
-        // DEPRECADO: segunda fuente de verdad de color. Se elimina al migrar
-        // las pantallas a tokens (ver notas del handoff). No usar en código nuevo.
-        ios: {
-          blue: "#007AFF",
-          green: "#34C759",
-          orange: "#FF9500",
-          red: "#FF3B30",
-          purple: "#AF52DE",
-          pink: "#FF2D55",
-          yellow: "#FFCC00",
-          teal: "#5AC8FA",
-          gray: "#8E8E93",
-        },
       },
       borderRadius: {
         sm: "var(--radius-sm)", // 8 — badges/chips
