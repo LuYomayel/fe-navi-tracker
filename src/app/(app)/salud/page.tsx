@@ -1192,29 +1192,29 @@ function MealsList({
                 {macroLine(m)}
               </div>
             )}
-            <div className="mt-1.5 flex items-center gap-1.5">
+            <div className="mt-1.5 flex items-center gap-2">
               <button
                 onClick={() => toggleCompliance(m, "on_diet")}
-                className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                className={`flex min-h-[32px] items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                   m.dietCompliance === "on_diet"
                     ? "bg-success/15 text-success"
                     : "bg-muted/60 text-muted-foreground hover:bg-muted"
                 }`}
                 aria-label="Marcar dentro de dieta"
               >
-                <CheckCircle2 className="h-3 w-3" />
+                <CheckCircle2 className="h-3.5 w-3.5" />
                 En dieta
               </button>
               <button
                 onClick={() => toggleCompliance(m, "off_diet")}
-                className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                className={`flex min-h-[32px] items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                   m.dietCompliance === "off_diet"
                     ? "bg-warning/15 text-warning"
                     : "bg-muted/60 text-muted-foreground hover:bg-muted"
                 }`}
                 aria-label="Marcar fuera de dieta"
               >
-                <Pizza className="h-3 w-3" />
+                <Pizza className="h-3.5 w-3.5" />
                 Fuera
               </button>
               {m.dietCompliance === "off_diet" && m.complianceNote && (
