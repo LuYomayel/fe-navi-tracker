@@ -29,15 +29,19 @@ import {
   Plus,
   Sparkles,
   ArrowLeft,
+  StickyNote,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 
-type Tab = "tareas" | "compras" | "calendario";
+type Tab = "tareas" | "compras" | "calendario" | "notas";
 type CalView = "dia" | "mes";
 
 const TAB_OPTIONS = [
   { value: "tareas" as const, label: "Tareas", icon: ListChecks },
   { value: "compras" as const, label: "Compras", icon: ShoppingCart },
   { value: "calendario" as const, label: "Calendario", icon: CalendarIcon },
+  { value: "notas" as const, label: "Notas", icon: StickyNote },
 ];
 
 const CAL_OPTIONS = [
@@ -52,7 +56,9 @@ export default function PlanPage() {
 
   const tabParam = searchParams.get("tab");
   const initialTab: Tab =
-    tabParam === "compras" || tabParam === "calendario" ? tabParam : "tareas";
+    tabParam === "compras" || tabParam === "calendario" || tabParam === "notas"
+      ? tabParam
+      : "tareas";
 
   const [tab, setTab] = useState<Tab>(initialTab);
   const [calView, setCalView] = useState<CalView>("mes");
@@ -110,6 +116,8 @@ export default function PlanPage() {
       {tab === "tareas" && <TaskList />}
 
       {tab === "compras" && <ComprasSection />}
+
+      {tab === "notas" && <NotasSection />}
 
       {tab === "calendario" && (
         <div className="space-y-4">
@@ -242,6 +250,172 @@ function ComprasSection() {
         onOpenChange={setShowGenerate}
         onGenerated={(id) => setSelectedId(id)}
       />
+    </div>
+  );
+}
+
+/**
+ * Sección de notas: muestra TODAS las notas (incluidas las creadas por voz
+ * via MCP con crear_nota) con alta, edición y borrado. Antes no se veían en
+ * ningún lado de la UI.
+ */
+function NotasSection() {
+  const { dailyNotes, createNote, updateNoteById, deleteNoteById } =
+    useNaviTrackerStore();
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+
+  const sorted = useMemo(
+    () =>
+      [...dailyNotes].sort((a, b) => {
+        if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+        const ca = new Date(a.createdAt || a.date).getTime();
+        const cb = new Date(b.createdAt || b.date).getTime();
+        return cb - ca;
+      }),
+    [dailyNotes]
+  );
+
+  const dateLabel = (key: string) => {
+    const [y, m, d] = key.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString("es-AR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    });
+  };
+
+  const moodEmoji = (mood?: number) =>
+    mood && mood !== 3 ? ["", "😞", "😕", "", "🙂", "😄"][mood] || "" : "";
+
+  const handleCreate = async () => {
+    const content = draft.trim();
+    if (!content) return;
+    setSaving(true);
+    await createNote(content);
+    setDraft("");
+    setSaving(false);
+  };
+
+  const startEdit = (id: string, content: string) => {
+    setEditingId(id);
+    setEditDraft(content);
+  };
+
+  const handleUpdate = async () => {
+    if (!editingId) return;
+    const content = editDraft.trim();
+    if (!content) return;
+    await updateNoteById(editingId, content);
+    setEditingId(null);
+    setEditDraft("");
+  };
+
+  const handleDelete = (id: string, content: string) => {
+    if (
+      typeof window !== "undefined" &&
+      window.confirm(`¿Borrar la nota "${content.slice(0, 60)}…"?`)
+    ) {
+      deleteNoteById(id);
+    }
+  };
+
+  let lastDate = "";
+
+  return (
+    <div className="space-y-4 animate-fade-in">
+      <div className="space-y-2 rounded-lg border bg-card p-3">
+        <textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="Anotá una idea, una decisión, algo para no olvidar…"
+          rows={3}
+          className="w-full resize-none rounded-md border bg-background p-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+        />
+        <div className="flex justify-end">
+          <Button size="sm" onClick={handleCreate} disabled={saving || !draft.trim()}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            Guardar nota
+          </Button>
+        </div>
+      </div>
+
+      {sorted.length === 0 ? (
+        <EmptyState
+          icon={StickyNote}
+          title="Sin notas todavía"
+          description="Las notas que crees acá o por voz (via Claude) van a aparecer en esta lista."
+        />
+      ) : (
+        <div className="space-y-2">
+          {sorted.map((n) => {
+            const showDate = n.date !== lastDate;
+            lastDate = n.date;
+            return (
+              <div key={n.id}>
+                {showDate && (
+                  <div className="mb-1.5 mt-3 text-xs font-semibold capitalize text-muted-foreground first:mt-0">
+                    {dateLabel(n.date)}
+                  </div>
+                )}
+                <div className="flex items-start gap-3 rounded-lg border bg-card p-3">
+                  <div className="min-w-0 flex-1">
+                    {editingId === n.id ? (
+                      <div className="space-y-2">
+                        <textarea
+                          value={editDraft}
+                          onChange={(e) => setEditDraft(e.target.value)}
+                          rows={3}
+                          className="w-full resize-none rounded-md border bg-background p-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                        />
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingId(null)}
+                          >
+                            Cancelar
+                          </Button>
+                          <Button size="sm" onClick={handleUpdate}>
+                            Guardar
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                        {moodEmoji(n.mood) && (
+                          <span className="mr-1">{moodEmoji(n.mood)}</span>
+                        )}
+                        {n.content}
+                      </p>
+                    )}
+                  </div>
+                  {editingId !== n.id && (
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      <button
+                        onClick={() => startEdit(n.id, n.content)}
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        aria-label="Editar nota"
+                      >
+                        <Pencil className="h-[15px] w-[15px]" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(n.id, n.content)}
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                        aria-label="Borrar nota"
+                      >
+                        <Trash2 className="h-[15px] w-[15px]" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
