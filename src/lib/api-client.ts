@@ -726,6 +726,26 @@ export const api = {
       apiClient.put<void>("/hydration/goal", data),
   },
 
+  // SWEAT TESTS (tasa de sudoración → meta de agua real)
+  sweatTests: {
+    getAll: () => apiClient.get("/sweat-tests"),
+    getStats: () => apiClient.get("/sweat-tests/stats"),
+    getRecommendation: (trainingHours = 2) =>
+      apiClient.get(`/sweat-tests/recommendation?trainingHours=${trainingHours}`),
+    create: (data: {
+      date: string;
+      activity?: string;
+      durationMin: number;
+      weightBeforeKg: number;
+      weightAfterKg: number;
+      fluidIntakeMl?: number;
+      indoor?: boolean;
+      temperatureC?: number;
+      notes?: string;
+    }) => apiClient.post("/sweat-tests", data),
+    remove: (id: string) => apiClient.delete(`/sweat-tests/${id}`),
+  },
+
   // SHOPPING LIST
   shoppingList: {
     getAll: () => apiClient.get<ShoppingList[]>("/shopping-list"),

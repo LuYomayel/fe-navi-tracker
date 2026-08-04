@@ -58,6 +58,7 @@ import { WeightChart } from "@/components/nutrition/WeightChart";
 import { WeightTracker } from "@/components/nutrition/WeightTracker";
 import HydrationCircularProgress from "@/components/hydration/HydrationCircularProgress";
 import HydrationPaceCard from "@/components/hydration/HydrationPaceCard";
+import SweatTestCard from "@/components/hydration/SweatTestCard";
 import HydrationControls from "@/components/hydration/HydrationControls";
 import HydrationHistory from "@/components/hydration/HydrationHistory";
 import HydrationGoalDialog from "@/components/hydration/HydrationGoalDialog";
@@ -156,6 +157,8 @@ export default function SaludPage() {
   // Hidratación: día navegable (tocar una barra del historial edita ese día)
   const todayStr = getDateKey(new Date());
   const [aguaDate, setAguaDate] = useState(todayStr);
+  // Cambia al aplicar tramos nuevos: remonta la card de ritmo con la config fresca
+  const [paceKey, setPaceKey] = useState(0);
   useEffect(() => {
     fetchTodayHydration(aguaDate);
     fetchHydrationGoal();
@@ -580,10 +583,14 @@ export default function SaludPage() {
 
           {/* Ritmo por tramos: 1L a la mañana, 1L a la tarde, extra si entrena */}
           <HydrationPaceCard
+            key={paceKey}
             date={aguaDate}
             isToday={isAguaToday}
             mlConsumed={todayHydration?.mlConsumed ?? 0}
           />
+
+          {/* Tasa de sudoración medida → cuánta agua necesita de verdad */}
+          <SweatTestCard onBlocksApplied={() => setPaceKey((k) => k + 1)} />
 
           <HydrationHistory
             selectedDate={aguaDate}
