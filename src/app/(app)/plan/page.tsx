@@ -11,6 +11,7 @@ import { PillToggle } from "@/components/ui/pill-toggle";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
+import { ActionIconButton } from "@/components/ui/action-icon-button";
 
 import TaskList from "@/components/tasks/TaskList";
 import ShoppingListCard from "@/components/shopping/ShoppingListCard";
@@ -400,20 +401,17 @@ function NotasSection() {
                   </div>
                   {editingId !== n.id && (
                     <div className="flex shrink-0 items-center gap-0.5">
-                      <button
+                      <ActionIconButton
+                        icon={Pencil}
                         onClick={() => startEdit(n.id, n.content)}
-                        className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         aria-label="Editar nota"
-                      >
-                        <Pencil className="h-[15px] w-[15px]" />
-                      </button>
-                      <button
+                      />
+                      <ActionIconButton
+                        icon={Trash2}
+                        variant="destructive"
                         onClick={() => handleDelete(n.id, n.content)}
-                        className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                         aria-label="Borrar nota"
-                      >
-                        <Trash2 className="h-[15px] w-[15px]" />
-                      </button>
+                      />
                     </div>
                   )}
                 </div>

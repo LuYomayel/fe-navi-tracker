@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
+import { ActionIconButton } from "@/components/ui/action-icon-button";
 import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
 import { MealType, type SavedMeal, type Macronutrients } from "@/types";
@@ -339,20 +340,19 @@ export function SavedMealsManager({
                         {m.macronutrients.fat.toFixed(0)}g · {m.timesUsed}x
                       </div>
                     </div>
-                    <button
+                    <ActionIconButton
+                      icon={Pencil}
+                      className="shrink-0"
                       onClick={() => openEdit(m)}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                       aria-label="Editar"
-                    >
-                      <Pencil className="h-[15px] w-[15px]" />
-                    </button>
-                    <button
+                    />
+                    <ActionIconButton
+                      icon={Trash2}
+                      variant="destructive"
+                      className="shrink-0"
                       onClick={() => handleDelete(m)}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                       aria-label="Borrar"
-                    >
-                      <Trash2 className="h-[15px] w-[15px]" />
-                    </button>
+                    />
                   </div>
                 ))}
               </div>

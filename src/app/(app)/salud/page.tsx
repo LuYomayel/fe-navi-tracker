@@ -27,6 +27,7 @@ import { MacroProgressBar } from "@/components/ui/macro-progress-bar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
+import { ActionIconButton } from "@/components/ui/action-icon-button";
 
 import { useNaviTrackerStore } from "@/store";
 import { useInitializeStore } from "@/hooks/useInitializeStore";
@@ -629,17 +630,16 @@ export default function SaludPage() {
                             : ""}
                         </div>
                       </div>
-                      <button
+                      <ActionIconButton
+                        icon={Trash2}
+                        variant="destructive"
                         onClick={async () => {
                           if (!a.id) return;
                           if (await confirmBodyAnalysis.confirm(a.id))
                             deleteBodyAnalysis(a.id);
                         }}
-                        className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                         aria-label="Borrar análisis"
-                      >
-                        <Trash2 className="h-[15px] w-[15px]" />
-                      </button>
+                      />
                     </Card>
                   ))}
               </div>
@@ -709,27 +709,24 @@ export default function SaludPage() {
                             Σ {total} mm · {sites} sitios
                           </div>
                         </div>
-                        <button
+                        <ActionIconButton
+                          icon={Pencil}
                           onClick={() => {
                             setEditingSkinFold(r);
                             setShowSkinFold(true);
                           }}
-                          className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                           aria-label="Editar medición"
-                        >
-                          <Pencil className="h-[15px] w-[15px]" />
-                        </button>
-                        <button
+                        />
+                        <ActionIconButton
+                          icon={Trash2}
+                          variant="destructive"
                           onClick={async () => {
                             if (!r.id) return;
                             if (await confirmSkinFold.confirm(r.id))
                               deleteSkinFoldRecord(r.id);
                           }}
-                          className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                           aria-label="Borrar medición"
-                        >
-                          <Trash2 className="h-[15px] w-[15px]" />
-                        </button>
+                        />
                       </Card>
                     );
                   })}
@@ -961,13 +958,12 @@ function ExerciseList({
               {a.source === "image" ? "Desde captura" : "Manual"}
             </div>
           </div>
-          <button
+          <ActionIconButton
+            icon={Trash2}
+            variant="destructive"
             onClick={() => handleDelete(a)}
-            className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
             aria-label="Borrar actividad"
-          >
-            <Trash2 className="h-[15px] w-[15px]" />
-          </button>
+          />
         </Card>
       ))}
 
@@ -1223,20 +1219,17 @@ function MealsList({
             <span className="text-[11px] text-muted-foreground">kcal</span>
           </div>
           <div className="flex items-center gap-0.5">
-            <button
+            <ActionIconButton
+              icon={Pencil}
               onClick={() => onEdit(m)}
-              className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               aria-label="Editar comida"
-            >
-              <Pencil className="h-[15px] w-[15px]" />
-            </button>
-            <button
+            />
+            <ActionIconButton
+              icon={Trash2}
+              variant="destructive"
               onClick={() => handleDelete(m)}
-              className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
               aria-label="Borrar comida"
-            >
-              <Trash2 className="h-[15px] w-[15px]" />
-            </button>
+            />
           </div>
         </Card>
       ))}

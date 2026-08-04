@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
+import { ActionIconButton } from "@/components/ui/action-icon-button";
 import {
   Sparkles,
   FileUp,
@@ -128,7 +129,10 @@ export function MealPrepView() {
                 {activePlan.pdfFilename ? ` · ${activePlan.pdfFilename}` : ""}
               </div>
             </div>
-            <button
+            <ActionIconButton
+              icon={Trash2}
+              variant="destructive"
+              className="shrink-0"
               onClick={async () => {
                 if (!activePlan.id) return;
                 const ok = await confirmDeletePlan.confirm({
@@ -137,11 +141,8 @@ export function MealPrepView() {
                 });
                 if (ok) deletePlan(activePlan.id);
               }}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
               aria-label="Eliminar plan"
-            >
-              <Trash2 className="h-[17px] w-[17px]" />
-            </button>
+            />
           </div>
         )}
 

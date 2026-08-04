@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
+import { ActionIconButton } from "@/components/ui/action-icon-button";
 import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
 import { getDateKey, getMonthKey } from "@/lib/utils";
@@ -393,23 +394,20 @@ export default function GastosSection() {
                     {fmtARS(e.amount)}
                   </span>
                   <div className="flex items-center gap-0.5">
-                    <button
+                    <ActionIconButton
+                      icon={Pencil}
                       onClick={() => {
                         setEditingExpense(e);
                         setShowExpenseDialog(true);
                       }}
-                      className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                       aria-label="Editar gasto"
-                    >
-                      <Pencil className="h-[15px] w-[15px]" />
-                    </button>
-                    <button
+                    />
+                    <ActionIconButton
+                      icon={Trash2}
+                      variant="destructive"
                       onClick={() => handleDeleteExpense(e)}
-                      className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                       aria-label="Borrar gasto"
-                    >
-                      <Trash2 className="h-[15px] w-[15px]" />
-                    </button>
+                    />
                   </div>
                 </Card>
               </div>
@@ -499,7 +497,9 @@ export default function GastosSection() {
                   <span className="font-mono text-sm font-bold tabular-nums text-success">
                     +{fmtARS(inc.amount - inc.cost)}
                   </span>
-                  <button
+                  <ActionIconButton
+                    icon={Trash2}
+                    variant="destructive"
                     onClick={async () => {
                       if (await confirmIncome.confirm(inc)) {
                         try {
@@ -510,11 +510,8 @@ export default function GastosSection() {
                         }
                       }
                     }}
-                    className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                     aria-label={`Borrar ingreso ${inc.description}`}
-                  >
-                    <Trash2 className="h-[14px] w-[14px]" />
-                  </button>
+                  />
                 </div>
               ))}
             </div>
@@ -999,13 +996,12 @@ function CategoriesDialog({
                   }}
                   className="h-8 w-28 text-right text-xs"
                 />
-                <button
+                <ActionIconButton
+                  icon={Trash2}
+                  variant="destructive"
                   onClick={() => handleDelete(c)}
-                  className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                   aria-label={`Borrar categoría ${c.name}`}
-                >
-                  <Trash2 className="h-[15px] w-[15px]" />
-                </button>
+                />
               </div>
             ))}
           </div>
@@ -1180,13 +1176,12 @@ function RecurringDialog({
                   onCheckedChange={() => handleToggle(r)}
                   aria-label={`Activar/desactivar ${r.description}`}
                 />
-                <button
+                <ActionIconButton
+                  icon={Trash2}
+                  variant="destructive"
                   onClick={() => handleDelete(r)}
-                  className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                   aria-label={`Borrar ${r.description}`}
-                >
-                  <Trash2 className="h-[15px] w-[15px]" />
-                </button>
+                />
               </div>
             ))}
           </div>
