@@ -37,6 +37,7 @@ import {
 
 import { api } from "@/lib/api-client";
 import { getDateKey } from "@/lib/utils";
+import { PlateComposer } from "./PlateComposer";
 import { toast } from "@/lib/toast-helper";
 
 // Normaliza texto para búsqueda sin acentos ni mayúsculas ("cafe" == "Café").
@@ -109,68 +110,6 @@ export function FoodAnalyzer({
   const [savedMeals, setSavedMeals] = useState<SavedMeal[]>([]);
   const [_loadingSavedMeals, setLoadingSavedMeals] = useState(false);
   const [savedQuery, setSavedQuery] = useState("");
-  // Selección múltiple de guardadas: elegir 1 o varias arma "el plato" en el
-  // mismo flujo (un solo registro con todo sumado), sin modo aparte.
-  const [selectedSaved, setSelectedSaved] = useState<SavedMeal[]>([]);
-  const [savingSelected, setSavingSelected] = useState(false);
-
-  const toggleSavedSelection = (meal: SavedMeal) => {
-    setSelectedSaved((prev) =>
-      prev.some((m) => m.id === meal.id)
-        ? prev.filter((m) => m.id !== meal.id)
-        : [...prev, meal]
-    );
-  };
-
-  const selectedTotals = selectedSaved.reduce(
-    (acc, m) => ({
-      kcal: acc.kcal + (m.totalCalories || 0),
-      protein: acc.protein + (m.macronutrients?.protein || 0),
-      carbs: acc.carbs + (m.macronutrients?.carbs || 0),
-      fat: acc.fat + (m.macronutrients?.fat || 0),
-    }),
-    { kcal: 0, protein: 0, carbs: 0, fat: 0 }
-  );
-
-  const handleLogSelected = async () => {
-    if (selectedSaved.length === 0) return;
-    setSavingSelected(true);
-    try {
-      if (selectedSaved.length === 1) {
-        // Un solo componente: mismo camino rápido de siempre
-        await handleQuickAddSavedMeal(selectedSaved[0]);
-        setSelectedSaved([]);
-        return;
-      }
-      const res = await api.savedMeals.logPlate({
-        componentIds: selectedSaved.map((m) => m.id),
-        mealType: selectedMealType,
-        date: getDateKey(selectedDate),
-      });
-      if (!res.success) throw new Error("No se pudo registrar");
-      await api.xp.addXp({
-        action: XpAction.NUTRITION_LOG,
-        xpAmount: 15,
-        description: "Registrar una comida (plato de guardadas)",
-      });
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("nutrition-log"));
-      }
-      toast.success(
-        `Comida registrada: ${Math.round(selectedTotals.kcal)} kcal`,
-        selectedSaved.map((m) => m.name).join(" + ")
-      );
-      setSelectedSaved([]);
-      handleReset();
-      onClose();
-      onAnalysisSaved?.();
-    } catch (error) {
-      console.error("Error registrando seleccionadas:", error);
-      toast.error("Error", "No se pudo registrar. Probá de nuevo.");
-    } finally {
-      setSavingSelected(false);
-    }
-  };
 
   // Más usadas primero (la comida que consumís siempre queda arriba),
   // con lastUsedAt como desempate. Se muestran TODAS.
@@ -545,7 +484,6 @@ export function FoodAnalyzer({
     setEditableResult(null);
     setAdjustmentPercentage(0);
     setIsAnalyzing(false);
-    setSelectedSaved([]);
     setSavedQuery("");
   };
 
@@ -579,133 +517,17 @@ export function FoodAnalyzer({
         <div className="space-y-6">
           {step === "method_selection" && (
             <div className="text-center space-y-5">
-              {/* Lo más frecuente PRIMERO: re-loguear una guardada es 1 toque.
-                  Los métodos de análisis quedan compactos abajo. */}
-              {savedMeals.length > 0 && (
-                <div className="space-y-2.5 text-left">
-                  <div className="flex items-center gap-1.5">
-                    <Star className="h-4 w-4 shrink-0 text-amber-500" />
-                    <h4 className="whitespace-nowrap text-sm font-medium">
-                      Tus comidas de siempre
-                    </h4>
-                    <span className="truncate text-xs text-muted-foreground">
-                      · 1 toque y listo
-                    </span>
-                  </div>
-
-                  {/* Buscador: aparece cuando hay varias para encontrar cualquiera al instante */}
-                  {savedMeals.length > 3 && (
-                    <div className="relative">
-                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <input
-                        type="text"
-                        value={savedQuery}
-                        onChange={(e) => setSavedQuery(e.target.value)}
-                        placeholder="Buscar (ej: café con leche)…"
-                        className="w-full rounded-xl border border-border bg-background py-2 pl-9 pr-3 text-sm outline-none transition focus:ring-2 focus:ring-primary/30"
-                      />
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 gap-2 sm:max-h-80 sm:grid-cols-2 sm:overflow-y-auto">
-                    {filteredSavedMeals.map((meal) => {
-                      const isSelected = selectedSaved.some(
-                        (m) => m.id === meal.id
-                      );
-                      return (
-                        <button
-                          key={meal.id}
-                          onClick={() => toggleSavedSelection(meal)}
-                          className={`flex w-full items-center justify-between rounded-xl p-3 text-left transition-colors ${
-                            isSelected
-                              ? "bg-primary/10 ring-2 ring-primary"
-                              : "bg-secondary/50 hover:bg-secondary"
-                          }`}
-                          aria-pressed={isSelected}
-                        >
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate text-sm font-medium">
-                              {meal.name}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {meal.totalCalories} kcal · P:
-                              {meal.macronutrients.protein.toFixed(0)}g C:
-                              {meal.macronutrients.carbs.toFixed(0)}g G:
-                              {meal.macronutrients.fat.toFixed(0)}g
-                            </div>
-                          </div>
-                          <div className="ml-2 shrink-0 text-xs">
-                            {isSelected ? (
-                              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                                ✓
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground">
-                                {meal.timesUsed}x
-                              </span>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                    {filteredSavedMeals.length === 0 && (
-                      <p className="col-span-full py-2 text-center text-xs text-muted-foreground">
-                        Sin resultados para “{savedQuery}”.
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Barra de confirmación: tocás componentes, se suma en vivo,
-                      un solo registro. Esto ES "armar el plato". */}
-                  {selectedSaved.length > 0 && (
-                    <div className="sticky bottom-0 space-y-2 rounded-xl border bg-card p-3 shadow-md">
-                      {selectedSaved.length > 1 && (
-                        <div className="flex gap-1.5 overflow-x-auto">
-                          {[
-                            { value: MealType.BREAKFAST, label: "Desayuno" },
-                            { value: MealType.LUNCH, label: "Almuerzo" },
-                            { value: MealType.MERIENDA, label: "Merienda" },
-                            { value: MealType.DINNER, label: "Cena" },
-                          ].map((t) => (
-                            <button
-                              key={t.value}
-                              onClick={() => setSelectedMealType(t.value)}
-                              className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                                selectedMealType === t.value
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-                              }`}
-                            >
-                              {t.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="font-mono text-base font-bold tabular-nums">
-                            {Math.round(selectedTotals.kcal)} kcal
-                          </div>
-                          <div className="truncate font-mono text-[11px] tabular-nums text-muted-foreground">
-                            P {Math.round(selectedTotals.protein)}g · C{" "}
-                            {Math.round(selectedTotals.carbs)}g · G{" "}
-                            {Math.round(selectedTotals.fat)}g
-                          </div>
-                        </div>
-                        <Button
-                          onClick={handleLogSelected}
-                          disabled={savingSelected}
-                          className="shrink-0"
-                        >
-                          {savingSelected
-                            ? "Registrando…"
-                            : `Registrar${selectedSaved.length > 1 ? ` (${selectedSaved.length})` : ""}`}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+              {/* EL flujo principal: armar el plato con tus componentes
+                  guardados (proteína + carbo + verdura + bebida/fruta) y
+                  registrarlo todo junto de una. */}
+              <PlateComposer
+                selectedDate={selectedDate}
+                onLogged={() => {
+                  handleReset();
+                  onClose();
+                  onAnalysisSaved?.();
+                }}
+              />
 
               <div className="space-y-2.5">
                 {savedMeals.length > 0 && (
