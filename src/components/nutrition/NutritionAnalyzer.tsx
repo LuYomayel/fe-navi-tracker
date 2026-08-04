@@ -31,7 +31,6 @@ import {
   Macronutrients,
   FoodCategory as _FoodCategory,
   NutritionAnalysis,
-  XpAction,
   SavedMeal,
 } from "@/types";
 
@@ -177,14 +176,11 @@ export function FoodAnalyzer({
       // Mark meal as used
       await api.savedMeals.use(meal.id);
 
-      await api.xp.addXp({
-        action: XpAction.NUTRITION_LOG,
-        xpAmount: 15,
-        description: "Registrar una comida (plantilla guardada)",
-      });
-
+      // El +15 XP lo otorga el backend al crear la comida.
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("nutrition-log"));
+        // El XP ya lo otorgo el backend: pedimos refrescar el contador.
+        window.dispatchEvent(new Event("xp-updated"));
       }
 
       toast.success(`${meal.name} agregada correctamente`);
@@ -439,17 +435,13 @@ export function FoodAnalyzer({
         }
       }
 
-      const expResponse = await api.xp.addXp({
-        action: XpAction.NUTRITION_LOG,
-        xpAmount: 15,
-        description: "Registrar una comida",
-      });
-      if (!expResponse.success) {
-        throw Error(expResponse.message || "Error al agregar experiencia");
-      }
-
+      // El +15 XP lo otorga el backend al crear la comida. Antes se pedia
+      // aca aparte y, si fallaba DESPUES de haber guardado, se tiraba error
+      // y el usuario reintentaba: la comida quedaba duplicada.
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("nutrition-log"));
+        // El XP ya lo otorgo el backend: pedimos refrescar el contador.
+        window.dispatchEvent(new Event("xp-updated"));
       }
 
       // Reset component

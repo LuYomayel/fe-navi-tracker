@@ -8,7 +8,6 @@ import type {
 } from "@/types";
 import { toast } from "@/lib/toast-helper";
 import { api } from "@/lib/api-client";
-import { XpAction } from "@/types/xp";
 import type { StoreSet, StoreGet } from "../types";
 
 export interface NutritionSlice {
@@ -80,17 +79,11 @@ export const createNutritionSlice = (set: StoreSet, get: StoreGet): NutritionSli
         toast.error("Error", response.message);
         return;
       }
-      const responseEXP = await api.xp.addXp({
-        action: XpAction.NUTRITION_LOG,
-        xpAmount: 15,
-        description: "Análisis nutricional guardado",
-      });
-      if (!responseEXP.success) {
-        toast.error("Error", responseEXP.message);
-        return;
-      }
+      // El +15 XP lo otorga el backend al crear la comida.
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("nutrition-log"));
+        // El XP ya lo otorgo el backend: pedimos refrescar el contador.
+        window.dispatchEvent(new Event("xp-updated"));
       }
       const newAnalysis = response.data as NutritionAnalysis;
 

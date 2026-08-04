@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
 import { getDateKey } from "@/lib/utils";
-import { XpAction } from "@/types/xp";
 import type { MealType, PlateComponent, SavedMeal } from "@/types";
 import { Loader2, Search, Sparkles, X } from "lucide-react";
 
@@ -239,13 +238,11 @@ export function PlateComposer({
         date: getDateKey(selectedDate),
       });
       if (!res.success) throw new Error("No se pudo registrar");
-      await api.xp.addXp({
-        action: XpAction.NUTRITION_LOG,
-        xpAmount: 15,
-        description: "Registrar una comida (plato)",
-      });
+      // El +15 XP lo otorga el backend al crear la comida.
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("nutrition-log"));
+        // El XP ya lo otorgo el backend: pedimos refrescar el contador.
+        window.dispatchEvent(new Event("xp-updated"));
       }
       toast.success(
         `¡Plato registrado! ${Math.round(totals.kcal)} kcal · +15 XP`,
