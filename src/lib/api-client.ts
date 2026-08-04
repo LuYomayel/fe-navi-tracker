@@ -713,6 +713,12 @@ export const api = {
       ),
     adjust: (data: { date: string; delta: number }) =>
       apiClient.post<HydrationLog>("/hydration/adjust", data),
+    getPace: (date?: string) =>
+      apiClient.get(`/hydration/pace${date ? `?date=${date}` : ""}`),
+    setBlocks: (blocks: unknown[]) =>
+      apiClient.put("/hydration/blocks", { blocks }),
+    setTrainingToday: (value: boolean | null, date?: string) =>
+      apiClient.put("/hydration/training-today", { value, date }),
     set: (data: { date: string; glasses: number }) =>
       apiClient.put<HydrationLog>("/hydration", data),
     getGoal: () => apiClient.get<HydrationGoal>("/hydration/goal"),

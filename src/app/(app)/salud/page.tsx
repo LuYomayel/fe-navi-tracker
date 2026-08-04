@@ -57,6 +57,7 @@ import type { SkinFoldRecord } from "@/types/skinFold";
 import { WeightChart } from "@/components/nutrition/WeightChart";
 import { WeightTracker } from "@/components/nutrition/WeightTracker";
 import HydrationCircularProgress from "@/components/hydration/HydrationCircularProgress";
+import HydrationPaceCard from "@/components/hydration/HydrationPaceCard";
 import HydrationControls from "@/components/hydration/HydrationControls";
 import HydrationHistory from "@/components/hydration/HydrationHistory";
 import HydrationGoalDialog from "@/components/hydration/HydrationGoalDialog";
@@ -557,6 +558,9 @@ export default function SaludPage() {
               onAdjust={adjustHydration}
             />
           </Card>
+
+          {/* Ritmo por tramos: 1L a la mañana, 1L a la tarde, extra si entrena */}
+          <HydrationPaceCard mlConsumed={todayHydration?.mlConsumed ?? 0} />
 
           <HydrationHistory selectedDate={todayStr} onSelectDate={() => {}} />
 

@@ -6,7 +6,11 @@
  * deep links (callback OAuth de Google Calendar) y push notifications.
  */
 import { isNative, isAndroid } from "./platform";
-import { scheduleDailyReminders } from "./notifications";
+import {
+  scheduleDailyReminders,
+  scheduleHydrationPaceReminders,
+  HydrationPaceLike,
+} from "./notifications";
 import { registerPush } from "./push";
 
 export interface NativeInitOptions {
@@ -28,6 +32,23 @@ export async function initNativeApp(opts: NativeInitOptions): Promise<void> {
   await setupDeepLinks(opts);
   await scheduleDailyReminders();
   await registerPush();
+  await scheduleHydrationFromServer();
+}
+
+/**
+ * Al abrir la app: baja el ritmo de hidratación por tramos y agenda los
+ * recordatorios graduales del día (aunque el usuario no entre a la tab Agua).
+ */
+async function scheduleHydrationFromServer(): Promise<void> {
+  try {
+    const { api } = await import("@/lib/api-client");
+    const res = await api.hydration.getPace();
+    if (res?.success && res.data) {
+      await scheduleHydrationPaceReminders(res.data as HydrationPaceLike);
+    }
+  } catch {
+    /* sin sesión o sin red: los recordatorios se agendan al entrar a Agua */
+  }
 }
 
 async function setupStatusBar(): Promise<void> {
