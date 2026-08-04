@@ -21,7 +21,6 @@ export interface UISlice {
   currentWeekStart: Date;
   showAddActivityModal: boolean;
   showDailyReflection: boolean;
-  showReadingAssistant: boolean;
   showNutritionAnalyzer: boolean;
   showAIAssistant: boolean;
   isLoading: boolean;
@@ -31,7 +30,6 @@ export interface UISlice {
   setCurrentWeekStart: (date: Date) => void;
   setShowAddActivityModal: (show: boolean) => void;
   setShowDailyReflection: (show: boolean, date?: Date) => void;
-  setShowReadingAssistant: (show: boolean) => void;
   setShowNutritionAnalyzer: (show: boolean, date?: Date) => void;
   setShowAIAssistant: (show: boolean) => void;
   updatePreferences: (preferences: Partial<UserPreferences>) => void;
@@ -46,7 +44,6 @@ export const createUISlice = (set: StoreSet, get: StoreGet): UISlice => ({
   currentWeekStart: new Date(),
   showAddActivityModal: false,
   showDailyReflection: false,
-  showReadingAssistant: false,
   showNutritionAnalyzer: false,
   showAIAssistant: false,
   isLoading: false,
@@ -66,7 +63,6 @@ export const createUISlice = (set: StoreSet, get: StoreGet): UISlice => ({
       showDailyReflection: show,
       selectedModalDate: date,
     }),
-  setShowReadingAssistant: (show) => set({ showReadingAssistant: show }),
   setShowNutritionAnalyzer: (show, date) =>
     set({
       showNutritionAnalyzer: show,
