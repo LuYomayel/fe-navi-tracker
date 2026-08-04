@@ -52,21 +52,31 @@ export default function SweatTestCard({ onBlocksApplied }: { onBlocksApplied?: (
   const [tests, setTests] = useState<SweatTest[]>([]);
   const [showDialog, setShowDialog] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [needsWeight, setNeedsWeight] = useState(false);
   const [applying, setApplying] = useState(false);
   const confirmDelete = useConfirm<string>();
 
   const load = useCallback(async () => {
     try {
-      const [statsRes, recRes, listRes] = await Promise.all([
+      const [statsRes, listRes] = await Promise.all([
         api.sweatTests.getStats(),
-        api.sweatTests.getRecommendation(2),
         api.sweatTests.getAll(),
       ]);
       if (statsRes?.success) setStats(statsRes.data as Stats);
-      if (recRes?.success) setRec(recRes.data as Recommendation);
       if (listRes?.success) setTests((listRes.data as SweatTest[]) ?? []);
     } catch (error) {
       console.error("Error cargando tests de sudoración:", error);
+    }
+    // La recomendación necesita el peso: si no lo tiene, se avisa en la card.
+    try {
+      const recRes = await api.sweatTests.getRecommendation(2);
+      if (recRes?.success) {
+        setRec(recRes.data as Recommendation);
+        setNeedsWeight(false);
+      }
+    } catch {
+      setRec(null);
+      setNeedsWeight(true);
     }
   }, []);
 
@@ -127,6 +137,13 @@ export default function SweatTestCard({ onBlocksApplied }: { onBlocksApplied?: (
         <p className="text-[11px] text-muted-foreground">
           Rango medido: {stats?.minRateMlPerHour} a {stats?.maxRateMlPerHour} ml/h
           según el día.
+        </p>
+      )}
+
+      {needsWeight && (
+        <p className="border-t pt-3 text-xs text-muted-foreground">
+          Registrá tu peso (tab Peso) y calculo cuánta agua necesitás por día
+          según cuánto sudás.
         </p>
       )}
 

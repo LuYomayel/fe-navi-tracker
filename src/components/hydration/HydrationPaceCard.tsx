@@ -47,11 +47,14 @@ export default function HydrationPaceCard({
   mlConsumed,
   date,
   isToday = true,
+  savedTick = 0,
 }: {
   mlConsumed: number;
   /** Día a mostrar (YYYY-MM-DD). Sin date = hoy. */
   date?: string;
   isToday?: boolean;
+  /** Sube cuando el server confirmó el vaso: refresca con el dato real. */
+  savedTick?: number;
 }) {
   const [pace, setPace] = useState<HydrationPace | null>(null);
   const [showBlocks, setShowBlocks] = useState(false);
@@ -72,7 +75,7 @@ export default function HydrationPaceCard({
   // Refresca cuando cambia el consumo (cada vaso registrado) o el día visto
   useEffect(() => {
     load();
-  }, [load, mlConsumed]);
+  }, [load, mlConsumed, savedTick]);
 
   const toggleTraining = async (value: boolean) => {
     try {

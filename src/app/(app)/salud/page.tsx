@@ -159,6 +159,9 @@ export default function SaludPage() {
   const [aguaDate, setAguaDate] = useState(todayStr);
   // Cambia al aplicar tramos nuevos: remonta la card de ritmo con la config fresca
   const [paceKey, setPaceKey] = useState(0);
+  // Se incrementa cuando el server YA confirmó el vaso: el update optimista
+  // solo no alcanza para refrescar el historial (llegaría el valor viejo).
+  const [aguaSaved, setAguaSaved] = useState(0);
   useEffect(() => {
     fetchTodayHydration(aguaDate);
     fetchHydrationGoal();
@@ -577,7 +580,10 @@ export default function SaludPage() {
             <HydrationControls
               glasses={glasses}
               date={aguaDate}
-              onAdjust={adjustHydration}
+              onAdjust={async (date, delta) => {
+                await adjustHydration(date, delta);
+                setAguaSaved((n) => n + 1);
+              }}
             />
           </Card>
 
@@ -587,6 +593,7 @@ export default function SaludPage() {
             date={aguaDate}
             isToday={isAguaToday}
             mlConsumed={todayHydration?.mlConsumed ?? 0}
+            savedTick={aguaSaved}
           />
 
           {/* Tasa de sudoración medida → cuánta agua necesita de verdad */}
@@ -595,7 +602,7 @@ export default function SaludPage() {
           <HydrationHistory
             selectedDate={aguaDate}
             onSelectDate={setAguaDate}
-            refreshKey={`${aguaDate}:${glasses}`}
+            refreshKey={`${aguaDate}:${aguaSaved}`}
           />
 
           <HydrationGoalDialog
