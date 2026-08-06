@@ -267,6 +267,8 @@ export const api = {
     businessSummary: () => apiClient.get("/expenses/business-summary"),
     balance: (month?: string) =>
       apiClient.get(`/expenses/balance${month ? `?month=${month}` : ""}`),
+    projection: (month?: string) =>
+      apiClient.get(`/expenses/projection${month ? `?month=${month}` : ""}`),
     cardStatement: {
       parse: (data: { images: string[] }) =>
         apiClient.post("/expenses/card-statement/parse", data),

@@ -103,3 +103,24 @@ export interface ExpenseSummary {
   recurringMonthly: number;
   topExpenses: { id: string; date: string; description: string; amount: number }[];
 }
+
+export interface MonthProjection {
+  month: string;
+  today: string;
+  ingresosCobrados: number;
+  gastosEjecutados: number;
+  saldoHoy: number;
+  gastosFuturos: { id: string; date: string; amount: number; description: string }[];
+  gastosFuturosTotal: number;
+  recurrentesPorVenir: {
+    id: string;
+    description: string;
+    amount: number;
+    dayOfMonth: number;
+    cuota: string | null;
+  }[];
+  recurrentesPorVenirTotal: number;
+  ingresosEsperados: { id: string; date: string; amount: number; description: string }[];
+  ingresosEsperadosTotal: number;
+  disponibleProyectado: number;
+}

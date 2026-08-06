@@ -27,9 +27,11 @@ import type {
   Income,
   IncomeSource,
   MonthlyBalance,
+  MonthProjection,
   RecurringExpense,
 } from "@/types/expenses";
 import { ImportCardStatementDialog } from "./ImportCardStatementDialog";
+import { ProjectionCard, CashFlowChart } from "./ProjectionAndFlow";
 import {
   ChevronLeft,
   ChevronRight,
@@ -107,6 +109,8 @@ export default function GastosSection() {
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [recurring, setRecurring] = useState<RecurringExpense[]>([]);
   const [balance, setBalance] = useState<MonthlyBalance | null>(null);
+  const [projection, setProjection] = useState<MonthProjection | null>(null);
+  const [filterCat, setFilterCat] = useState<string | null>(null);
   const [business, setBusiness] = useState<BusinessSummary | null>(null);
   const [activeGoalId, setActiveGoalId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -133,7 +137,7 @@ export default function GastosSection() {
   const reload = useCallback(async () => {
     const requestId = ++reloadSeq.current;
     try {
-      const [expRes, sumRes, catRes, recRes, balRes, bizRes] =
+      const [expRes, sumRes, catRes, recRes, balRes, bizRes, projRes] =
         await Promise.all([
           api.expenses.list(month),
           api.expenses.summary(month),
@@ -141,6 +145,7 @@ export default function GastosSection() {
           api.expenses.recurring.list(),
           api.expenses.balance(month),
           api.expenses.businessSummary(),
+          api.expenses.projection(month),
         ]);
       if (requestId !== reloadSeq.current) return;
       setExpenses((expRes.data as Expense[]) || []);
@@ -149,6 +154,7 @@ export default function GastosSection() {
       setRecurring((recRes.data as RecurringExpense[]) || []);
       setBalance(balRes.data as MonthlyBalance);
       setBusiness(bizRes.data as BusinessSummary);
+      setProjection(projRes.data as MonthProjection);
     } catch (error) {
       if (requestId !== reloadSeq.current) return;
       console.error("Error cargando gastos:", error);
@@ -358,6 +364,19 @@ export default function GastosSection() {
         )}
       </Card>
 
+      {/* Proyección: cuánta plata queda de verdad para el resto del mes */}
+      {isCurrentMonth && projection && <ProjectionCard projection={projection} />}
+
+      {/* Cash flow acumulado (pasado sólido, proyección punteada) */}
+      {balance && (
+        <CashFlowChart
+          month={month}
+          expenses={expenses}
+          balance={balance}
+          projection={isCurrentMonth ? projection : null}
+        />
+      )}
+
       <Button
         variant="default"
         size="xl"
@@ -458,6 +477,53 @@ export default function GastosSection() {
         </Card>
       )}
 
+      {/* Filtro por categoría */}
+      {expenses.length > 0 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          <button
+            onClick={() => setFilterCat(null)}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+              !filterCat
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            }`}
+          >
+            Todas
+          </button>
+          {categories
+            .filter((c) => expenses.some((e) => e.categoryId === c.id))
+            .map((c) => (
+              <button
+                key={c.id}
+                onClick={() =>
+                  setFilterCat(filterCat === c.id ? null : c.id)
+                }
+                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                  filterCat === c.id
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+              >
+                {c.icon} {c.name}
+              </button>
+            ))}
+          {expenses.some((e) => !e.categoryId) && (
+            <button
+              onClick={() =>
+                setFilterCat(filterCat === "none" ? null : "none")
+              }
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                filterCat === "none"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              }`}
+            >
+              Sin categoría
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Lista de gastos del mes */}
       {expenses.length === 0 ? (
         <EmptyState
@@ -467,7 +533,15 @@ export default function GastosSection() {
         />
       ) : (
         <div className="space-y-1.5">
-          {expenses.map((e) => {
+          {expenses
+            .filter((e) =>
+              !filterCat
+                ? true
+                : filterCat === "none"
+                ? !e.categoryId
+                : e.categoryId === filterCat
+            )
+            .map((e) => {
             const showDate = e.date !== lastDate;
             lastDate = e.date;
             const [, m, d] = e.date.split("-");
