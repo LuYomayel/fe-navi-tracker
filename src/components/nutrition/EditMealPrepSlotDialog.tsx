@@ -95,6 +95,7 @@ export function EditMealPrepSlotDialog({
   // ─── Bulk edit state ────────────────────────────────
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedDays, setSelectedDays] = useState<DayKey[]>([]);
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
 
   // ─── Initialize from current slot ───────────────────
   useEffect(() => {
@@ -111,6 +112,7 @@ export function EditMealPrepSlotDialog({
       setAnalyzedResult(null);
       setAnalyzeText("");
       setAnalyzeImage(null);
+      setSaveAsTemplate(false);
     } else if (isOpen && !currentSlot) {
       setName("");
       setNotes("");
@@ -315,6 +317,23 @@ export function EditMealPrepSlotDialog({
           await api.savedMeals.use(selectedSavedMeal.id);
         } catch {
           // best effort
+        }
+      }
+
+      // Guardar también como plantilla (cierra el loop: analizar acá
+      // crea la comida guardada sin pasar por "Registrar comida")
+      if (saveAsTemplate && !selectedSavedMeal) {
+        try {
+          await api.savedMeals.create({
+            name: name.trim(),
+            mealType,
+            foods,
+            totalCalories,
+            macronutrients: macros,
+          });
+          toast.success("Plantilla creada", `"${name.trim()}" quedó en comidas guardadas`);
+        } catch {
+          toast.error("Ojo", "La comida se guardó pero no como plantilla");
         }
       }
 
@@ -708,6 +727,24 @@ export function EditMealPrepSlotDialog({
             </div>
           )}
         </div>
+
+        {/* Guardar también como plantilla (solo si no vino de una) */}
+        {!selectedSavedMeal && name.trim() && (
+          <label className="flex cursor-pointer items-center gap-2 rounded-lg border bg-muted/30 p-2.5 text-sm">
+            <input
+              type="checkbox"
+              checked={saveAsTemplate}
+              onChange={(e) => setSaveAsTemplate(e.target.checked)}
+              className="h-4 w-4 accent-[hsl(var(--primary))]"
+            />
+            <span>
+              ⭐ Guardar también en comidas guardadas
+              <span className="block text-xs text-muted-foreground">
+                Para reusarla en otros días o al registrar comidas
+              </span>
+            </span>
+          </label>
+        )}
 
         {/* ─── ACTION BUTTONS ───────────────────────── */}
         <div className="flex gap-2 pt-2">

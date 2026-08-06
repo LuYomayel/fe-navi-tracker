@@ -10,6 +10,8 @@ import {
   Loader2,
   Save,
   Utensils,
+  Sparkles,
+  Camera,
 } from "lucide-react";
 
 import {
@@ -25,7 +27,12 @@ import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
 import { ActionIconButton } from "@/components/ui/action-icon-button";
 import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
-import { MealType, type SavedMeal, type Macronutrients } from "@/types";
+import {
+  MealType,
+  type SavedMeal,
+  type Macronutrients,
+  type DetectedFood,
+} from "@/types";
 import { MEAL_TYPE_OPTIONS, mealTypeLabel } from "@/lib/meal-types";
 
 interface FormState {
@@ -131,6 +138,12 @@ export function SavedMealsManager({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
 
+  // Análisis con IA dentro del form (sin registrar nada como comido)
+  const [aiText, setAiText] = useState("");
+  const [aiImage, setAiImage] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [foods, setFoods] = useState<DetectedFood[]>([]);
+
   const load = async () => {
     try {
       setLoading(true);
@@ -163,13 +176,78 @@ export function SavedMealsManager({
   const openNew = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setFoods([]);
+    setAiText("");
+    setAiImage(null);
     setMode("form");
   };
 
   const openEdit = (m: SavedMeal) => {
     setEditingId(m.id);
     setForm(fromMeal(m));
+    setFoods((m.foods as DetectedFood[]) || []);
+    setAiText("");
+    setAiImage(null);
     setMode("form");
+  };
+
+  // Analiza la descripción (o foto) y completa kcal/macros/foods del form.
+  // NO registra nada: la comida solo queda como plantilla al guardar.
+  const handleAnalyze = async () => {
+    if (!aiText.trim() && !aiImage) {
+      toast.error("Contame qué lleva la comida (o subí una foto)");
+      return;
+    }
+    setAnalyzing(true);
+    try {
+      const res = aiImage
+        ? await api.analyzeFood.analyzeImage({
+            image: aiImage,
+            mealType: form.mealType as MealType,
+            context: aiText.trim() || undefined,
+          })
+        : await api.analyzeFood.analyzeManualFood({
+            ingredients: aiText.trim(),
+            servings: 1,
+            mealType: form.mealType as MealType,
+          });
+      const data = res.data;
+      if (!data) throw new Error("sin data");
+      setFoods(data.foods || []);
+      const mn = data.macronutrients || {};
+      setForm((f) => ({
+        ...f,
+        name:
+          f.name.trim() ||
+          (data.foods?.length === 1
+            ? data.foods[0].name
+            : (data.foods || []).map((x) => x.name).join(" + ")),
+        calories: String(Math.round(data.totalCalories || 0)),
+        protein: String(mn.protein ?? ""),
+        carbs: String(mn.carbs ?? ""),
+        fat: String(mn.fat ?? ""),
+        fiber: String(mn.fiber ?? ""),
+        sugar: String(mn.sugar ?? ""),
+        sodium: String(mn.sodium ?? ""),
+      }));
+      toast.success(
+        "Análisis listo",
+        `${Math.round(data.totalCalories || 0)} kcal — revisá y guardá`
+      );
+    } catch {
+      toast.error("No se pudo analizar la comida");
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const handleAiImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () =>
+      setAiImage((reader.result as string).split(",")[1] || null);
+    reader.readAsDataURL(file);
   };
 
   const set = (k: keyof FormState, v: string) =>
@@ -194,8 +272,6 @@ export function SavedMealsManager({
     try {
       setSaving(true);
       if (editingId) {
-        // Preservamos los `foods` existentes; sólo editamos macros/kcal/tipo/nombre.
-        const existing = meals.find((m) => m.id === editingId);
         await api.savedMeals.update(editingId, {
           name,
           description: form.description.trim(),
@@ -203,7 +279,7 @@ export function SavedMealsManager({
           component: (form.component || null) as SavedMeal["component"],
           totalCalories,
           macronutrients,
-          foods: existing?.foods ?? [],
+          foods,
         });
         toast.success("Plantilla actualizada");
       } else {
@@ -212,7 +288,7 @@ export function SavedMealsManager({
           description: form.description.trim() || undefined,
           mealType: form.mealType,
           component: (form.component || null) as SavedMeal["component"],
-          foods: [],
+          foods,
           totalCalories,
           macronutrients,
         });
@@ -349,6 +425,47 @@ export function SavedMealsManager({
           </div>
         ) : (
           <div className="max-h-[68vh] space-y-4 overflow-y-auto pr-0.5">
+            {/* Análisis con IA: completa kcal/macros sin registrar nada */}
+            <div className="space-y-2 rounded-xl border border-primary/25 bg-primary/5 p-3">
+              <div className="flex items-center gap-1.5 text-sm font-semibold">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Analizar con IA
+              </div>
+              <Input
+                value={aiText}
+                onChange={(e) => setAiText(e.target.value)}
+                placeholder='Ej: "fideos caseros con salsa de tomate, 1 plato"'
+              />
+              <div className="flex gap-2">
+                <label className="flex h-9 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md border text-xs font-medium text-muted-foreground transition-colors hover:bg-muted">
+                  <Camera className="h-4 w-4" />
+                  {aiImage ? "Foto lista ✓" : "Foto (opcional)"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAiImage}
+                  />
+                </label>
+                <Button
+                  size="sm"
+                  className="flex-1"
+                  onClick={handleAnalyze}
+                  disabled={analyzing}
+                >
+                  {analyzing ? (
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-1.5 h-4 w-4" />
+                  )}
+                  Analizar
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Completa calorías y macros solo. No registra nada como comido.
+              </p>
+            </div>
+
             <div className="space-y-1.5">
               <Label htmlFor="sm-name">Nombre</Label>
               <Input
