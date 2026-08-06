@@ -61,10 +61,14 @@ export default function NaviPage() {
 
   // --- Nivel + XP (datos reales) ---
   const level = xpStats?.level ?? 1;
-  const xp = xpStats?.xp ?? 0;
+  const xp = Math.max(0, xpStats?.xp ?? 0);
   const xpForNextLevel = xpStats?.xpForNextLevel ?? 100;
   const totalXp = xpStats?.totalXp ?? 0;
-  const xpPct = Math.min(100, Math.round(xpStats?.xpProgressPercentage ?? 0));
+  // clamp a [0,100]: sin el piso, un dato viejo pintaba la barra en "-21%"
+  const xpPct = Math.min(
+    100,
+    Math.max(0, Math.round(xpStats?.xpProgressPercentage ?? 0)),
+  );
   const xpRemaining = Math.max(0, xpForNextLevel - xp);
 
   // --- Rachas (3 categorías reales + racha global) ---
