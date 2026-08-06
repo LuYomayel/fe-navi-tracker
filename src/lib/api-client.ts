@@ -757,6 +757,20 @@ export const api = {
   },
 
   // HYDRATION
+  sleep: {
+    getStats: (days = 7) => apiClient.get(`/sleep/stats?days=${days}`),
+    getByDate: (date: string) => apiClient.get(`/sleep/${date}`),
+    upsert: (data: {
+      date: string;
+      minutesAsleep: number;
+      bedTime?: string | null;
+      wakeTime?: string | null;
+      quality?: number | null;
+      notes?: string | null;
+    }) => apiClient.post("/sleep", data),
+    remove: (date: string) => apiClient.delete(`/sleep/${date}`),
+  },
+
   hydration: {
     getByDate: (date?: string) =>
       apiClient.get<HydrationLog>(

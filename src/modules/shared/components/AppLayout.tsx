@@ -11,7 +11,6 @@ import {
   Target,
   CalendarCheck,
   Star,
-  Plus,
   Settings,
   Plane,
 } from "lucide-react";
@@ -27,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { XpGlobalIndicator } from "@/components/xp/XpGlobalIndicator";
+import { QuickAddFab } from "@/components/shared/QuickAddFab";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -196,16 +196,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
         {children}
       </main>
 
-      {/* FAB contextual: registro rápido → Salud (Comidas). Oculto en Ajustes. */}
-      {!onAjustes && (
-        <Link
-          href="/salud?tab=comidas&log=1"
-          className="fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-fab transition-transform active:scale-95 md:hidden"
-          aria-label="Registro rápido"
-        >
-          <Plus className="h-6 w-6" strokeWidth={2.5} />
-        </Link>
-      )}
+      {/* FAB de registro rápido (se abre en menú). Oculto en Ajustes. */}
+      {!onAjustes && <QuickAddFab />}
 
       {/* Bottom tab bar: 5 tabs (mobile). Oculto en Ajustes. */}
       {!onAjustes && (

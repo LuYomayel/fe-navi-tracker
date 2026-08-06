@@ -62,14 +62,22 @@ import SweatTestCard from "@/components/hydration/SweatTestCard";
 import HydrationControls from "@/components/hydration/HydrationControls";
 import HydrationHistory from "@/components/hydration/HydrationHistory";
 import HydrationGoalDialog from "@/components/hydration/HydrationGoalDialog";
+import SleepSection from "@/components/sleep/SleepSection";
 
-type SaludTab = "resumen" | "comidas" | "ejercicio" | "agua" | "peso";
+type SaludTab =
+  | "resumen"
+  | "comidas"
+  | "ejercicio"
+  | "agua"
+  | "sueno"
+  | "peso";
 
 const TAB_OPTIONS: { value: SaludTab; label: string }[] = [
   { value: "resumen", label: "Resumen" },
   { value: "comidas", label: "Comidas" },
   { value: "ejercicio", label: "Ejercicio" },
   { value: "agua", label: "Agua" },
+  { value: "sueno", label: "Sueño" },
   { value: "peso", label: "Cuerpo" },
 ];
 
@@ -78,6 +86,7 @@ const isSaludTab = (v: string | null): v is SaludTab =>
   v === "comidas" ||
   v === "ejercicio" ||
   v === "agua" ||
+  v === "sueno" ||
   v === "peso";
 
 export default function SaludPage() {
@@ -147,10 +156,16 @@ export default function SaludPage() {
     if (isSaludTab(tabParam)) {
       setTab(tabParam);
     }
+    // ?log=1 abre el registro DE ESA TAB (el FAB manda tab + log)
     const logParam = searchParams.get("log");
     if (logParam === "1" || logParam === "true") {
-      setTab("comidas");
-      setShowFoodAnalyzer(true);
+      if (tabParam === "ejercicio") {
+        setTab("ejercicio");
+        setShowExerciseDialog(true);
+      } else {
+        setTab("comidas");
+        setShowFoodAnalyzer(true);
+      }
     }
   }, [searchParams]);
 
@@ -545,6 +560,8 @@ export default function SaludPage() {
           />
         </div>
       )}
+
+      {tab === "sueno" && <SleepSection />}
 
       {tab === "agua" && (
         <div className="space-y-4">

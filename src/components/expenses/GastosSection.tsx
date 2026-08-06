@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
 import { ActionIconButton } from "@/components/ui/action-icon-button";
+import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
 import { getDateKey, getMonthKey, fmtARS } from "@/lib/utils";
@@ -160,6 +161,15 @@ export default function GastosSection() {
       if (requestId === reloadSeq.current) setLoading(false);
     }
   }, [month]);
+
+  // El FAB entra con ?nuevo=1: abre directo el alta de gasto
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("nuevo") === "1") {
+      setEditingExpense(null);
+      setShowExpenseDialog(true);
+    }
+  }, [searchParams]);
 
   // Objetivo activo (fondo NZ) para linkear inversiones — una sola vez
   useEffect(() => {
