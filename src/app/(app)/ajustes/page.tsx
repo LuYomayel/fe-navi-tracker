@@ -27,6 +27,7 @@ import { SummaryRow } from "@/components/ui/summary-row";
 import type { Tone } from "@/components/ui/tone";
 import { SetGoalsDialog } from "@/components/nutrition/SetGoalsDialog";
 import { AICostWidget } from "@/components/nutrition/AICostWidget";
+import { QuickActionsSettings } from "@/components/settings/QuickActionsSettings";
 
 // Guía de conexión del MCP (recuperada de la vieja /connect-claude).
 const CONNECT_STEPS: string[] = [
@@ -232,6 +233,11 @@ export default function AjustesPage() {
             onClick={() => router.push("/salud?tab=peso")}
           />
         </div>
+      </Section>
+
+      {/* Automatizaciones: tags NFC / Atajos / Watch */}
+      <Section title="Automatizaciones">
+        <QuickActionsSettings />
       </Section>
 
       {/* Integraciones: Conectar con Claude */}

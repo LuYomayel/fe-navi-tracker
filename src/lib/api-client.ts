@@ -818,6 +818,14 @@ export const api = {
   },
 
   // Goals (fondo de ahorro — Objetivo NZ)
+  quickActions: {
+    getConfig: () => apiClient.get("/quick-actions/config"),
+    setConfig: (data: {
+      aguaVasosPorTap?: number;
+      notaMoodDefault?: number;
+      gastoCategoriaDefault?: string | null;
+    }) => apiClient.put("/quick-actions/config", data),
+  },
   goals: {
     getAll: () => apiClient.get<Goal[]>("/goals"),
     getProgress: () => apiClient.get<GoalProgress>("/goals/progress"),
