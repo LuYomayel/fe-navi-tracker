@@ -210,10 +210,30 @@ export function EditMealPrepSlotDialog({
       macronutrients: { ...emptyMacros, ...(m.macronutrients || {}) },
       category: FoodCategory.OTHER,
     }));
-    const updated = [...foods, ...rows];
+    // Slots generados por IA suelen tener totales SIN alimentos desglosados.
+    // Si no materializamos lo existente como una fila, recalcFromFoods pisa
+    // esos totales y agregar un componente BORRA la comida actual.
+    let base = [...foods];
+    if (base.length === 0 && totalCalories > 0) {
+      base = [
+        {
+          name: name.trim() || "Comida actual",
+          quantity: "1 porción",
+          calories: totalCalories,
+          confidence: 1,
+          macronutrients: { ...emptyMacros, ...macros },
+          category: FoodCategory.OTHER,
+        },
+      ];
+    }
+    const updated = [...base, ...rows];
     setFoods(updated);
     recalcFromFoods(updated);
-    if (!name.trim()) setName(sel.map((m) => m.name).join(" + "));
+    setName(
+      name.trim()
+        ? `${name.trim()} + ${sel.map((m) => m.name).join(" + ")}`
+        : sel.map((m) => m.name).join(" + ")
+    );
     setMode("manual");
     toast.success(
       "Plato armado",
