@@ -123,6 +123,20 @@ export interface MonthProjection {
   ingresosEsperados: { id: string; date: string; amount: number; description: string }[];
   ingresosEsperadosTotal: number;
   disponibleProyectado: number;
-  tarjetaPendiente: { id: string; date: string; amount: number; description: string }[];
+  tarjetaPendiente: TarjetaPendienteItem[];
   tarjetaPendienteTotal: number;
+  tarjetaPendientePorTarjeta?: {
+    card: string | null; // null = la Visa propia
+    label: string;
+    total: number;
+    items: TarjetaPendienteItem[];
+  }[];
+}
+
+export interface TarjetaPendienteItem {
+  id: string;
+  date: string;
+  amount: number;
+  description: string;
+  card?: string | null;
 }

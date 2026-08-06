@@ -2,9 +2,14 @@
 
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
-import type { Expense, MonthProjection, MonthlyBalance } from "@/types/expenses";
+import type {
+  Expense,
+  MonthProjection,
+  MonthlyBalance,
+  TarjetaPendienteItem,
+} from "@/types/expenses";
 import { getDateKey } from "@/lib/utils";
-import { Wallet2, CalendarClock } from "lucide-react";
+import { Wallet2, CalendarClock, X } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -30,8 +35,27 @@ const fmtCompact = (n: number) =>
  * "¿Cuánta plata dispongo realmente para el resto del mes?" — número héroe
  * con el desglose de compromisos futuros e ingresos esperados.
  */
-export function ProjectionCard({ projection }: { projection: MonthProjection }) {
+export function ProjectionCard({
+  projection,
+  onDeleteCardItem,
+}: {
+  projection: MonthProjection;
+  onDeleteCardItem?: (item: TarjetaPendienteItem) => void;
+}) {
   const pr = projection;
+  // Fallback para respuestas del backend viejo (sin agrupado por tarjeta)
+  const cardGroups =
+    pr.tarjetaPendientePorTarjeta ??
+    (pr.tarjetaPendienteTotal > 0
+      ? [
+          {
+            card: null,
+            label: "Visa",
+            total: pr.tarjetaPendienteTotal,
+            items: pr.tarjetaPendiente,
+          },
+        ]
+      : []);
   const hasFuture =
     pr.gastosFuturos.length > 0 ||
     pr.recurrentesPorVenir.length > 0 ||
@@ -100,14 +124,55 @@ export function ProjectionCard({ projection }: { projection: MonthProjection }) 
         {pr.tarjetaPendienteTotal > 0 && (
           <div className="mt-2 rounded-lg border border-warning/30 bg-warning/8 p-2.5">
             <div className="flex justify-between text-sm font-medium">
-              <span>💳 Próximo resumen de tarjeta</span>
+              <span>💳 Tarjetas de crédito</span>
               <span className="font-mono tabular-nums">
                 {fmtARS(pr.tarjetaPendienteTotal)}
               </span>
             </div>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">
-              Consumos de crédito acumulados — se pagan el mes que viene, no
-              cuentan en el disponible de este mes
+            <div className="mt-1.5 space-y-2">
+              {cardGroups.map((g) => (
+                <div key={g.label} className="space-y-0.5">
+                  <div className="flex justify-between text-xs font-semibold">
+                    <span>
+                      {g.card ? `🤝 Tarjeta de ${g.label}` : "💳 Visa (mía)"}
+                    </span>
+                    <span className="font-mono tabular-nums">
+                      {fmtARS(g.total)}
+                    </span>
+                  </div>
+                  {g.items.map((c) => (
+                    <div
+                      key={c.id}
+                      className="flex items-center justify-between gap-2 text-xs text-muted-foreground"
+                    >
+                      <span className="truncate">
+                        {c.description}{" "}
+                        <span className="text-[10px]">
+                          ({c.date.slice(8)}/{c.date.slice(5, 7)})
+                        </span>
+                      </span>
+                      <span className="flex shrink-0 items-center gap-1.5">
+                        <span className="font-mono tabular-nums">
+                          {fmtARS(c.amount)}
+                        </span>
+                        {onDeleteCardItem && (
+                          <button
+                            onClick={() => onDeleteCardItem(c)}
+                            className="text-muted-foreground/50 transition-colors hover:text-destructive"
+                            aria-label={`Borrar consumo ${c.description}`}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              No cuentan en el disponible del mes: la Visa se salda al importar
+              el resumen; una tarjeta ajena, cuando le transferís lo gastado.
             </p>
           </div>
         )}

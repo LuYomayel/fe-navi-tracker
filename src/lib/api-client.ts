@@ -250,6 +250,8 @@ export const api = {
       description: string;
       categoryId?: string | null;
       goalId?: string | null;
+      tarjeta?: boolean; // consumo de crédito → buffer del próximo resumen
+      card?: string | null; // null = la Visa propia, texto = otra tarjeta
     }) => apiClient.post("/expenses", data),
     update: (
       id: string,

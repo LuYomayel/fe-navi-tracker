@@ -28,6 +28,7 @@ import type {
   IncomeSource,
   MonthlyBalance,
   MonthProjection,
+  TarjetaPendienteItem,
   RecurringExpense,
 } from "@/types/expenses";
 import { ImportCardStatementDialog } from "./ImportCardStatementDialog";
@@ -218,6 +219,19 @@ export default function GastosSection() {
     }
   };
 
+  // Consumos del buffer de tarjeta: son Expense comunes (source
+  // tarjeta-pendiente), asi que el delete usa el mismo endpoint
+  const handleDeleteCardItem = async (item: TarjetaPendienteItem) => {
+    if (!(await confirmExpense.confirm(item as unknown as Expense))) return;
+    try {
+      await api.expenses.delete(item.id);
+      toast.success("Consumo borrado", "");
+      reload();
+    } catch {
+      toast.error("Error", "No se pudo borrar el consumo");
+    }
+  };
+
   const openIncomeDialog = (inc: Income | null, source: IncomeSource = "otro") => {
     setEditingIncome(inc);
     setIncomeDialogSource(inc ? (inc.source as IncomeSource) : source);
@@ -365,7 +379,12 @@ export default function GastosSection() {
       </Card>
 
       {/* Proyección: cuánta plata queda de verdad para el resto del mes */}
-      {isCurrentMonth && projection && <ProjectionCard projection={projection} />}
+      {isCurrentMonth && projection && (
+        <ProjectionCard
+          projection={projection}
+          onDeleteCardItem={handleDeleteCardItem}
+        />
+      )}
 
       {/* Cash flow acumulado (pasado sólido, proyección punteada) */}
       {balance && (
@@ -795,6 +814,9 @@ export default function GastosSection() {
         categories={categories}
         editing={editingExpense}
         activeGoalId={activeGoalId}
+        cardOptions={(projection?.tarjetaPendientePorTarjeta ?? []).flatMap(
+          (g) => (g.card ? [g.card] : []),
+        )}
         onSaved={reload}
       />
       <IncomeDialog
@@ -863,6 +885,7 @@ function ExpenseDialog({
   categories,
   editing,
   activeGoalId,
+  cardOptions,
   onSaved,
 }: {
   open: boolean;
@@ -870,6 +893,7 @@ function ExpenseDialog({
   categories: ExpenseCategory[];
   editing: Expense | null;
   activeGoalId: string | null;
+  cardOptions: string[];
   onSaved: () => void;
 }) {
   const [amount, setAmount] = useState("");
@@ -877,6 +901,8 @@ function ExpenseDialog({
   const [categoryId, setCategoryId] = useState("");
   const [date, setDate] = useState(todayKey());
   const [isInvestment, setIsInvestment] = useState(false);
+  const [isCard, setIsCard] = useState(false);
+  const [cardName, setCardName] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -886,6 +912,8 @@ function ExpenseDialog({
       setCategoryId(editing?.categoryId || "");
       setDate(editing?.date || todayKey());
       setIsInvestment(!!editing?.goalId);
+      setIsCard(false);
+      setCardName("");
     }
   }, [open, editing]);
 
@@ -907,13 +935,19 @@ function ExpenseDialog({
         description: description.trim(),
         categoryId: categoryId || null,
         goalId: isInvestment ? activeGoalId : null,
+        ...(!editing && isCard
+          ? { tarjeta: true, card: cardName.trim() || null }
+          : {}),
       };
       if (editing) {
         await api.expenses.update(editing.id, payload);
         toast.success("Gasto actualizado", "");
       } else {
         await api.expenses.create(payload);
-        toast.success("Gasto registrado", fmtARS(monto));
+        toast.success(
+          isCard ? "Anotado en el próximo resumen" : "Gasto registrado",
+          fmtARS(monto),
+        );
       }
       onClose();
       onSaved();
@@ -984,6 +1018,39 @@ function ExpenseDialog({
               />
             </div>
           </div>
+          {!editing && (
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border bg-muted/30 p-3 text-sm">
+              <input
+                type="checkbox"
+                checked={isCard}
+                onChange={(e) => setIsCard(e.target.checked)}
+                className="h-4 w-4 accent-[hsl(var(--primary))]"
+              />
+              <span>
+                💳 Tarjeta de crédito
+                <span className="block text-xs text-muted-foreground">
+                  Va al próximo resumen, no al gasto del mes
+                </span>
+              </span>
+            </label>
+          )}
+          {!editing && isCard && (
+            <div>
+              <Label htmlFor="exp-card">¿Qué tarjeta?</Label>
+              <Input
+                id="exp-card"
+                list="exp-card-options"
+                placeholder="Vacío = Visa (la mía) — o escribí de quién es"
+                value={cardName}
+                onChange={(e) => setCardName(e.target.value)}
+              />
+              <datalist id="exp-card-options">
+                {cardOptions.map((c) => (
+                  <option key={c} value={c} />
+                ))}
+              </datalist>
+            </div>
+          )}
           {activeGoalId && (
             <label className="flex cursor-pointer items-center gap-2 rounded-lg border bg-muted/30 p-3 text-sm">
               <input
