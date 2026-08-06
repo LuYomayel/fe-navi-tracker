@@ -29,6 +29,7 @@ import type {
   MonthlyBalance,
   RecurringExpense,
 } from "@/types/expenses";
+import { ImportCardStatementDialog } from "./ImportCardStatementDialog";
 import {
   ChevronLeft,
   ChevronRight,
@@ -43,6 +44,7 @@ import {
   Printer,
   HandCoins,
   Clock,
+  CreditCard,
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
@@ -113,6 +115,7 @@ export default function GastosSection() {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [showCategoriesDialog, setShowCategoriesDialog] = useState(false);
   const [showRecurringDialog, setShowRecurringDialog] = useState(false);
+  const [showCardDialog, setShowCardDialog] = useState(false);
   const [showIncomeDialog, setShowIncomeDialog] = useState(false);
   const [editingIncome, setEditingIncome] = useState<Income | null>(null);
   const [incomeDialogSource, setIncomeDialogSource] =
@@ -681,6 +684,17 @@ export default function GastosSection() {
         </Card>
       )}
 
+      {/* Importar resumen de tarjeta */}
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full"
+        onClick={() => setShowCardDialog(true)}
+      >
+        <CreditCard className="mr-1.5 h-4 w-4" />
+        Importar resumen de tarjeta (PDF)
+      </Button>
+
       {/* Accesos: recurrentes + categorías */}
       <div className="grid grid-cols-2 gap-2">
         <Button
@@ -722,6 +736,11 @@ export default function GastosSection() {
         onClose={() => setShowCategoriesDialog(false)}
         categories={categories}
         onChanged={reload}
+      />
+      <ImportCardStatementDialog
+        isOpen={showCardDialog}
+        onClose={() => setShowCardDialog(false)}
+        onImported={reload}
       />
       <RecurringDialog
         open={showRecurringDialog}
