@@ -28,6 +28,33 @@
   html {
     font-size: 109%;
   }
+
+  /* iOS hace ZOOM al enfocar un campo con letra < 16px y despues no vuelve:
+     es lo que hace sentir la app "tosca" al tipear. 16px reales lo evita. */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Campos numéricos sin las flechitas del spinner (se ven mal y no se usan
+   en mobile: el teclado numérico ya alcanza). */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Los date/month nativos traen ancho intrínseco y desbordan su contenedor. */
+input[type="date"],
+input[type="month"],
+input[type="time"] {
+  min-width: 0;
 }
 
 @layer base {

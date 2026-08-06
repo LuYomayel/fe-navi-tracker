@@ -57,12 +57,14 @@ const CHART_TOKENS = ["chart-1", "chart-2", "chart-3", "chart-4", "chart-5"];
 const tokenColor = (token?: string | null, index = 0) =>
   `hsl(var(--${token || CHART_TOKENS[index % CHART_TOKENS.length]}))`;
 
+// "2026-08" -> "Agosto 2026". Sin el "de" del medio: con `capitalize` de CSS
+// quedaba "Agosto De 2026".
 const monthLabel = (key: string) => {
   const [y, m] = key.split("-").map(Number);
-  return new Date(y, m - 1, 1).toLocaleDateString("es-AR", {
+  const mes = new Date(y, m - 1, 1).toLocaleDateString("es-AR", {
     month: "long",
-    year: "numeric",
   });
+  return `${mes.charAt(0).toUpperCase()}${mes.slice(1)} ${y}`;
 };
 
 const todayKey = () => getDateKey(new Date());
@@ -276,9 +278,7 @@ export default function GastosSection() {
           <ChevronLeft className="h-5 w-5" />
         </button>
         <div className="flex flex-col items-center leading-tight">
-          <span className="text-sm font-semibold capitalize">
-            {monthLabel(month)}
-          </span>
+          <span className="text-sm font-semibold">{monthLabel(month)}</span>
           {!isCurrentMonth && (
             <button
               onClick={() => setMonth(getMonthKey(new Date()))}
