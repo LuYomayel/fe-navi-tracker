@@ -67,9 +67,19 @@ const sectorCenter = (index: number, cx = 100, cy = 100, r = 55) => {
 export function PlateComposer({
   selectedDate,
   onLogged,
+  composeMode = false,
+  onCompose,
+  initialMealType,
 }: {
-  selectedDate: Date;
-  onLogged: () => void;
+  selectedDate?: Date;
+  onLogged?: () => void;
+  /** true = armar el plato SIN registrar: devuelve los componentes por onCompose (ej: meal prep) */
+  composeMode?: boolean;
+  onCompose?: (
+    meals: SavedMeal[],
+    totals: { kcal: number; protein: number; carbs: number; fat: number }
+  ) => void;
+  initialMealType?: string;
 }) {
   const [meals, setMeals] = useState<SavedMeal[]>([]);
   const [selected, setSelected] = useState<Record<string, SavedMeal[]>>({});
@@ -138,16 +148,20 @@ export function PlateComposer({
   };
 
   useEffect(() => {
-    const hour = new Date().getHours();
-    setMealType(
-      hour < 11
-        ? "breakfast"
-        : hour < 15
-        ? "lunch"
-        : hour < 19
-        ? "merienda"
-        : "dinner"
-    );
+    if (initialMealType) {
+      setMealType(initialMealType);
+    } else {
+      const hour = new Date().getHours();
+      setMealType(
+        hour < 11
+          ? "breakfast"
+          : hour < 15
+          ? "lunch"
+          : hour < 19
+          ? "merienda"
+          : "dinner"
+      );
+    }
     api.savedMeals
       .getAll()
       .then((res) => setMeals((res.data as SavedMeal[]) || []))
@@ -230,12 +244,18 @@ export function PlateComposer({
 
   const handleLog = async () => {
     if (allSelected.length === 0) return;
+    // Modo componer: no registra nada, entrega los componentes al padre
+    if (composeMode && onCompose) {
+      onCompose(allSelected, totals);
+      setSelected({});
+      return;
+    }
     setLogging(true);
     try {
       const res = await api.savedMeals.logPlate({
         componentIds: allSelected.map((m) => m.id),
         mealType,
-        date: getDateKey(selectedDate),
+        date: getDateKey(selectedDate || new Date()),
       });
       if (!res.success) throw new Error("No se pudo registrar");
       // El +15 XP lo otorga el backend al crear la comida.
@@ -249,7 +269,7 @@ export function PlateComposer({
         allSelected.map((m) => m.name).join(" + ")
       );
       setSelected({});
-      onLogged();
+      onLogged?.();
     } catch (error) {
       console.error("Error registrando plato:", error);
       toast.error("Error", "No se pudo registrar el plato");
@@ -520,7 +540,7 @@ export function PlateComposer({
 
       {/* Totales + tipo + CTA */}
       <div className="space-y-3 border-t pt-3">
-        <div className="flex gap-1.5 overflow-x-auto">
+        <div className={composeMode ? "hidden" : "flex gap-1.5 overflow-x-auto"}>
           {MEAL_TYPES.map((t) => (
             <button
               key={t.value}
@@ -558,7 +578,9 @@ export function PlateComposer({
             : logging
             ? "Registrando…"
             : allSelected.length > 0
-            ? `¡A comer! (${allSelected.length} componente${allSelected.length > 1 ? "s" : ""})`
+            ? composeMode
+              ? `Poner en la comida (${allSelected.length} componente${allSelected.length > 1 ? "s" : ""})`
+              : `¡A comer! (${allSelected.length} componente${allSelected.length > 1 ? "s" : ""})`
             : "Armá tu plato tocando las zonas"}
         </Button>
       </div>

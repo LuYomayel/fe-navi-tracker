@@ -22,7 +22,9 @@ import {
   Trash2,
   Copy,
   Check,
+  Utensils,
 } from "lucide-react";
+import { PlateComposer } from "./PlateComposer";
 import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
 import {
@@ -37,7 +39,7 @@ import {
 } from "@/types";
 import type { SavedMeal, DetectedFood, Macronutrients, MealType } from "@/types";
 
-type EditMode = "manual" | "saved" | "analyze";
+type EditMode = "manual" | "plate" | "saved" | "analyze";
 
 interface EditMealPrepSlotDialogProps {
   isOpen: boolean;
@@ -196,6 +198,27 @@ export function EditMealPrepSlotDialog({
     const updated = foods.filter((_, i) => i !== index);
     setFoods(updated);
     recalcFromFoods(updated);
+  };
+
+  // ─── Plato modular: suma cada componente como un alimento más ──
+  const applyPlate = (sel: SavedMeal[]) => {
+    const rows: DetectedFood[] = sel.map((m) => ({
+      name: m.name,
+      quantity: "1 porción",
+      calories: m.totalCalories || 0,
+      confidence: 1,
+      macronutrients: { ...emptyMacros, ...(m.macronutrients || {}) },
+      category: FoodCategory.OTHER,
+    }));
+    const updated = [...foods, ...rows];
+    setFoods(updated);
+    recalcFromFoods(updated);
+    if (!name.trim()) setName(sel.map((m) => m.name).join(" + "));
+    setMode("manual");
+    toast.success(
+      "Plato armado",
+      `${sel.length} componente${sel.length > 1 ? "s" : ""} sumado${sel.length > 1 ? "s" : ""} — revisá y guardá`
+    );
   };
 
   // ─── Select saved meal ─────────────────────────────
@@ -371,6 +394,7 @@ export function EditMealPrepSlotDialog({
         <div className="flex gap-1 bg-muted/50 rounded-lg p-0.5">
           {[
             { id: "manual" as EditMode, label: "Manual", icon: Pencil },
+            { id: "plate" as EditMode, label: "Plato", icon: Utensils },
             { id: "saved" as EditMode, label: "Guardadas", icon: BookmarkCheck },
             { id: "analyze" as EditMode, label: "Analizar", icon: Camera },
           ].map((tab) => {
@@ -545,6 +569,17 @@ export function EditMealPrepSlotDialog({
         )}
 
         {/* ─── SAVED MEALS MODE ─────────────────────── */}
+        {/* ─── PLATE MODE: armar el plato por componentes ── */}
+        {mode === "plate" && (
+          <div className="max-h-[55vh] overflow-y-auto pr-1">
+            <PlateComposer
+              composeMode
+              initialMealType={mealType}
+              onCompose={(sel) => applyPlate(sel)}
+            />
+          </div>
+        )}
+
         {mode === "saved" && (
           <div className="max-h-[55vh] overflow-y-auto pr-1">
             {loadingSavedMeals ? (
