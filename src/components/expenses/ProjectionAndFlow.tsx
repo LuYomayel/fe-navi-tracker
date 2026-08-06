@@ -97,6 +97,20 @@ export function ProjectionCard({ projection }: { projection: MonthProjection }) 
             </span>
           </div>
         ))}
+        {pr.tarjetaPendienteTotal > 0 && (
+          <div className="mt-2 rounded-lg border border-warning/30 bg-warning/8 p-2.5">
+            <div className="flex justify-between text-sm font-medium">
+              <span>💳 Próximo resumen de tarjeta</span>
+              <span className="font-mono tabular-nums">
+                {fmtARS(pr.tarjetaPendienteTotal)}
+              </span>
+            </div>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              Consumos de crédito acumulados — se pagan el mes que viene, no
+              cuentan en el disponible de este mes
+            </p>
+          </div>
+        )}
         {!hasFuture && (
           <p className="text-xs text-muted-foreground">
             Sin compromisos futuros agendados. Cargá gastos con fecha futura o

@@ -123,4 +123,6 @@ export interface MonthProjection {
   ingresosEsperados: { id: string; date: string; amount: number; description: string }[];
   ingresosEsperadosTotal: number;
   disponibleProyectado: number;
+  tarjetaPendiente: { id: string; date: string; amount: number; description: string }[];
+  tarjetaPendienteTotal: number;
 }
