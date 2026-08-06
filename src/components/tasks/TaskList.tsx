@@ -170,12 +170,12 @@ export default function TaskList() {
 
       {/* Filters + Add button */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex gap-1 overflow-x-auto">
+        <div className="scrollbar-hide flex min-w-0 gap-1 overflow-x-auto py-0.5">
           {filters.map((f) => (
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+              className={`shrink-0 rounded-full px-3 py-2 text-xs font-medium whitespace-nowrap transition-all active:scale-[0.97] ${
                 filter === f.key
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted text-muted-foreground hover:bg-muted/80"

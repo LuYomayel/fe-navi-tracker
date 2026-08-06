@@ -193,10 +193,14 @@
   background: rgba(255, 255, 255, 0.15);
 }
 
-/* Hide scrollbar but keep scroll functionality */
+/* Scrollers horizontales (tabs, chips, tiras de días): sin barra visible,
+   con inercia de iOS y sin arrastrar el scroll de la página al llegar al
+   final. Es lo que hace que se sientan nativos y no "toscos" en el celu. */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;

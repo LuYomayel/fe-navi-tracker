@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -32,14 +34,26 @@ export function PillToggle<T extends string = string>({
   const norm: PillOption<T>[] = options.map((o) =>
     typeof o === "string" ? { value: o, label: o } : o,
   );
+  const listRef = React.useRef<HTMLDivElement>(null);
+
+  // Si la tab activa quedó fuera de la parte visible del scroll, traerla.
+  React.useEffect(() => {
+    const el = listRef.current?.querySelector<HTMLElement>(
+      '[aria-selected="true"]',
+    );
+    el?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [value]);
 
   return (
     <div
+      ref={listRef}
       role="tablist"
       aria-label={props["aria-label"]}
       className={cn(
-        "gap-0.5 rounded-md bg-muted p-[3px]",
-        fullWidth ? "flex w-full" : "inline-flex",
+        // En mobile los labels NO se truncan: si no entran, la tira scrollea
+        // (sin barra visible). Ver flex-[1_0_auto] en cada tab.
+        "scrollbar-hide flex snap-x gap-0.5 overflow-x-auto rounded-md bg-muted p-[3px]",
+        fullWidth ? "w-full" : "inline-flex",
         className,
       )}
     >
@@ -53,19 +67,17 @@ export function PillToggle<T extends string = string>({
             aria-selected={on}
             onClick={() => onChange(o.value)}
             className={cn(
-              "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-[9px] py-[7px] font-semibold transition-all duration-fast active:scale-[0.98]",
-              // fullWidth: reparte en columnas iguales y permite encoger
-              // (min-w-0) para que N tabs entren sin desbordar el viewport.
-              fullWidth
-                ? "min-w-0 flex-1 px-2 text-[12.5px]"
-                : "px-3.5 text-[13px]",
+              "inline-flex min-h-[38px] snap-start items-center justify-center gap-1.5 whitespace-nowrap rounded-[9px] px-3.5 py-2 text-[13px] font-semibold transition-all duration-fast active:scale-[0.98]",
+              // grow para repartir el ancho cuando sobra, pero shrink 0 para
+              // no achicarse nunca por debajo del texto (nada de "Resum…").
+              fullWidth && "flex-[1_0_auto]",
               on
                 ? "bg-card text-primary shadow-xs"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
             {Icon && <Icon size={15} strokeWidth={2} className="shrink-0" />}
-            <span className="truncate">{o.label}</span>
+            <span>{o.label}</span>
           </button>
         );
       })}

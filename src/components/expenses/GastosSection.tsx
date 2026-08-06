@@ -18,7 +18,7 @@ import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
 import { ActionIconButton } from "@/components/ui/action-icon-button";
 import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
-import { getDateKey, getMonthKey } from "@/lib/utils";
+import { getDateKey, getMonthKey, fmtARS } from "@/lib/utils";
 import type {
   BusinessSummary,
   Expense,
@@ -51,12 +51,6 @@ import {
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
-const fmtARS = (n: number) =>
-  new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  }).format(n);
 
 const CHART_TOKENS = ["chart-1", "chart-2", "chart-3", "chart-4", "chart-5"];
 
@@ -498,7 +492,7 @@ export default function GastosSection() {
 
       {/* Filtro por categoría */}
       {expenses.length > 0 && (
-        <div className="flex gap-1.5 overflow-x-auto pb-1">
+        <div className="scrollbar-hide -mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1">
           <button
             onClick={() => setFilterCat(null)}
             className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${

@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
+import { fmtARS } from "@/lib/utils";
 import type { ExpenseCategory } from "@/types/expenses";
 import {
   CreditCard,
@@ -21,13 +22,6 @@ import {
   X,
   CheckCircle2,
 } from "lucide-react";
-
-const fmtARS = (n: number) =>
-  new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  }).format(n);
 
 interface ParsedMovement {
   date: string;

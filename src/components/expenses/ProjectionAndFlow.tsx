@@ -8,7 +8,7 @@ import type {
   MonthlyBalance,
   TarjetaPendienteItem,
 } from "@/types/expenses";
-import { getDateKey } from "@/lib/utils";
+import { getDateKey, fmtARS } from "@/lib/utils";
 import { Wallet2, CalendarClock, X } from "lucide-react";
 import {
   Area,
@@ -20,13 +20,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-
-const fmtARS = (n: number) =>
-  new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  }).format(n);
 
 const fmtCompact = (n: number) =>
   `${n < 0 ? "-" : ""}$${Math.round(Math.abs(n) / 1000)}k`;
@@ -246,7 +239,10 @@ export function CashFlowChart({
     return points;
   }, [month, expenses, balance, projection]);
 
-  if (data.length === 0) return null;
+  // Sin movimientos el gráfico es una línea plana en cero: ocupa media
+  // pantalla en el celu para no decir nada.
+  const hayMovimiento = data.some((p) => (p.real ?? p.proyectado ?? 0) !== 0);
+  if (data.length === 0 || !hayMovimiento) return null;
 
   return (
     <Card className="rounded-lg border p-4">

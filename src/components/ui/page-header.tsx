@@ -37,7 +37,9 @@ export function PageHeader({
             {title}
           </h1>
           {subtitle && (
-            <p className="mt-0.5 text-[13px] text-muted-foreground">
+            // En el celu el subtítulo va a una línea: si envuelve, el header
+            // se come el alto útil de la pantalla.
+            <p className="mt-0.5 truncate text-[13px] text-muted-foreground sm:whitespace-normal">
               {subtitle}
             </p>
           )}

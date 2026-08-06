@@ -27,6 +27,21 @@ export function fmtUSD(n: number, options?: Intl.NumberFormatOptions): string {
   return `USD ${fmtNumber(n, options)}`;
 }
 
+/**
+ * Monto en pesos (1234 -> "$1.234").
+ *
+ * `Intl` con style currency mete un espacio duro entre el "$" y el número
+ * ("$ 1.234"); en tipografía mono/tabular ese espacio se ve enorme y los
+ * montos parecen rotos. Lo sacamos para que el signo quede pegado.
+ */
+export function fmtARS(n: number, options?: Intl.NumberFormatOptions): string {
+  const sign = n < 0 ? "-" : "";
+  return `${sign}$${fmtNumber(Math.abs(n), {
+    maximumFractionDigits: 0,
+    ...options,
+  })}`;
+}
+
 // Función helper para obtener la clave de mes en formato YYYY-MM (zona horaria local)
 export function getMonthKey(date: Date): string {
   const year = date.getFullYear();
