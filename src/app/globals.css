@@ -38,6 +38,16 @@
   }
 }
 
+/* Feel nativo al tocar: iOS pinta un recuadro gris sobre cada botón/link que
+   tocás y agrega ~300ms de espera por el doble-tap-zoom. Las dos cosas hacen
+   que la app se sienta lenta y "web". */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  touch-action: manipulation;
+}
+
 /* Campos numéricos sin las flechitas del spinner (se ven mal y no se usan
    en mobile: el teclado numérico ya alcanza). */
 input[type="number"]::-webkit-outer-spin-button,
