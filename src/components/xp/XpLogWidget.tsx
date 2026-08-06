@@ -56,7 +56,7 @@ export function XpLogWidget({
       case "streak_bonus":
         return <Zap className="w-4 h-4 text-orange-500" />;
       default:
-        return <Star className="w-4 h-4 text-gray-500" />;
+        return <Star className="w-4 h-4 text-muted-foreground" />;
     }
   };
 
@@ -73,7 +73,7 @@ export function XpLogWidget({
       case "streak_bonus":
         return "bg-orange-100 text-orange-700 border-orange-200";
       default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
+        return "bg-muted text-muted-foreground border-border";
     }
   };
 

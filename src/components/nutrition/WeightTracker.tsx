@@ -263,7 +263,7 @@ export function WeightTracker({
                         ? "text-red-600"
                         : trend.direction === "down"
                         ? "text-green-600"
-                        : "text-gray-600"
+                        : "text-muted-foreground"
                     }`}
                   >
                     {trend.direction === "up" ? (

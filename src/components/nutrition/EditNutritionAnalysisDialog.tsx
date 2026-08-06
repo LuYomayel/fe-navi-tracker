@@ -336,14 +336,14 @@ export function EditNutritionAnalysisDialog({
                   >
                     <div>
                       <span className="font-medium">{food.name}</span>
-                      <span className="text-sm text-gray-500 ml-2">
+                      <span className="text-sm text-muted-foreground ml-2">
                         ({food.quantity})
                       </span>
                     </div>
                     <div className="text-right">
                       <div className="font-medium">{food.calories} kcal</div>
                       {food.confidence && (
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-muted-foreground">
                           {Math.round(food.confidence * 100)}% confianza
                         </div>
                       )}

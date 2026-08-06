@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 const priorities = [
-  { value: "low", label: "Baja", color: "bg-gray-400" },
+  { value: "low", label: "Baja", color: "bg-muted-foreground" },
   { value: "medium", label: "Media", color: "bg-blue-500" },
   { value: "high", label: "Alta", color: "bg-orange-500" },
   { value: "urgent", label: "Urgente", color: "bg-red-500" },

@@ -18,7 +18,7 @@ const priorityColors: Record<string, string> = {
   urgent: "bg-red-500 text-white",
   high: "bg-orange-500 text-white",
   medium: "bg-blue-500 text-white",
-  low: "bg-gray-400 text-white",
+  low: "bg-muted-foreground text-background",
 };
 
 const priorityLabels: Record<string, string> = {

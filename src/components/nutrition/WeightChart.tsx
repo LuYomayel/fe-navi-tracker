@@ -86,7 +86,7 @@ export function WeightChart({ entries, targetWeight }: WeightChartProps) {
       case "obese":
         return "text-red-600";
       default:
-        return "text-gray-600";
+        return "text-muted-foreground";
     }
   };
 
@@ -112,7 +112,7 @@ export function WeightChart({ entries, targetWeight }: WeightChartProps) {
       case "decreasing":
         return <TrendingDown className="h-4 w-4 text-green-600" />;
       default:
-        return <Minus className="h-4 w-4 text-gray-600" />;
+        return <Minus className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -123,7 +123,7 @@ export function WeightChart({ entries, targetWeight }: WeightChartProps) {
       case "decreasing":
         return "text-green-600";
       default:
-        return "text-gray-600";
+        return "text-muted-foreground";
     }
   };
 
@@ -131,7 +131,7 @@ export function WeightChart({ entries, targetWeight }: WeightChartProps) {
     return (
       <Card>
         <CardContent className="p-6 text-center">
-          <Scale className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+          <Scale className="h-12 w-12 mx-auto mb-4 text-muted-foreground/60" />
           <h3 className="text-lg font-medium mb-2">Sin datos de peso</h3>
           <p className="text-muted-foreground">
             Registra tu primer peso para ver el análisis
@@ -269,7 +269,7 @@ export function WeightChart({ entries, targetWeight }: WeightChartProps) {
                       {analysis.progressToTarget.toFixed(1)}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-muted rounded-full h-2">
                     <div
                       className="bg-green-600 h-2 rounded-full transition-all duration-300"
                       style={{

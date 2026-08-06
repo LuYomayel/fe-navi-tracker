@@ -751,7 +751,7 @@ export function BodyAnalyzer({
                     className={`flex items-center gap-2 ${
                       taskStatus === "creating"
                         ? "text-blue-600"
-                        : "text-gray-500"
+                        : "text-muted-foreground"
                     }`}
                   >
                     {taskStatus === "creating" ? "🔄" : "✅"} Creando tarea de
@@ -763,7 +763,7 @@ export function BodyAnalyzer({
                         ? "text-blue-600"
                         : taskStatus === "completed"
                         ? "text-green-600"
-                        : "text-gray-500"
+                        : "text-muted-foreground"
                     }`}
                   >
                     {taskStatus === "processing"
@@ -777,7 +777,7 @@ export function BodyAnalyzer({
                     className={`flex items-center gap-2 ${
                       taskStatus === "completed"
                         ? "text-green-600"
-                        : "text-gray-500"
+                        : "text-muted-foreground"
                     }`}
                   >
                     {taskStatus === "completed" ? "✅" : "⏳"} Calculando
@@ -787,7 +787,7 @@ export function BodyAnalyzer({
                     className={`flex items-center gap-2 ${
                       taskStatus === "completed"
                         ? "text-green-600"
-                        : "text-gray-500"
+                        : "text-muted-foreground"
                     }`}
                   >
                     {taskStatus === "completed" ? "✅" : "⏳"} Personalizando
@@ -1073,7 +1073,7 @@ export function BodyAnalyzer({
                   {analysisResult.insights?.map((insight, index) => (
                     <div
                       key={index}
-                      className="p-3 bg-gray-50/50 rounded-lg text-sm capitalize"
+                      className="p-3 bg-muted/50 rounded-lg text-sm capitalize"
                     >
                       {insight}
                     </div>

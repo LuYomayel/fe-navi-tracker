@@ -244,7 +244,7 @@ export function CreatePhysicalActivityDialog({
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        <Upload className="h-12 w-12 mx-auto text-gray-400" />
+                        <Upload className="h-12 w-12 mx-auto text-muted-foreground/60" />
                         <div>
                           <Label
                             htmlFor="image-upload"

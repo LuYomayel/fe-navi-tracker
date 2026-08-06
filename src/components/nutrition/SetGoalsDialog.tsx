@@ -576,7 +576,7 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
                       preferences?.gender ||
                       "male"
                     }
-                    className="w-full p-2 border rounded-md bg-gray-100/50"
+                    className="w-full p-2 border rounded-md bg-muted/50"
                     required
                   >
                     <option value="male">Masculino</option>
@@ -641,7 +641,7 @@ export const SetGoalsDialog: React.FC<SetGoalsDialogProps> = ({
               </Button>
 
               {showPayloadPreview && (
-                <div className="bg-gray-100/50 p-4 rounded-lg">
+                <div className="bg-muted/50 p-4 rounded-lg">
                   <h4 className="font-medium text-sm mb-2">
                     Datos que se enviarán al endpoint:
                   </h4>

@@ -644,7 +644,7 @@ export function FoodAnalyzer({
                         rows={4}
                         className="resize-none"
                       />
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         💡 Incluye cantidades (gramos, tazas, unidades) y
                         métodos de cocción para mayor precisión
                       </p>
@@ -913,13 +913,13 @@ export function FoodAnalyzer({
                     >
                       <div>
                         <span className="font-medium">{food.name}</span>
-                        <span className="text-sm text-gray-500 ml-2">
+                        <span className="text-sm text-muted-foreground ml-2">
                           ({food.quantity})
                         </span>
                       </div>
                       <div className="text-right">
                         <div className="font-medium">{food.calories} kcal</div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-muted-foreground">
                           {Math.round(food.confidence * 100)}% confianza
                         </div>
                       </div>
