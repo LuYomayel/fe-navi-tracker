@@ -513,6 +513,12 @@ export const api = {
     getPreferences: () => apiClient.get("/preferences"),
     getCurrentGoals: () => apiClient.get("/preferences/goals"),
     post: (data: any) => apiClient.post("/preferences", data),
+    updateGoals: (data: {
+      dailyCalorieGoal?: number;
+      proteinGoal?: number;
+      carbsGoal?: number;
+      fatGoal?: number;
+    }) => apiClient.put("/preferences/goals", data),
   },
 
   // Skin Fold
@@ -618,6 +624,19 @@ export const api = {
       apiClient.put<NutritionistPlan>(`/meal-prep/nutritionist-plan/${id}`, data as any),
     deletePlan: (id: string) =>
       apiClient.delete(`/meal-prep/nutritionist-plan/${id}`),
+    computePlanGoals: (id: string) =>
+      apiClient.post<{
+        planId: string;
+        planName: string;
+        source: "plan" | "promedio-dias" | "estimado-ia";
+        goals: {
+          dailyCalorieGoal?: number;
+          proteinGoal?: number;
+          carbsGoal?: number;
+          fatGoal?: number;
+        };
+        rationale?: string | null;
+      }>(`/meal-prep/nutritionist-plan/${id}/compute-goals`),
 
     // Meal Preps
     getAll: () => apiClient.get<MealPrep[]>("/meal-prep"),
