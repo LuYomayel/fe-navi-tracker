@@ -25,6 +25,8 @@ import type {
   ExpenseCategory,
   ExpenseSummary,
   Income,
+  IncomeSource,
+  MonthlyBalance,
   RecurringExpense,
 } from "@/types/expenses";
 import {
@@ -39,6 +41,8 @@ import {
   TrendingDown,
   TrendingUp,
   Printer,
+  HandCoins,
+  Clock,
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
@@ -64,13 +68,24 @@ const monthLabel = (key: string) => {
 
 const todayKey = () => getDateKey(new Date());
 
+const SOURCE_META: Record<string, { label: string; emoji: string }> = {
+  "3d": { label: "3D", emoji: "🖨️" },
+  sueldo: { label: "Sueldo", emoji: "💼" },
+  devolucion: { label: "Devolución", emoji: "↩️" },
+  venta: { label: "Venta", emoji: "🏷️" },
+  otro: { label: "Otro", emoji: "💰" },
+};
+
+const sourceLabel = (source: string) =>
+  SOURCE_META[source] || { label: source, emoji: "💰" };
+
 export default function GastosSection() {
   const [month, setMonth] = useState(() => getMonthKey(new Date()));
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [summary, setSummary] = useState<ExpenseSummary | null>(null);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [recurring, setRecurring] = useState<RecurringExpense[]>([]);
-  const [incomes, setIncomes] = useState<Income[]>([]);
+  const [balance, setBalance] = useState<MonthlyBalance | null>(null);
   const [business, setBusiness] = useState<BusinessSummary | null>(null);
   const [activeGoalId, setActiveGoalId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,6 +95,9 @@ export default function GastosSection() {
   const [showCategoriesDialog, setShowCategoriesDialog] = useState(false);
   const [showRecurringDialog, setShowRecurringDialog] = useState(false);
   const [showIncomeDialog, setShowIncomeDialog] = useState(false);
+  const [editingIncome, setEditingIncome] = useState<Income | null>(null);
+  const [incomeDialogSource, setIncomeDialogSource] =
+    useState<IncomeSource>("otro");
 
   // Navegar meses rapido dispara varios reload() en paralelo. Nos quedamos
   // solo con la respuesta del ultimo pedido: si no, los datos de un mes
@@ -93,13 +111,13 @@ export default function GastosSection() {
   const reload = useCallback(async () => {
     const requestId = ++reloadSeq.current;
     try {
-      const [expRes, sumRes, catRes, recRes, incRes, bizRes] =
+      const [expRes, sumRes, catRes, recRes, balRes, bizRes] =
         await Promise.all([
           api.expenses.list(month),
           api.expenses.summary(month),
           api.expenses.categories.list(),
           api.expenses.recurring.list(),
-          api.expenses.incomes.list(month),
+          api.expenses.balance(month),
           api.expenses.businessSummary(),
         ]);
       if (requestId !== reloadSeq.current) return;
@@ -107,7 +125,7 @@ export default function GastosSection() {
       setSummary(sumRes.data as ExpenseSummary);
       setCategories((catRes.data as ExpenseCategory[]) || []);
       setRecurring((recRes.data as RecurringExpense[]) || []);
-      setIncomes((incRes.data as Income[]) || []);
+      setBalance(balRes.data as MonthlyBalance);
       setBusiness(bizRes.data as BusinessSummary);
     } catch (error) {
       if (requestId !== reloadSeq.current) return;
@@ -169,6 +187,33 @@ export default function GastosSection() {
       reload();
     } catch {
       toast.error("Error", "No se pudo borrar el gasto");
+    }
+  };
+
+  const openIncomeDialog = (inc: Income | null, source: IncomeSource = "otro") => {
+    setEditingIncome(inc);
+    setIncomeDialogSource(inc ? (inc.source as IncomeSource) : source);
+    setShowIncomeDialog(true);
+  };
+
+  const handleDeleteIncome = async (inc: Income) => {
+    if (!(await confirmIncome.confirm(inc))) return;
+    try {
+      await api.expenses.incomes.delete(inc.id);
+      toast.success("Ingreso borrado", "");
+      reload();
+    } catch {
+      toast.error("Error", "No se pudo borrar el ingreso");
+    }
+  };
+
+  const handleReceiveIncome = async (inc: Income) => {
+    try {
+      await api.expenses.incomes.receive(inc.id);
+      toast.success("Cobrado ✅", `${inc.description} suma al balance de hoy`);
+      reload();
+    } catch {
+      toast.error("Error", "No se pudo marcar como cobrado");
     }
   };
 
@@ -252,6 +297,41 @@ export default function GastosSection() {
         {(summary?.subscriptionsMonthly || 0) > 0 && (
           <div className="text-xs text-muted-foreground">
             Suscripciones activas: {fmtARS(summary!.subscriptionsMonthly)}/mes
+          </div>
+        )}
+
+        {/* Balance del mes: ingresos cobrados vs gastos */}
+        {balance && (balance.incomesTotal > 0 || balance.refundsTotal > 0) && (
+          <div className="grid grid-cols-2 gap-2 border-t pt-3">
+            <div className="rounded-md bg-muted/50 p-2 text-center">
+              <div className="text-[11px] text-muted-foreground">Ingresos</div>
+              <div className="font-mono text-sm font-bold tabular-nums text-success">
+                +{fmtARS(balance.incomesTotal)}
+              </div>
+            </div>
+            <div
+              className={`rounded-md p-2 text-center ${
+                balance.balance >= 0 ? "bg-success/10" : "bg-destructive/10"
+              }`}
+            >
+              <div className="text-[11px] text-muted-foreground">
+                Balance del mes
+              </div>
+              <div
+                className={`font-mono text-sm font-bold tabular-nums ${
+                  balance.balance >= 0 ? "text-success" : "text-destructive"
+                }`}
+              >
+                {balance.balance >= 0 ? "+" : ""}
+                {fmtARS(balance.balance)}
+              </div>
+            </div>
+            {balance.refundsTotal > 0 && (
+              <div className="col-span-2 text-xs text-muted-foreground">
+                ↩️ Devoluciones: {fmtARS(balance.refundsTotal)} → gasto neto{" "}
+                {fmtARS(balance.netExpenses)}
+              </div>
+            )}
           </div>
         )}
       </Card>
@@ -416,102 +496,98 @@ export default function GastosSection() {
         </div>
       )}
 
-      {/* Negocio 3D: inversión vs ganancia (linkeado al objetivo NZ) */}
-      {(business &&
-        (business.invested > 0 || business.incomesCount > 0)) ||
-      incomes.length > 0 ? (
+      {/* Ingresos del mes: sueldo, ventas, devoluciones + por cobrar */}
+      {balance &&
+      (balance.incomes.length > 0 || balance.pending.length > 0) ? (
         <Card className="space-y-3 rounded-lg border p-4">
           <div className="flex items-center justify-between">
             <h3 className="flex items-center gap-1.5 text-sm font-semibold">
-              <Printer className="h-4 w-4 text-primary" />
-              Negocio 3D
+              <HandCoins className="h-4 w-4 text-success" />
+              Ingresos
             </h3>
-            <Button size="sm" onClick={() => setShowIncomeDialog(true)}>
+            <Button size="sm" onClick={() => openIncomeDialog(null, "otro")}>
               <Plus className="mr-1 h-4 w-4" />
               Ingreso
             </Button>
           </div>
-          {business && (
-            <>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-md bg-muted/50 p-2">
-                  <div className="text-[11px] text-muted-foreground">
-                    Invertido
-                  </div>
-                  <div className="font-mono text-sm font-bold tabular-nums">
-                    {fmtARS(business.invested)}
-                  </div>
-                </div>
-                <div className="rounded-md bg-success/10 p-2">
-                  <div className="text-[11px] text-muted-foreground">
-                    Ganancia
-                  </div>
-                  <div className="font-mono text-sm font-bold tabular-nums text-success">
-                    {fmtARS(business.profit)}
-                  </div>
-                </div>
-                <div
-                  className={`rounded-md p-2 ${
-                    business.balance >= 0 ? "bg-success/10" : "bg-warning/10"
-                  }`}
-                >
-                  <div className="text-[11px] text-muted-foreground">
-                    Balance
-                  </div>
-                  <div
-                    className={`font-mono text-sm font-bold tabular-nums ${
-                      business.balance >= 0 ? "text-success" : "text-warning"
-                    }`}
-                  >
-                    {fmtARS(business.balance)}
-                  </div>
-                </div>
-              </div>
-              {business.toRecover > 0 && (
-                <div className="text-xs text-muted-foreground">
-                  Para recuperar la inversión faltan{" "}
-                  <span className="font-semibold">
-                    {fmtARS(business.toRecover)}
-                  </span>{" "}
-                  de ganancia.
-                </div>
-              )}
-            </>
-          )}
-          {incomes.length > 0 && (
-            <div className="space-y-1.5 border-t pt-2">
-              <div className="text-[11px] font-semibold uppercase text-muted-foreground">
-                Ingresos del mes
-              </div>
-              {incomes.map((inc) => (
-                <div
-                  key={inc.id}
-                  className="flex items-center gap-2 text-sm"
-                >
-                  <span className="min-w-0 flex-1 truncate">
-                    {inc.description}
+          {balance.incomes.length > 0 && (
+            <div className="space-y-1.5">
+              {balance.incomes.map((inc) => (
+                <div key={inc.id} className="flex items-center gap-2 text-sm">
+                  <span className="shrink-0 text-base">
+                    {sourceLabel(inc.source).emoji}
                   </span>
-                  <span className="font-mono text-xs tabular-nums text-muted-foreground">
-                    costo {fmtARS(inc.cost)}
-                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate">{inc.description}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {inc.date.slice(8)}/{inc.date.slice(5, 7)} ·{" "}
+                      {sourceLabel(inc.source).label}
+                      {inc.source === "3d" && inc.cost > 0
+                        ? ` · costo ${fmtARS(inc.cost)}`
+                        : ""}
+                    </div>
+                  </div>
                   <span className="font-mono text-sm font-bold tabular-nums text-success">
-                    +{fmtARS(inc.amount - inc.cost)}
+                    +{fmtARS(inc.amount)}
                   </span>
-                  <ActionIconButton
-                    icon={Trash2}
-                    variant="destructive"
-                    onClick={async () => {
-                      if (await confirmIncome.confirm(inc)) {
-                        try {
-                          await api.expenses.incomes.delete(inc.id);
-                          reload();
-                        } catch {
-                          toast.error("Error", "No se pudo borrar");
-                        }
-                      }
-                    }}
-                    aria-label={`Borrar ingreso ${inc.description}`}
-                  />
+                  <div className="flex items-center gap-0.5">
+                    <ActionIconButton
+                      icon={Pencil}
+                      onClick={() => openIncomeDialog(inc)}
+                      aria-label={`Editar ingreso ${inc.description}`}
+                    />
+                    <ActionIconButton
+                      icon={Trash2}
+                      variant="destructive"
+                      onClick={() => handleDeleteIncome(inc)}
+                      aria-label={`Borrar ingreso ${inc.description}`}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {balance.pending.length > 0 && (
+            <div className="space-y-1.5 border-t pt-2">
+              <div className="flex items-center gap-1 text-[11px] font-semibold uppercase text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                Por cobrar · {fmtARS(balance.pendingTotal)}
+              </div>
+              {balance.pending.map((inc) => (
+                <div key={inc.id} className="flex items-center gap-2 text-sm">
+                  <span className="shrink-0 text-base">
+                    {sourceLabel(inc.source).emoji}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate">{inc.description}</div>
+                    <div className="text-xs text-muted-foreground">
+                      desde {inc.date.slice(8)}/{inc.date.slice(5, 7)} ·{" "}
+                      {sourceLabel(inc.source).label}
+                    </div>
+                  </div>
+                  <span className="font-mono text-sm font-bold tabular-nums text-muted-foreground">
+                    {fmtARS(inc.amount)}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleReceiveIncome(inc)}
+                  >
+                    Cobrar
+                  </Button>
+                  <div className="flex items-center gap-0.5">
+                    <ActionIconButton
+                      icon={Pencil}
+                      onClick={() => openIncomeDialog(inc)}
+                      aria-label={`Editar ingreso ${inc.description}`}
+                    />
+                    <ActionIconButton
+                      icon={Trash2}
+                      variant="destructive"
+                      onClick={() => handleDeleteIncome(inc)}
+                      aria-label={`Borrar ingreso ${inc.description}`}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -519,12 +595,71 @@ export default function GastosSection() {
         </Card>
       ) : (
         <button
-          onClick={() => setShowIncomeDialog(true)}
+          onClick={() => openIncomeDialog(null, "otro")}
           className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground transition-colors hover:bg-muted/50"
         >
-          <Printer className="h-4 w-4" />
-          Registrar ingreso del negocio 3D
+          <HandCoins className="h-4 w-4" />
+          Registrar un ingreso (sueldo, venta, devolución…)
         </button>
+      )}
+
+      {/* Negocio 3D: inversión vs ganancia (linkeado al objetivo NZ) */}
+      {business && (business.invested > 0 || business.incomesCount > 0) && (
+        <Card className="space-y-3 rounded-lg border p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="flex items-center gap-1.5 text-sm font-semibold">
+              <Printer className="h-4 w-4 text-primary" />
+              Negocio 3D
+            </h3>
+            <Button size="sm" onClick={() => openIncomeDialog(null, "3d")}>
+              <Plus className="mr-1 h-4 w-4" />
+              Ingreso 3D
+            </Button>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-md bg-muted/50 p-2">
+              <div className="text-[11px] text-muted-foreground">
+                Invertido
+              </div>
+              <div className="font-mono text-sm font-bold tabular-nums">
+                {fmtARS(business.invested)}
+              </div>
+            </div>
+            <div className="rounded-md bg-success/10 p-2">
+              <div className="text-[11px] text-muted-foreground">
+                Ganancia
+              </div>
+              <div className="font-mono text-sm font-bold tabular-nums text-success">
+                {fmtARS(business.profit)}
+              </div>
+            </div>
+            <div
+              className={`rounded-md p-2 ${
+                business.balance >= 0 ? "bg-success/10" : "bg-warning/10"
+              }`}
+            >
+              <div className="text-[11px] text-muted-foreground">
+                Balance
+              </div>
+              <div
+                className={`font-mono text-sm font-bold tabular-nums ${
+                  business.balance >= 0 ? "text-success" : "text-warning"
+                }`}
+              >
+                {fmtARS(business.balance)}
+              </div>
+            </div>
+          </div>
+          {business.toRecover > 0 && (
+            <div className="text-xs text-muted-foreground">
+              Para recuperar la inversión faltan{" "}
+              <span className="font-semibold">
+                {fmtARS(business.toRecover)}
+              </span>{" "}
+              de ganancia.
+            </div>
+          )}
+        </Card>
       )}
 
       {/* Accesos: recurrentes + categorías */}
@@ -559,6 +694,8 @@ export default function GastosSection() {
         open={showIncomeDialog}
         onClose={() => setShowIncomeDialog(false)}
         activeGoalId={activeGoalId}
+        editing={editingIncome}
+        initialSource={incomeDialogSource}
         onSaved={reload}
       />
       <CategoriesDialog
@@ -766,41 +903,57 @@ function ExpenseDialog({
   );
 }
 
-// ── Dialog de ingreso del negocio 3D ────────────────────────
+// ── Dialog de alta/edición de ingreso (sueldo, ventas, 3D…) ─
+
+const SOURCE_OPTIONS: { value: IncomeSource; label: string }[] = [
+  { value: "sueldo", label: "💼 Sueldo" },
+  { value: "venta", label: "🏷️ Venta" },
+  { value: "devolucion", label: "↩️ Devolución" },
+  { value: "3d", label: "🖨️ Negocio 3D" },
+  { value: "otro", label: "💰 Otro" },
+];
 
 function IncomeDialog({
   open,
   onClose,
   activeGoalId,
+  editing,
+  initialSource,
   onSaved,
 }: {
   open: boolean;
   onClose: () => void;
   activeGoalId: string | null;
+  editing: Income | null;
+  initialSource: IncomeSource;
   onSaved: () => void;
 }) {
   const [amount, setAmount] = useState("");
   const [cost, setCost] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(todayKey());
+  const [source, setSource] = useState<IncomeSource>("otro");
+  const [isPending, setIsPending] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
-      setAmount("");
-      setCost("");
-      setDescription("");
-      setDate(todayKey());
+      setAmount(editing ? String(editing.amount) : "");
+      setCost(editing && editing.cost ? String(editing.cost) : "");
+      setDescription(editing?.description || "");
+      setDate(editing?.date || todayKey());
+      setSource(editing ? (editing.source as IncomeSource) : initialSource);
+      setIsPending(editing ? editing.status === "pending" : false);
     }
-  }, [open]);
+  }, [open, editing, initialSource]);
 
   const monto = parseFloat(amount) || 0;
-  const costo = parseFloat(cost) || 0;
+  const costo = source === "3d" ? parseFloat(cost) || 0 : 0;
   const ganancia = monto - costo;
 
   const handleSave = async () => {
     if (!monto || monto <= 0) {
-      toast.error("Error", "Ingresá el monto cobrado");
+      toast.error("Error", "Ingresá el monto");
       return;
     }
     if (costo < 0 || costo > monto) {
@@ -813,18 +966,35 @@ function IncomeDialog({
     }
     setSaving(true);
     try {
-      await api.expenses.incomes.create({
+      const base = {
         date,
         description: description.trim(),
         amount: monto,
         cost: costo,
-        goalId: activeGoalId,
-      });
-      toast.success("Ingreso registrado", `Ganancia ${fmtARS(ganancia)}`);
+        source,
+        goalId: source === "3d" ? activeGoalId : null,
+      };
+      if (editing) {
+        await api.expenses.incomes.update(editing.id, base);
+        toast.success("Ingreso actualizado", "");
+      } else {
+        await api.expenses.incomes.create({
+          ...base,
+          status: isPending ? "pending" : "received",
+        });
+        toast.success(
+          isPending ? "Quedó por cobrar" : "Ingreso registrado",
+          isPending
+            ? "Cuando lo cobres, tocá Cobrar"
+            : source === "3d"
+            ? `Ganancia ${fmtARS(ganancia)}`
+            : fmtARS(monto)
+        );
+      }
       onClose();
       onSaved();
     } catch {
-      toast.error("Error", "No se pudo registrar el ingreso");
+      toast.error("Error", "No se pudo guardar el ingreso");
     } finally {
       setSaving(false);
     }
@@ -834,14 +1004,37 @@ function IncomeDialog({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Registrar ingreso 3D</DialogTitle>
+          <DialogTitle>
+            {editing ? "Editar ingreso" : "Registrar ingreso"}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+          <div>
+            <Label htmlFor="inc-source">Tipo</Label>
+            <select
+              id="inc-source"
+              value={source}
+              onChange={(e) => setSource(e.target.value as IncomeSource)}
+              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+            >
+              {SOURCE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
           <div>
             <Label htmlFor="inc-desc">Descripción</Label>
             <Input
               id="inc-desc"
-              placeholder='Ej: "Tetris x2 vendidos por Marcelito"'
+              placeholder={
+                source === "sueldo"
+                  ? 'Ej: "Sueldo agosto"'
+                  : source === "3d"
+                  ? 'Ej: "Tetris x2 vendidos por Marcelito"'
+                  : 'Ej: "Venta cafetera"'
+              }
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               autoFocus
@@ -849,7 +1042,7 @@ function IncomeDialog({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="inc-amount">Monto cobrado</Label>
+              <Label htmlFor="inc-amount">Monto (ARS)</Label>
               <Input
                 id="inc-amount"
                 type="number"
@@ -859,6 +1052,17 @@ function IncomeDialog({
                 onChange={(e) => setAmount(e.target.value)}
               />
             </div>
+            <div>
+              <Label htmlFor="inc-date">Fecha</Label>
+              <Input
+                id="inc-date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
+          </div>
+          {source === "3d" && (
             <div>
               <Label htmlFor="inc-cost">Parte que es costo</Label>
               <Input
@@ -870,17 +1074,8 @@ function IncomeDialog({
                 onChange={(e) => setCost(e.target.value)}
               />
             </div>
-          </div>
-          <div>
-            <Label htmlFor="inc-date">Fecha</Label>
-            <Input
-              id="inc-date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </div>
-          {monto > 0 && (
+          )}
+          {source === "3d" && monto > 0 && (
             <div className="flex items-center justify-between rounded-lg bg-success/10 p-3">
               <span className="text-sm font-medium">Ganancia limpia</span>
               <span className="font-mono text-lg font-bold tabular-nums text-success">
@@ -888,12 +1083,29 @@ function IncomeDialog({
               </span>
             </div>
           )}
+          {!editing && (
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border bg-muted/30 p-3 text-sm">
+              <input
+                type="checkbox"
+                checked={isPending}
+                onChange={(e) => setIsPending(e.target.checked)}
+                className="h-4 w-4 accent-[hsl(var(--primary))]"
+              />
+              <span>
+                ⏳ Todavía no lo cobré
+                <span className="block text-xs text-muted-foreground">
+                  Queda &quot;por cobrar&quot; y no suma al balance hasta que lo
+                  marques cobrado
+                </span>
+              </span>
+            </label>
+          )}
           <div className="flex justify-end gap-2 border-t pt-4">
             <Button variant="outline" onClick={onClose} disabled={saving}>
               Cancelar
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? "Guardando..." : "Registrar"}
+              {saving ? "Guardando..." : editing ? "Actualizar" : "Registrar"}
             </Button>
           </div>
         </div>

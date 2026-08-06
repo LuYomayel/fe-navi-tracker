@@ -24,6 +24,8 @@ export interface Expense {
   updatedAt: string;
 }
 
+export type IncomeSource = "3d" | "sueldo" | "devolucion" | "venta" | "otro";
+
 export interface Income {
   id: string;
   userId: string;
@@ -31,11 +33,25 @@ export interface Income {
   description: string;
   amount: number; // cobrado
   cost: number; // porción costo; ganancia = amount - cost
-  source: string;
+  source: IncomeSource | string;
+  status: "received" | "pending"; // pending = por cobrar
   goalId?: string | null;
   notes?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface MonthlyBalance {
+  month: string;
+  expensesTotal: number;
+  incomesTotal: number; // cobrados, sin devoluciones
+  refundsTotal: number; // devoluciones (descuentan gasto)
+  netExpenses: number; // gastos - devoluciones
+  balance: number; // ingresos + devoluciones - gastos
+  bySource: { source: string; amount: number; count: number }[];
+  incomes: Income[];
+  pendingTotal: number;
+  pending: Income[];
 }
 
 export interface BusinessSummary {

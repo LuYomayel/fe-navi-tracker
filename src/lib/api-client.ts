@@ -265,6 +265,8 @@ export const api = {
     summary: (month?: string) =>
       apiClient.get(`/expenses/summary${month ? `?month=${month}` : ""}`),
     businessSummary: () => apiClient.get("/expenses/business-summary"),
+    balance: (month?: string) =>
+      apiClient.get(`/expenses/balance${month ? `?month=${month}` : ""}`),
     incomes: {
       list: (month?: string) =>
         apiClient.get(`/expenses/incomes${month ? `?month=${month}` : ""}`),
@@ -273,7 +275,10 @@ export const api = {
         description: string;
         amount: number;
         cost?: number;
+        source?: string;
+        status?: "received" | "pending";
         goalId?: string | null;
+        notes?: string | null;
       }) => apiClient.post("/expenses/incomes", data),
       update: (
         id: string,
@@ -282,9 +287,13 @@ export const api = {
           description: string;
           amount: number;
           cost: number;
+          source: string;
           goalId: string | null;
+          notes: string | null;
         }>
       ) => apiClient.put(`/expenses/incomes/${id}`, data),
+      receive: (id: string, date?: string) =>
+        apiClient.patch(`/expenses/incomes/${id}/receive`, date ? { date } : {}),
       delete: (id: string) => apiClient.delete(`/expenses/incomes/${id}`),
     },
     categories: {
