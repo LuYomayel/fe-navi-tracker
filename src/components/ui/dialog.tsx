@@ -47,8 +47,13 @@ const DialogContent = React.forwardRef<
       )}
       {...props}
     >
+      {/* Handle del sheet: sólo mobile, señal visual de "esto se baja" */}
+      <div
+        aria-hidden
+        className="mx-auto -mt-1 mb-1 h-1 w-9 shrink-0 rounded-full bg-muted-foreground/25 sm:hidden"
+      />
       {children}
-      <DialogPrimitive.Close className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] sm:top-3 h-7 w-7 rounded-full bg-muted flex items-center justify-center opacity-70 transition-opacity hover:opacity-100 focus:outline-none disabled:pointer-events-none">
+      <DialogPrimitive.Close className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] sm:top-3 h-9 w-9 sm:h-7 sm:w-7 rounded-full bg-muted flex items-center justify-center opacity-70 transition-opacity hover:opacity-100 focus:outline-none disabled:pointer-events-none">
         <X className="h-4 w-4" />
         <span className="sr-only">Cerrar</span>
       </DialogPrimitive.Close>

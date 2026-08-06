@@ -64,16 +64,17 @@ export function HabitsWeekGrid({ activities, onAdd }: HabitsWeekGridProps) {
     );
   }
 
-  const gridCols = "1fr repeat(7, minmax(0, 1fr))";
+  // En mobile el nombre va en su PROPIA línea y abajo los 7 días: si comparte
+  // fila, la columna del nombre queda en ~7px y el hábito se ve como un
+  // puntito de color sin texto. Desde sm vuelve a ser una sola fila.
+  const gridCols =
+    "grid-cols-7 sm:grid-cols-[minmax(0,1fr)_repeat(7,minmax(0,1fr))]";
 
   return (
     <Card className="p-3.5">
       {/* Header de días */}
-      <div
-        className="mb-2.5 grid items-center gap-0"
-        style={{ gridTemplateColumns: gridCols }}
-      >
-        <div />
+      <div className={`mb-2.5 grid items-center gap-0 ${gridCols}`}>
+        <div className="hidden sm:block" />
         {week.map((date, i) => {
           const isToday = i === todayColIndex;
           return (
@@ -97,11 +98,10 @@ export function HabitsWeekGrid({ activities, onAdd }: HabitsWeekGridProps) {
         {visible.map((activity) => (
           <div
             key={activity.id}
-            className="grid items-center gap-0 py-[7px]"
-            style={{ gridTemplateColumns: gridCols }}
+            className={`py-2 sm:grid sm:items-center sm:gap-0 sm:py-[7px] ${gridCols}`}
           >
             {/* Nombre del hábito */}
-            <div className="flex min-w-0 items-center gap-2 pr-2">
+            <div className="mb-1.5 flex min-w-0 items-center gap-2 pr-2 sm:mb-0">
               <span
                 className="h-[26px] w-[26px] shrink-0 rounded-md"
                 style={{ backgroundColor: activity.color }}
@@ -112,7 +112,8 @@ export function HabitsWeekGrid({ activities, onAdd }: HabitsWeekGridProps) {
               </span>
             </div>
 
-            {/* Celdas por día */}
+            {/* Celdas por día (en sm+ se funden en la grilla de la fila) */}
+            <div className="grid grid-cols-7 sm:contents">
             {week.map((date, ci) => {
               const isToday = ci === todayColIndex;
               const isFuture = todayColIndex >= 0 && ci > todayColIndex;
@@ -145,7 +146,7 @@ export function HabitsWeekGrid({ activities, onAdd }: HabitsWeekGridProps) {
                       filled ? "completado" : "pendiente"
                     }`}
                     aria-pressed={filled}
-                    className={`flex h-6 w-6 items-center justify-center rounded-full border transition-all duration-fast ${
+                    className={`flex h-9 w-9 touch-manipulation items-center justify-center rounded-full border transition-all duration-fast sm:h-6 sm:w-6 ${
                       filled
                         ? "border-transparent bg-primary text-primary-foreground"
                         : isFuture
@@ -155,11 +156,12 @@ export function HabitsWeekGrid({ activities, onAdd }: HabitsWeekGridProps) {
                       isToday && filled ? "ring-[3px] ring-primary/20" : ""
                     } ${isFuture ? "opacity-50" : ""}`}
                   >
-                    {filled ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : null}
+                    {filled ? <Check className="h-4 w-4 sm:h-3.5 sm:w-3.5" strokeWidth={3} /> : null}
                   </button>
                 </div>
               );
             })}
+            </div>
           </div>
         ))}
       </div>
