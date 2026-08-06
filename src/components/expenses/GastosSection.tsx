@@ -303,7 +303,7 @@ export default function GastosSection() {
         <div className="flex items-end justify-between">
           <div>
             <div className="text-xs text-muted-foreground">
-              Total gastado en {monthLabel(month).split(" ")[0]}
+              Total gastado en {monthLabel(month).split(" ")[0].toLowerCase()}
             </div>
             <div className="font-mono text-3xl font-bold tabular-nums">
               {fmtARS(summary?.total || 0)}
