@@ -323,6 +323,9 @@ export const api = {
         dayOfMonth: number;
         kind?: "recurring" | "subscription";
         categoryId?: string | null;
+        totalInstallments?: number | null;
+        installmentsPaid?: number;
+        startPeriod?: string | null;
       }) => apiClient.post("/expenses/recurring", data),
       update: (
         id: string,
@@ -333,6 +336,9 @@ export const api = {
           kind: "recurring" | "subscription";
           categoryId: string | null;
           active: boolean;
+          totalInstallments: number | null;
+          installmentsPaid: number;
+          startPeriod: string | null;
         }>
       ) => apiClient.put(`/expenses/recurring/${id}`, data),
       delete: (id: string) => apiClient.delete(`/expenses/recurring/${id}`),

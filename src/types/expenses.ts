@@ -76,6 +76,9 @@ export interface RecurringExpense {
   kind: "recurring" | "subscription";
   active: boolean;
   lastPostedPeriod?: string | null;
+  totalInstallments?: number | null; // cantidad de cuotas (null = sin fin)
+  installmentsPaid: number; // cuotas ya pagadas
+  startPeriod?: string | null; // YYYY-MM de la primera cuota (puede ser pasado)
   createdAt: string;
   updatedAt: string;
 }

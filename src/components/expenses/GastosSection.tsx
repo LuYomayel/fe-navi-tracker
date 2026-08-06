@@ -79,6 +79,25 @@ const SOURCE_META: Record<string, { label: string; emoji: string }> = {
 const sourceLabel = (source: string) =>
   SOURCE_META[source] || { label: source, emoji: "💰" };
 
+// Mes YYYY-MM de la última cuota (espejo de recurringEndPeriod del backend)
+const recurringEnd = (r: RecurringExpense): string | null => {
+  if (!r.totalInstallments) return null;
+  const remaining = r.totalInstallments - r.installmentsPaid;
+  if (remaining <= 0) return null;
+  const add = (period: string, n: number) => {
+    const [y, m] = period.split("-").map(Number);
+    return getMonthKey(new Date(y, m - 1 + n, 1));
+  };
+  if (r.startPeriod) return add(r.startPeriod, r.totalInstallments - 1);
+  const current = getMonthKey(new Date());
+  return add(current, r.lastPostedPeriod === current ? remaining : remaining - 1);
+};
+
+const monthShort = (period: string) => {
+  const [y, m] = period.split("-");
+  return `${m}/${y}`;
+};
+
 export default function GastosSection() {
   const [month, setMonth] = useState(() => getMonthKey(new Date()));
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -1300,12 +1319,19 @@ function RecurringDialog({
     "subscription"
   );
   const [categoryId, setCategoryId] = useState("");
+  const [installments, setInstallments] = useState("");
+  const [startPeriod, setStartPeriod] = useState("");
   const confirmDelete = useConfirm<RecurringExpense>();
 
   const handleCreate = async () => {
     const monto = parseFloat(amount);
     if (!description.trim() || !monto || monto <= 0) {
       toast.error("Error", "Completá descripción y monto");
+      return;
+    }
+    const cuotas = parseInt(installments) || null;
+    if (installments && (!cuotas || cuotas < 1)) {
+      toast.error("Error", "Las cuotas deben ser un número mayor a 0");
       return;
     }
     try {
@@ -1315,11 +1341,18 @@ function RecurringDialog({
         dayOfMonth: parseInt(day) || 1,
         kind,
         categoryId: categoryId || null,
+        totalInstallments: cuotas,
+        startPeriod: startPeriod || null,
       });
       setDescription("");
       setAmount("");
       setDay("1");
-      toast.success("Recurrente creado", "Se registra solo cada mes");
+      setInstallments("");
+      setStartPeriod("");
+      toast.success(
+        "Recurrente creado",
+        cuotas ? "Se apaga solo en la última cuota" : "Se registra solo cada mes"
+      );
       onChanged();
     } catch {
       toast.error("Error", "No se pudo crear");
@@ -1381,6 +1414,17 @@ function RecurringDialog({
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {fmtARS(r.amount)}/mes · día {r.dayOfMonth}
+                    {r.totalInstallments ? (
+                      recurringEnd(r) ? (
+                        <>
+                          {" "}
+                          · cuota {r.installmentsPaid}/{r.totalInstallments} ·
+                          termina {monthShort(recurringEnd(r)!)}
+                        </>
+                      ) : (
+                        <> · {r.totalInstallments} cuotas ✅ terminado</>
+                      )
+                    ) : null}
                   </div>
                 </div>
                 <Switch
@@ -1427,6 +1471,35 @@ function RecurringDialog({
                 aria-label="Día del mes"
               />
             </div>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  placeholder="Cuotas (opcional)"
+                  value={installments}
+                  onChange={(e) => setInstallments(e.target.value)}
+                  aria-label="Cantidad de cuotas"
+                />
+              </div>
+              <div className="flex-1">
+                <Input
+                  type="month"
+                  value={startPeriod}
+                  onChange={(e) => setStartPeriod(e.target.value)}
+                  aria-label="Primer mes de la cuota (puede ser pasado)"
+                  title="Primer mes (puede ser pasado: los meses ya transcurridos cuentan pagados)"
+                />
+              </div>
+            </div>
+            {installments && (
+              <div className="text-[11px] text-muted-foreground">
+                {startPeriod
+                  ? `Arrancó ${monthShort(startPeriod)} — los meses ya pasados cuentan como cuotas pagadas.`
+                  : "Tip: si ya venís pagándolo, poné el primer mes (puede ser pasado)."}
+              </div>
+            )}
             <div className="flex gap-2">
               <select
                 value={kind}
