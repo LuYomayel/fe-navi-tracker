@@ -49,6 +49,11 @@ export async function initNativeApp(opts: NativeInitOptions): Promise<void> {
  */
 async function scheduleHydrationFromServer(): Promise<void> {
   try {
+    // El persist de auth es asincrono: sin esperarlo esta request salia sin
+    // Authorization en cada arranque en frio y los recordatorios del dia
+    // nunca se agendaban (fallaba en silencio).
+    const { waitForAuthToken } = await import("@/modules/auth/store");
+    if (!(await waitForAuthToken())) return;
     const { api } = await import("@/lib/api-client");
     const res = await api.hydration.getPace();
     if (res?.success && res.data) {

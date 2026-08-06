@@ -289,3 +289,28 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
+
+/**
+ * Espera a que el persist termine de rehidratar y devuelve el access token.
+ *
+ * En nativo el storage es asincrono (Capacitor Preferences): cualquier fetch
+ * disparado al montar sale sin Authorization y vuelve 401. Todo lo que pida
+ * datos fuera del arbol de `(app)` (init nativo, background tasks) tiene que
+ * esperar esto primero.
+ */
+export function waitForAuthToken(timeoutMs = 5000): Promise<string | null> {
+  const token = () => useAuthStore.getState().getAccessToken();
+  if (useAuthStore.getState().isHydrated) return Promise.resolve(token());
+
+  return new Promise((resolve) => {
+    const finish = () => {
+      clearTimeout(timer);
+      unsubscribe();
+      resolve(token());
+    };
+    const timer = setTimeout(finish, timeoutMs);
+    const unsubscribe = useAuthStore.subscribe((state) => {
+      if (state.isHydrated) finish();
+    });
+  });
+}

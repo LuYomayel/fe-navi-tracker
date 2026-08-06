@@ -12,6 +12,7 @@ import type {
 } from "@/types";
 import { toast } from "@/lib/toast-helper";
 import { api } from "@/lib/api-client";
+import { useAuthStore } from "@/modules/auth/store";
 import type { StoreSet, StoreGet } from "../types";
 import { getDateKey } from "@/lib/utils";
 
@@ -33,7 +34,7 @@ export interface UISlice {
   setShowNutritionAnalyzer: (show: boolean, date?: Date) => void;
   setShowAIAssistant: (show: boolean) => void;
   updatePreferences: (preferences: Partial<UserPreferences>) => void;
-  initializeFromDatabase: () => Promise<void>;
+  initializeFromDatabase: (opts?: { silent?: boolean }) => Promise<void>;
   refreshAllData: () => Promise<void>;
   refreshActivities: () => Promise<void>;
 }
@@ -75,7 +76,12 @@ export const createUISlice = (set: StoreSet, get: StoreGet): UISlice => ({
       preferences: { ...state.preferences, ...preferences },
     })),
 
-  initializeFromDatabase: async () => {
+  initializeFromDatabase: async (opts?: { silent?: boolean }) => {
+    // Sin token no se pide nada: en nativo el persist de auth es ASINCRONO
+    // (Capacitor Preferences), asi que arrancar antes de rehidratar mandaba
+    // las 9 requests sin Authorization -> 401 -> store vacio hasta reabrir
+    // la app. Dejamos isInitialized en false para reintentar al rehidratar.
+    if (!useAuthStore.getState().getAccessToken()) return;
     try {
       set({ isLoading: true });
 
@@ -83,6 +89,14 @@ export const createUISlice = (set: StoreSet, get: StoreGet): UISlice => ({
       const thirtyDaysLater = getDateKey(new Date(
         Date.now() + 30 * 24 * 60 * 60 * 1000
       ));
+
+      // Si TODAS fallan (sin red, token vencido) no marcamos inicializado:
+      // que el proximo trigger reintente en vez de quedar vacio para siempre.
+      let failed = 0;
+      const onFail = () => {
+        failed++;
+        return { data: [] };
+      };
 
       const [
         activitiesResponse,
@@ -95,16 +109,28 @@ export const createUISlice = (set: StoreSet, get: StoreGet): UISlice => ({
         tasksResponse,
         calendarEventsResponse,
       ] = await Promise.all([
-        api.activities.getAll().catch(() => ({ data: [] })),
-        api.nutrition.getAnalyses().catch(() => ({ data: [] })),
-        api.bodyAnalysis.getAll().catch(() => ({ data: [] })),
-        api.notes.getAll().catch(() => ({ data: [] })),
-        api.physicalActivity.getAll().catch(() => ({ data: [] })),
-        api.nutrition.getAllWeightEntries().catch(() => ({ data: [] })),
-        api.skinFold.getRecords().catch(() => ({ data: [] })),
-        api.tasks.getAll().catch(() => ({ data: [] })),
-        api.calendar.getEvents(todayStr, thirtyDaysLater).catch(() => ({ data: [] })),
+        api.activities.getAll().catch(onFail),
+        api.nutrition.getAnalyses().catch(onFail),
+        api.bodyAnalysis.getAll().catch(onFail),
+        api.notes.getAll().catch(onFail),
+        api.physicalActivity.getAll().catch(onFail),
+        api.nutrition.getAllWeightEntries().catch(onFail),
+        api.skinFold.getRecords().catch(onFail),
+        api.tasks.getAll().catch(onFail),
+        api.calendar.getEvents(todayStr, thirtyDaysLater).catch(onFail),
       ]);
+
+      const allFailed = failed === 9;
+      if (allFailed) {
+        set({ isLoading: false, isInitialized: false });
+        if (!opts?.silent) {
+          toast.error(
+            "Error de sincronización",
+            "No se pudieron cargar los datos. Revisá la conexión."
+          );
+        }
+        return;
+      }
 
       set({
         activities: (activitiesResponse.data as Activity[]) || [],
@@ -123,15 +149,16 @@ export const createUISlice = (set: StoreSet, get: StoreGet): UISlice => ({
       });
 
       get().loadNutritionGoals().catch(() => {});
-
-      toast.success("Datos cargados", "Tu información se ha sincronizado");
     } catch (error) {
       console.error("Error inicializando desde API:", error);
-      set({ isLoading: false, isInitialized: true });
-      toast.error(
-        "Error de sincronización",
-        "No se pudieron cargar todos los datos. Trabajando en modo local."
-      );
+      // isInitialized queda en false para que el proximo trigger reintente
+      set({ isLoading: false, isInitialized: false });
+      if (!opts?.silent) {
+        toast.error(
+          "Error de sincronización",
+          "No se pudieron cargar los datos. Revisá la conexión."
+        );
+      }
     }
   },
 
