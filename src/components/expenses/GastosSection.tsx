@@ -1481,7 +1481,14 @@ function RecurringDialog({
   const [categoryId, setCategoryId] = useState("");
   const [installments, setInstallments] = useState("");
   const [startPeriod, setStartPeriod] = useState("");
+  const [isCard, setIsCard] = useState(false);
+  const [cardName, setCardName] = useState("");
   const confirmDelete = useConfirm<RecurringExpense>();
+
+  // Tarjetas ya usadas en otros recurrentes, para autocompletar
+  const knownCards = Array.from(
+    new Set(recurring.map((r) => r.card).filter((c): c is string => !!c))
+  );
 
   const handleCreate = async () => {
     const monto = parseFloat(amount);
@@ -1503,15 +1510,23 @@ function RecurringDialog({
         categoryId: categoryId || null,
         totalInstallments: cuotas,
         startPeriod: startPeriod || null,
+        tarjeta: isCard,
+        card: isCard ? cardName.trim() || null : null,
       });
       setDescription("");
       setAmount("");
       setDay("1");
       setInstallments("");
       setStartPeriod("");
+      setIsCard(false);
+      setCardName("");
       toast.success(
         "Recurrente creado",
-        cuotas ? "Se apaga solo en la última cuota" : "Se registra solo cada mes"
+        isCard
+          ? `Cada mes suma a la deuda de ${cardName.trim() || "tu Visa"}`
+          : cuotas
+            ? "Se apaga solo en la última cuota"
+            : "Se registra solo cada mes"
       );
       onChanged();
     } catch {
@@ -1569,6 +1584,11 @@ function RecurringDialog({
                     {r.kind === "subscription" && (
                       <Badge variant="info" className="shrink-0 text-[10px]">
                         sub
+                      </Badge>
+                    )}
+                    {r.tarjeta && (
+                      <Badge variant="warning" className="shrink-0 text-[10px]">
+                        💳 {r.card || "Visa"}
                       </Badge>
                     )}
                   </div>
@@ -1659,6 +1679,36 @@ function RecurringDialog({
                   ? `Arrancó ${monthShort(startPeriod)} — los meses ya pasados cuentan como cuotas pagadas.`
                   : "Tip: si ya venís pagándolo, poné el primer mes (puede ser pasado)."}
               </div>
+            )}
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={isCard}
+                onChange={(e) => setIsCard(e.target.checked)}
+                className="h-4 w-4 accent-[hsl(var(--primary))]"
+              />
+              <span>
+                💳 Se paga con tarjeta de crédito
+                <span className="block text-[11px] text-muted-foreground">
+                  Suma al resumen de esa tarjeta, no al gasto del mes
+                </span>
+              </span>
+            </label>
+            {isCard && (
+              <>
+                <Input
+                  list="rec-card-options"
+                  placeholder="Vacío = Visa (la mía) — o de quién es"
+                  value={cardName}
+                  onChange={(e) => setCardName(e.target.value)}
+                  aria-label="Tarjeta"
+                />
+                <datalist id="rec-card-options">
+                  {knownCards.map((c) => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>
+              </>
             )}
             <div className="flex gap-2">
               <select

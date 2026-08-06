@@ -344,6 +344,8 @@ export const api = {
         totalInstallments?: number | null;
         installmentsPaid?: number;
         startPeriod?: string | null;
+        tarjeta?: boolean; // se paga con tarjeta de crédito
+        card?: string | null; // null = la Visa propia, texto = otra tarjeta
       }) => apiClient.post("/expenses/recurring", data),
       update: (
         id: string,

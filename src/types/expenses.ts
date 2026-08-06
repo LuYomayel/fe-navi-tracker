@@ -79,6 +79,8 @@ export interface RecurringExpense {
   totalInstallments?: number | null; // cantidad de cuotas (null = sin fin)
   installmentsPaid: number; // cuotas ya pagadas
   startPeriod?: string | null; // YYYY-MM de la primera cuota (puede ser pasado)
+  tarjeta?: boolean; // se paga con tarjeta de crédito
+  card?: string | null; // null = la Visa propia, texto = otra tarjeta
   createdAt: string;
   updatedAt: string;
 }
@@ -139,4 +141,6 @@ export interface TarjetaPendienteItem {
   amount: number;
   description: string;
   card?: string | null;
+  /** true = recurrente que todavía no posteó (lo carga el cron ese día) */
+  pending?: boolean;
 }

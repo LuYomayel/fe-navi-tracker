@@ -146,16 +146,23 @@ export function ProjectionCard({
                       className="flex items-center justify-between gap-2 text-xs text-muted-foreground"
                     >
                       <span className="truncate">
+                        {c.pending ? "🔁 " : ""}
                         {c.description}{" "}
                         <span className="text-[10px]">
-                          ({c.date.slice(8)}/{c.date.slice(5, 7)})
+                          ({c.pending ? "día " : ""}
+                          {c.date.slice(8)}
+                          {c.pending ? "" : `/${c.date.slice(5, 7)}`})
                         </span>
                       </span>
                       <span className="flex shrink-0 items-center gap-1.5">
-                        <span className="font-mono tabular-nums">
+                        <span
+                          className={`font-mono tabular-nums ${
+                            c.pending ? "opacity-70" : ""
+                          }`}
+                        >
                           {fmtARS(c.amount)}
                         </span>
-                        {onDeleteCardItem && (
+                        {onDeleteCardItem && !c.pending && (
                           <button
                             onClick={() => onDeleteCardItem(c)}
                             className="text-muted-foreground/50 transition-colors hover:text-destructive"
@@ -173,6 +180,7 @@ export function ProjectionCard({
             <p className="mt-1.5 text-[11px] text-muted-foreground">
               No cuentan en el disponible del mes: la Visa se salda al importar
               el resumen; una tarjeta ajena, cuando le transferís lo gastado.
+              🔁 = recurrente que todavía no se cobró.
             </p>
           </div>
         )}
