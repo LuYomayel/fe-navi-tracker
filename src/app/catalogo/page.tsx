@@ -1,6 +1,7 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { fmtARS } from "@/lib/utils";
 import type { PublicCatalogItem } from "@/types/printing";
 
@@ -15,12 +16,16 @@ const API_BASE_URL =
  * le corresponde ver — lo que le cuesta, el precio sugerido y su ganancia.
  * El costo real y el margen de Luciano nunca salen del backend.
  */
-export default function CatalogoPublicoPage({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
-  const { token } = use(params);
+export default function CatalogoPublicoPage() {
+  return (
+    <Suspense fallback={null}>
+      <CatalogoPublico />
+    </Suspense>
+  );
+}
+
+function CatalogoPublico() {
+  const token = useSearchParams().get("t") ?? "";
   const [items, setItems] = useState<PublicCatalogItem[] | null>(null);
   const [error, setError] = useState(false);
 

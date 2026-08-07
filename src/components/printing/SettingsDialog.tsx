@@ -48,10 +48,13 @@ export default function SettingsDialog({
     }
   }, [isOpen, settings]);
 
-  const publicUrl =
-    typeof window !== "undefined" && settings
-      ? `${window.location.origin}/catalogo/${settings.publicToken}`
-      : "";
+  // Query param y no ruta dinamica: /catalogo/[token] no se puede exportar
+  // estatico y rompia el build del celu (Capacitor).
+  // En la app nativa el origin es capacitor://localhost, que no le sirve a
+  // Marcelito: el link siempre apunta al dominio web.
+  const publicUrl = settings
+    ? `https://navi-tracker.luciano-yomayel.com/catalogo?t=${settings.publicToken}`
+    : "";
 
   const handleSave = async () => {
     const ok = await onSave({
