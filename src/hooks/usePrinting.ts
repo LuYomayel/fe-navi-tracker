@@ -34,18 +34,31 @@ export function usePrinting() {
   const loadAll = useCallback(async () => {
     try {
       setIsLoading(true);
-      const [s, p, f, v, r] = await Promise.all([
+      // allSettled, no all: si una sola llamada falla, con Promise.all no se
+      // setea NADA y la pantalla queda en esqueleto para siempre.
+      const [s, p, f, v, r] = await Promise.allSettled([
         api.printing.settings.get(),
         api.printing.products.list(),
         api.printing.filaments.list(),
         api.printing.sales.list(),
         api.printing.summary(),
       ]);
-      if (s.success) setSettings(s.data as PrintSettings);
-      if (p.success) setProducts((p.data as PrintProduct[]) ?? []);
-      if (f.success) setFilaments((f.data as Filament[]) ?? []);
-      if (v.success) setSales((v.data as PrintSale[]) ?? []);
-      if (r.success) setSummary(r.data as PrintingSummary);
+      const ok = <T,>(res: PromiseSettledResult<{ success: boolean; data: unknown }>): T | null =>
+        res.status === "fulfilled" && res.value?.success
+          ? (res.value.data as T)
+          : null;
+
+      const settingsData = ok<PrintSettings>(s);
+      if (settingsData) setSettings(settingsData);
+      setProducts(ok<PrintProduct[]>(p) ?? []);
+      setFilaments(ok<Filament[]>(f) ?? []);
+      setSales(ok<PrintSale[]>(v) ?? []);
+      const summaryData = ok<PrintingSummary>(r);
+      if (summaryData) setSummary(summaryData);
+
+      if ([s, p, f, v, r].some((x) => x.status === "rejected")) {
+        toast.error("Algunos datos del negocio 3D no cargaron");
+      }
     } catch (error) {
       console.error("Error cargando el negocio 3D:", error);
       toast.error("No se pudo cargar el negocio 3D");
