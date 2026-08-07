@@ -13,6 +13,7 @@ import {
   Star,
   Settings,
   Plane,
+  Printer,
 } from "lucide-react";
 import { useAuthStore } from "../../auth/store";
 import { Button } from "@/components/ui/button";
@@ -171,6 +172,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/negocio">
+                      <Printer className="mr-2 h-4 w-4" />
+                      Negocio 3D
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/ajustes">
                       <Settings className="mr-2 h-4 w-4" />

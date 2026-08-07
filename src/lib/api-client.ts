@@ -365,6 +365,125 @@ export const api = {
     },
   },
 
+  // Negocio de impresion 3D (modulo autonomo, no depende del objetivo)
+  printing: {
+    settings: {
+      get: () => apiClient.get("/printing/settings"),
+      update: (
+        data: Partial<{
+          costPerGram: number;
+          wastePct: number;
+          powerPerHour: number;
+          defaultMarkup: number;
+          financingSurcharge: number;
+        }>
+      ) => apiClient.put("/printing/settings", data),
+      regenerateToken: () =>
+        apiClient.post("/printing/settings/regenerate-token"),
+    },
+    summary: () => apiClient.get("/printing/summary"),
+    products: {
+      list: () => apiClient.get("/printing/products"),
+      create: (data: {
+        name: string;
+        author?: string;
+        makerworldUrl?: string;
+        grams: number;
+        hours: number;
+        colorsLabel: string;
+        sizeMm?: string;
+        licenseOk?: boolean;
+        markupOverride?: number | null;
+        publicPrice?: number | null;
+        active?: boolean;
+        notes?: string;
+      }) => apiClient.post("/printing/products", data),
+      update: (
+        id: string,
+        data: Partial<{
+          name: string;
+          author: string;
+          makerworldUrl: string;
+          grams: number;
+          hours: number;
+          colorsLabel: string;
+          sizeMm: string;
+          licenseOk: boolean;
+          markupOverride: number | null;
+          publicPrice: number | null;
+          active: boolean;
+          notes: string;
+        }>
+      ) => apiClient.put(`/printing/products/${id}`, data),
+      delete: (id: string) => apiClient.delete(`/printing/products/${id}`),
+    },
+    filaments: {
+      list: () => apiClient.get("/printing/filaments"),
+      create: (data: {
+        brand: string;
+        material: string;
+        color: string;
+        pricePaid: number;
+        grams?: number;
+        purchasedAt: string;
+        discarded?: boolean;
+        discardReason?: string;
+        gramsLeft?: number;
+        notes?: string;
+      }) => apiClient.post("/printing/filaments", data),
+      update: (
+        id: string,
+        data: Partial<{
+          brand: string;
+          material: string;
+          color: string;
+          pricePaid: number;
+          grams: number;
+          purchasedAt: string;
+          discarded: boolean;
+          discardReason: string;
+          gramsLeft: number;
+          notes: string;
+        }>
+      ) => apiClient.put(`/printing/filaments/${id}`, data),
+      delete: (id: string) => apiClient.delete(`/printing/filaments/${id}`),
+    },
+    sales: {
+      list: () => apiClient.get("/printing/sales"),
+      create: (data: {
+        date: string;
+        productId: string;
+        kind?: "venta" | "muestra";
+        qty?: number;
+        chargedUnit?: number;
+        costUnit?: number;
+        status?: "a_liquidar" | "liquidado";
+        channel?: string;
+        notes?: string;
+      }) => apiClient.post("/printing/sales", data),
+      update: (
+        id: string,
+        data: Partial<{
+          date: string;
+          kind: "venta" | "muestra";
+          qty: number;
+          chargedUnit: number;
+          costUnit: number;
+          channel: string;
+          notes: string;
+        }>
+      ) => apiClient.put(`/printing/sales/${id}`, data),
+      delete: (id: string) => apiClient.delete(`/printing/sales/${id}`),
+      liquidar: (id: string) =>
+        apiClient.patch(`/printing/sales/${id}/liquidar`),
+    },
+    // Catalogo publico: SIN auth, se llama tambien desde /catalogo/[token]
+    // (fuera del grupo (app), sin login). fetchAPI manda el token si hay
+    // sesion pero el backend lo ignora en esta ruta (@Public()).
+    publicCatalog: (token: string) =>
+      apiClient.get(`/printing/catalog/${token}`),
+  },
+
   notes: {
     getAll: () => apiClient.get("/notes"),
     create: (data: Omit<DailyNote, "id" | "createdAt" | "updatedAt">) =>
