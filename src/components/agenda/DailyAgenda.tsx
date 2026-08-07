@@ -3,16 +3,26 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNaviTrackerStore } from "@/store";
 import { CalendarEvent } from "@/types";
-import { ChevronLeft, ChevronRight, Calendar, CheckCircle2, Circle, Utensils, Dumbbell, BookOpen, Droplets, Plus, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, CheckCircle2, Circle, Utensils, Dumbbell, BookOpen, Droplets, Moon, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
 import { getDateKey } from "@/lib/utils";
+import { api } from "@/lib/api-client";
 import AddEventDialog from "./AddEventDialog";
 
 const dayNames = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+// Meta de sueno: 7 horas (misma constante que day-score.service.ts en el backend)
+const SLEEP_GOAL_MINUTES = 7 * 60;
+
+const formatSleepDuration = (minutes: number) => {
+  const h = Math.floor(minutes / 60);
+  const m = Math.round(minutes % 60);
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+};
 
 export default function DailyAgenda() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -41,6 +51,7 @@ export default function DailyAgenda() {
   } = useNaviTrackerStore();
 
   const dateKey = getDateKey(selectedDate);
+  const [daySleep, setDaySleep] = useState<{ minutesAsleep: number } | null>(null);
 
   useEffect(() => {
     refreshActivities();
@@ -48,6 +59,21 @@ export default function DailyAgenda() {
     fetchCalendarEvents(dateKey, dateKey);
     fetchTodayHydration(dateKey);
   }, [dateKey, refreshActivities, fetchDayScore, fetchCalendarEvents, fetchTodayHydration]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.sleep
+      .getByDate(dateKey)
+      .then((res) => {
+        if (!cancelled) setDaySleep((res.data as { minutesAsleep: number } | null) ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setDaySleep(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dateKey]);
 
   const navigateDay = (dir: number) => {
     const d = new Date(selectedDate);
@@ -106,6 +132,13 @@ export default function DailyAgenda() {
   const hydrationRegistered = isToday
     ? (todayHydration?.glassesConsumed ?? 0) >= hydrationGoal.goalGlasses
     : (score?.hydrationLogged ?? false);
+  // El sueno solo "cuenta" (se muestra como parte del dia) desde que existe
+  // el primer registro alguna vez — para hoy siempre se muestra, igual que
+  // el resto de los modulos.
+  const sleepTracked = isToday ? true : (score?.sleepTracked ?? false);
+  const sleepRegistered = isToday
+    ? (daySleep?.minutesAsleep ?? 0) >= SLEEP_GOAL_MINUTES
+    : (score?.sleepLogged ?? false);
 
   const statusColors: Record<string, string> = {
     won: "text-green-500",
@@ -370,6 +403,23 @@ export default function DailyAgenda() {
                   ? `${todayHydration.glassesConsumed}/${hydrationGoal.goalGlasses} vasos`
                   : "Sin registrar"}
               </span>
+            )}
+          </Link>
+
+          <Link
+            href="/salud?tab=sueno"
+            className="flex items-center gap-3 text-sm hover:bg-muted/50 rounded p-2 -m-2 transition"
+          >
+            <Moon className="h-4 w-4 text-indigo-400" />
+            <span className="flex-1">Sueno</span>
+            {!sleepTracked ? (
+              <span className="text-xs text-muted-foreground">-</span>
+            ) : sleepRegistered ? (
+              <span className="text-xs text-green-500">
+                {daySleep?.minutesAsleep ? formatSleepDuration(daySleep.minutesAsleep) : "Registrado"}
+              </span>
+            ) : (
+              <span className="text-xs text-muted-foreground">Sin registrar</span>
             )}
           </Link>
         </div>
