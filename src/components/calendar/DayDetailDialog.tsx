@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, Utensils, Dumbbell, BookOpen, Target, RefreshCw, Droplets } from "lucide-react";
+import { CheckCircle2, XCircle, Utensils, Dumbbell, BookOpen, Target, RefreshCw, Droplets, Moon } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
@@ -156,6 +156,23 @@ export default function DayDetailDialog({ score, onClose }: DayDetailDialogProps
               <CheckCircle2 className="h-4 w-4 text-green-500" />
             ) : (
               <XCircle className="h-4 w-4 text-red-400" />
+            )}
+          </div>
+
+          {/* Sleep - solo cuenta desde la primera vez que se registro sueno */}
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <Moon className="h-4 w-4 text-indigo-400" />
+              <span>Sueno</span>
+            </div>
+            {score.sleepTracked ? (
+              score.sleepLogged ? (
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+              ) : (
+                <XCircle className="h-4 w-4 text-red-400" />
+              )
+            ) : (
+              <span className="text-xs text-muted-foreground">-</span>
             )}
           </div>
         </div>

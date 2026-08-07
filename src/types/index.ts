@@ -826,6 +826,8 @@ export interface DayScore {
   exerciseLogged: boolean;
   reflectionLogged: boolean;
   hydrationLogged?: boolean;
+  sleepLogged?: boolean;
+  sleepTracked?: boolean;
 }
 
 export interface MonthlyStats {
