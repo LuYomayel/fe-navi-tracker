@@ -23,6 +23,8 @@ export interface ConfirmDialogProps {
   cancelLabel?: string;
   destructive?: boolean;
   onConfirm: () => void;
+  /** Contenido extra entre el texto y los botones (ej: un input). */
+  children?: React.ReactNode;
 }
 
 /** Diálogo de confirmación tokenizado (reemplaza window.confirm). */
@@ -35,6 +37,7 @@ export function ConfirmDialog({
   cancelLabel = "Cancelar",
   destructive,
   onConfirm,
+  children,
 }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -45,6 +48,7 @@ export function ConfirmDialog({
             <AlertDialogDescription>{description}</AlertDialogDescription>
           )}
         </AlertDialogHeader>
+        {children}
         <AlertDialogFooter>
           <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction

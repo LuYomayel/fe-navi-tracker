@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ActionIconButton } from "@/components/ui/action-icon-button";
 import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
 import { fmtARS } from "@/lib/utils";
+import { uploadUrl } from "@/lib/api-client";
 import { Package, Plus, Pencil, Trash2, ExternalLink } from "lucide-react";
 import ProductDialog from "./ProductDialog";
 import type { CreatePrintProductDto, PrintProduct } from "@/types/printing";
@@ -18,6 +19,13 @@ interface CatalogTabProps {
   onCreate: (data: CreatePrintProductDto) => Promise<boolean>;
   onUpdate: (id: string, data: CreatePrintProductDto) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
+  onAddPhoto: (productId: string, dataUrl: string) => Promise<boolean>;
+  onDeletePhoto: (photoId: string) => Promise<boolean>;
+  onSetCover: (
+    productId: string,
+    photoId: string,
+    allIds: string[],
+  ) => Promise<boolean>;
 }
 
 export default function CatalogTab({
@@ -26,6 +34,9 @@ export default function CatalogTab({
   onCreate,
   onUpdate,
   onDelete,
+  onAddPhoto,
+  onDeletePhoto,
+  onSetCover,
 }: CatalogTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<PrintProduct | null>(null);
@@ -66,6 +77,19 @@ export default function CatalogTab({
           {products.map((p) => (
             <Card key={p.id} className="space-y-2 rounded-lg border p-3">
               <div className="flex items-start gap-2">
+                {p.photos?.length ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={uploadUrl(p.photos[0].url)}
+                    alt=""
+                    className="h-12 w-12 shrink-0 rounded-md border border-border object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-dashed border-border text-[9px] text-muted-foreground">
+                    sin foto
+                  </span>
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="truncate text-sm font-semibold">
@@ -150,8 +174,13 @@ export default function CatalogTab({
         onSave={(data) =>
           editing ? onUpdate(editing.id, data) : onCreate(data)
         }
-        editingProduct={editing}
+        editingProduct={
+          editing ? (products.find((p) => p.id === editing.id) ?? editing) : null
+        }
         isSubmitting={isSubmitting}
+        onAddPhoto={onAddPhoto}
+        onDeletePhoto={onDeletePhoto}
+        onSetCover={onSetCover}
       />
 
       <ConfirmDialog

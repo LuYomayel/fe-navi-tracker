@@ -58,6 +58,8 @@ export default function FilamentDialog({
               purchasedAt: editingFilament.purchasedAt,
               discarded: editingFilament.discarded,
               discardReason: editingFilament.discardReason || "",
+              gramsLeft: editingFilament.gramsLeft ?? undefined,
+              colorHex: editingFilament.colorHex || undefined,
               notes: editingFilament.notes || "",
             }
           : emptyOf(),
@@ -113,14 +115,28 @@ export default function FilamentDialog({
               />
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="f-color">Color</Label>
-            <Input
-              id="f-color"
-              value={form.color}
-              onChange={(e) => setForm({ ...form, color: e.target.value })}
-              placeholder="Rojo"
-            />
+          <div className="grid grid-cols-[1fr_auto] items-end gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="f-color">Color</Label>
+              <Input
+                id="f-color"
+                value={form.color}
+                onChange={(e) => setForm({ ...form, color: e.target.value })}
+                placeholder="Rojo"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="f-hex" className="text-xs">
+                Hex (Bambu)
+              </Label>
+              <input
+                id="f-hex"
+                type="color"
+                className="h-10 w-14 cursor-pointer rounded-md border border-input bg-background p-1"
+                value={form.colorHex || "#808080"}
+                onChange={(e) => setForm({ ...form, colorHex: e.target.value })}
+              />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -148,6 +164,28 @@ export default function FilamentDialog({
               />
             </div>
           </div>
+          {editingFilament && !form.discarded && (
+            <div className="space-y-1.5">
+              <Label htmlFor="f-left">
+                Gramos que quedan (stock actual del rollo)
+              </Label>
+              <Input
+                id="f-left"
+                type="number"
+                inputMode="decimal"
+                value={form.gramsLeft ?? ""}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    gramsLeft: e.target.value
+                      ? Number(e.target.value)
+                      : undefined,
+                  })
+                }
+                placeholder="Vacio = sin trackear"
+              />
+            </div>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="f-date">Fecha de compra</Label>
             <Input

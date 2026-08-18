@@ -11,9 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
-import { Copy, RefreshCw } from "lucide-react";
+import { Copy, RefreshCw, Printer, Unplug } from "lucide-react";
 import { toast } from "@/lib/toast-helper";
-import type { PrintSettings, UpdatePrintSettingsDto } from "@/types/printing";
+import type {
+  BambuStatus,
+  PrintSettings,
+  UpdatePrintSettingsDto,
+} from "@/types/printing";
 
 interface SettingsDialogProps {
   isOpen: boolean;
@@ -22,6 +26,9 @@ interface SettingsDialogProps {
   onSave: (data: UpdatePrintSettingsDto) => Promise<boolean>;
   onRegenerateToken: () => Promise<boolean>;
   isSubmitting?: boolean;
+  bambuStatus?: BambuStatus | null;
+  onConnectBambu?: (token: string) => Promise<boolean>;
+  onDisconnectBambu?: () => Promise<boolean>;
 }
 
 /** Parametros de costeo + link del catalogo publico (Marcelito). */
@@ -32,8 +39,12 @@ export default function SettingsDialog({
   onSave,
   onRegenerateToken,
   isSubmitting,
+  bambuStatus,
+  onConnectBambu,
+  onDisconnectBambu,
 }: SettingsDialogProps) {
   const [form, setForm] = useState<UpdatePrintSettingsDto>({});
+  const [bambuToken, setBambuToken] = useState("");
   const regenConfirm = useConfirm();
 
   useEffect(() => {
@@ -180,6 +191,64 @@ export default function SettingsDialog({
                 Generar link nuevo (revoca el actual)
               </Button>
             </div>
+
+            {onConnectBambu && (
+              <div className="space-y-1.5 rounded-lg border p-3">
+                <Label className="flex items-center gap-1.5 text-sm">
+                  <Printer className="h-4 w-4" />
+                  Impresora (Bambu Cloud)
+                </Label>
+                {bambuStatus?.connected ? (
+                  <>
+                    <p className="text-xs text-muted-foreground">
+                      Conectada ✅ — las impresiones se sincronizan solas cada
+                      30 min y descuentan el filamento del stock.
+                      {bambuStatus.lastSyncAt &&
+                        ` Último sync: ${new Date(bambuStatus.lastSyncAt).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}.`}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={() => onDisconnectBambu?.()}
+                    >
+                      <Unplug className="mr-1.5 h-3.5 w-3.5" />
+                      Desconectar
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs text-muted-foreground">
+                      Pegá el token de tu sesión de Bambu: entrá a
+                      makerworld.com logueado → DevTools → Application →
+                      Cookies → copiá el valor de la cookie{" "}
+                      <code className="rounded bg-muted px-1">token</code>.
+                      Se guarda encriptado.
+                    </p>
+                    <Input
+                      value={bambuToken}
+                      onChange={(e) => setBambuToken(e.target.value)}
+                      placeholder="Token de Bambu Cloud"
+                      className="text-xs"
+                    />
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      type="button"
+                      disabled={isSubmitting || !bambuToken.trim()}
+                      onClick={async () => {
+                        const ok = await onConnectBambu(bambuToken.trim());
+                        if (ok) setBambuToken("");
+                      }}
+                    >
+                      Conectar impresora
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

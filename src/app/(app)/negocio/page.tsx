@@ -10,21 +10,19 @@ import CatalogTab from "@/components/printing/CatalogTab";
 import FilamentsTab from "@/components/printing/FilamentsTab";
 import SalesTab from "@/components/printing/SalesTab";
 import BalanceTab from "@/components/printing/BalanceTab";
+import OrdersTab from "@/components/printing/OrdersTab";
 import SettingsDialog from "@/components/printing/SettingsDialog";
 import { fmtARS } from "@/lib/utils";
 import { Printer, Settings } from "lucide-react";
 
-type NegocioTab = "balance" | "ventas" | "catalogo" | "filamentos";
-
-const TABS: { value: NegocioTab; label: string }[] = [
-  { value: "balance", label: "Balance" },
-  { value: "ventas", label: "Ventas" },
-  { value: "catalogo", label: "Catálogo" },
-  { value: "filamentos", label: "Filamentos" },
-];
+type NegocioTab = "balance" | "pedidos" | "ventas" | "catalogo" | "filamentos";
 
 const isTab = (v: string | null): v is NegocioTab =>
-  v === "balance" || v === "ventas" || v === "catalogo" || v === "filamentos";
+  v === "balance" ||
+  v === "pedidos" ||
+  v === "ventas" ||
+  v === "catalogo" ||
+  v === "filamentos";
 
 /**
  * Negocio de impresión 3D. Módulo AUTÓNOMO: no cuelga del objetivo activo
@@ -42,6 +40,11 @@ export default function NegocioPage() {
     filaments,
     sales,
     summary,
+    orders,
+    notices,
+    stock,
+    jobs,
+    bambuStatus,
     isLoading,
     isSubmitting,
     loadAll,
@@ -55,8 +58,39 @@ export default function NegocioPage() {
     deleteFilament,
     createSale,
     deleteSale,
-    liquidarSale,
+    addSettlement,
+    deleteSettlement,
+    addPhoto,
+    deletePhoto,
+    setCoverPhoto,
+    updateOrderStatus,
+    deleteOrder,
+    resolveNotice,
+    finishFilament,
+    createJob,
+    deleteJob,
+    linkJob,
+    learnJob,
+    connectBambu,
+    disconnectBambu,
+    syncBambu,
   } = usePrinting();
+
+  // Badge en la tab: pedidos activos + avisos de pago sin resolver
+  const pendingOrders =
+    orders.filter((o) => o.status !== "entregado" && o.status !== "cancelado")
+      .length + notices.length;
+
+  const TABS: { value: NegocioTab; label: string }[] = [
+    { value: "balance", label: "Balance" },
+    {
+      value: "pedidos",
+      label: pendingOrders > 0 ? `Pedidos (${pendingOrders})` : "Pedidos",
+    },
+    { value: "ventas", label: "Ventas" },
+    { value: "catalogo", label: "Catálogo" },
+    { value: "filamentos", label: "Filamentos" },
+  ];
 
   useEffect(() => {
     loadAll();
@@ -105,6 +139,17 @@ export default function NegocioPage() {
         <BalanceTab summary={summary} isLoading={isLoading} />
       )}
 
+      {tab === "pedidos" && (
+        <OrdersTab
+          orders={orders}
+          notices={notices}
+          isSubmitting={isSubmitting}
+          onUpdateStatus={updateOrderStatus}
+          onDelete={deleteOrder}
+          onResolveNotice={resolveNotice}
+        />
+      )}
+
       {tab === "ventas" && (
         <SalesTab
           sales={sales}
@@ -112,7 +157,8 @@ export default function NegocioPage() {
           isSubmitting={isSubmitting}
           onCreate={createSale}
           onDelete={deleteSale}
-          onLiquidar={liquidarSale}
+          onAddSettlement={addSettlement}
+          onDeleteSettlement={deleteSettlement}
         />
       )}
 
@@ -123,16 +169,29 @@ export default function NegocioPage() {
           onCreate={createProduct}
           onUpdate={updateProduct}
           onDelete={deleteProduct}
+          onAddPhoto={addPhoto}
+          onDeletePhoto={deletePhoto}
+          onSetCover={setCoverPhoto}
         />
       )}
 
       {tab === "filamentos" && (
         <FilamentsTab
           filaments={filaments}
+          stock={stock}
+          jobs={jobs}
+          products={products}
+          bambuStatus={bambuStatus}
           isSubmitting={isSubmitting}
           onCreate={createFilament}
           onUpdate={updateFilament}
           onDelete={deleteFilament}
+          onFinish={finishFilament}
+          onCreateJob={createJob}
+          onDeleteJob={deleteJob}
+          onLinkJob={linkJob}
+          onLearnJob={learnJob}
+          onSyncBambu={syncBambu}
         />
       )}
 
@@ -143,6 +202,9 @@ export default function NegocioPage() {
         onSave={updateSettings}
         onRegenerateToken={regenerateToken}
         isSubmitting={isSubmitting}
+        bambuStatus={bambuStatus}
+        onConnectBambu={connectBambu}
+        onDisconnectBambu={disconnectBambu}
       />
     </div>
   );

@@ -4,14 +4,23 @@ import { useCallback, useState } from "react";
 import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
 import type {
+  AddSettlementDto,
+  BambuStatus,
   CreateFilamentDto,
+  CreatePrintJobDto,
   CreatePrintProductDto,
   CreatePrintSaleDto,
   Filament,
+  PrintJob,
+  PrintOrder,
+  PrintOrderStatus,
+  PrintPaymentNotice,
   PrintProduct,
   PrintSale,
   PrintSettings,
   PrintingSummary,
+  StockCheckResult,
+  StockSummary,
   UpdateFilamentDto,
   UpdatePrintProductDto,
   UpdatePrintSaleDto,
@@ -28,6 +37,11 @@ export function usePrinting() {
   const [filaments, setFilaments] = useState<Filament[]>([]);
   const [sales, setSales] = useState<PrintSale[]>([]);
   const [summary, setSummary] = useState<PrintingSummary | null>(null);
+  const [orders, setOrders] = useState<PrintOrder[]>([]);
+  const [notices, setNotices] = useState<PrintPaymentNotice[]>([]);
+  const [stock, setStock] = useState<StockSummary | null>(null);
+  const [jobs, setJobs] = useState<PrintJob[]>([]);
+  const [bambuStatus, setBambuStatus] = useState<BambuStatus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -36,12 +50,17 @@ export function usePrinting() {
       setIsLoading(true);
       // allSettled, no all: si una sola llamada falla, con Promise.all no se
       // setea NADA y la pantalla queda en esqueleto para siempre.
-      const [s, p, f, v, r] = await Promise.allSettled([
+      const [s, p, f, v, r, o, n, st, j, b] = await Promise.allSettled([
         api.printing.settings.get(),
         api.printing.products.list(),
         api.printing.filaments.list(),
         api.printing.sales.list(),
         api.printing.summary(),
+        api.printing.orders.list(),
+        api.printing.notices.list(),
+        api.printing.stock.get(),
+        api.printing.jobs.list(),
+        api.printing.bambu.status(),
       ]);
       const ok = <T,>(res: PromiseSettledResult<{ success: boolean; data: unknown }>): T | null =>
         res.status === "fulfilled" && res.value?.success
@@ -55,8 +74,15 @@ export function usePrinting() {
       setSales(ok<PrintSale[]>(v) ?? []);
       const summaryData = ok<PrintingSummary>(r);
       if (summaryData) setSummary(summaryData);
+      setOrders(ok<PrintOrder[]>(o) ?? []);
+      setNotices(ok<PrintPaymentNotice[]>(n) ?? []);
+      const stockData = ok<StockSummary>(st);
+      if (stockData) setStock(stockData);
+      setJobs(ok<PrintJob[]>(j) ?? []);
+      const bambuData = ok<BambuStatus>(b);
+      if (bambuData) setBambuStatus(bambuData);
 
-      if ([s, p, f, v, r].some((x) => x.status === "rejected")) {
+      if ([s, p, f, v, r, o, n, st, j, b].some((x) => x.status === "rejected")) {
         toast.error("Algunos datos del negocio 3D no cargaron");
       }
     } catch (error) {
@@ -356,15 +382,441 @@ export function usePrinting() {
     [reloadSummary],
   );
 
+  const reloadSales = useCallback(async () => {
+    const [salesRes, stockRes] = await Promise.all([
+      api.printing.sales.list(),
+      api.printing.stock.get(),
+    ]);
+    if (salesRes.success) setSales((salesRes.data as PrintSale[]) ?? []);
+    if (stockRes.success) setStock(stockRes.data as StockSummary);
+  }, []);
+
+  // ── Liquidaciones parciales ───────────────────────────────
+  const addSettlement = useCallback(
+    async (saleId: string, data: AddSettlementDto) => {
+      try {
+        setIsSubmitting(true);
+        const res = await api.printing.sales.settlements.add(saleId, data);
+        if (res.success) {
+          const salesRes = await api.printing.sales.list();
+          if (salesRes.success) setSales((salesRes.data as PrintSale[]) ?? []);
+          await reloadSummary();
+          toast.success("Pago registrado");
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error registrando pago:", error);
+        toast.error(error instanceof Error ? error.message : "No se pudo registrar el pago");
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [reloadSummary],
+  );
+
+  const deleteSettlement = useCallback(
+    async (id: string) => {
+      try {
+        setIsSubmitting(true);
+        const res = await api.printing.sales.settlements.delete(id);
+        if (res.success) {
+          const salesRes = await api.printing.sales.list();
+          if (salesRes.success) setSales((salesRes.data as PrintSale[]) ?? []);
+          await reloadSummary();
+          toast.success("Pago borrado");
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error borrando pago:", error);
+        toast.error("No se pudo borrar el pago");
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [reloadSummary],
+  );
+
+  // ── Fotos ─────────────────────────────────────────────────
+  const reloadProducts = useCallback(async () => {
+    const res = await api.printing.products.list();
+    if (res.success) setProducts((res.data as PrintProduct[]) ?? []);
+  }, []);
+
+  const addPhoto = useCallback(
+    async (productId: string, dataUrl: string) => {
+      try {
+        setIsSubmitting(true);
+        const res = await api.printing.photos.add(productId, dataUrl);
+        if (res.success) {
+          await reloadProducts();
+          toast.success("Foto agregada");
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error subiendo foto:", error);
+        toast.error(error instanceof Error ? error.message : "No se pudo subir la foto");
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [reloadProducts],
+  );
+
+  const deletePhoto = useCallback(
+    async (photoId: string) => {
+      try {
+        setIsSubmitting(true);
+        const res = await api.printing.photos.delete(photoId);
+        if (res.success) {
+          await reloadProducts();
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error borrando foto:", error);
+        toast.error("No se pudo borrar la foto");
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [reloadProducts],
+  );
+
+  const setCoverPhoto = useCallback(
+    async (productId: string, photoId: string, allIds: string[]) => {
+      try {
+        const ids = [photoId, ...allIds.filter((i) => i !== photoId)];
+        const res = await api.printing.photos.reorder(productId, ids);
+        if (res.success) {
+          await reloadProducts();
+          toast.success("Portada actualizada");
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error reordenando fotos:", error);
+        return false;
+      }
+    },
+    [reloadProducts],
+  );
+
+  // ── Pedidos + avisos ──────────────────────────────────────
+  const updateOrderStatus = useCallback(
+    async (id: string, status: PrintOrderStatus) => {
+      try {
+        setIsSubmitting(true);
+        const res = await api.printing.orders.updateStatus(id, status);
+        if (res.success) {
+          const [ordersRes] = await Promise.all([
+            api.printing.orders.list(),
+            // entregar un pedido crea ventas → refrescarlas junto al resumen
+            status === "entregado" ? reloadSales() : Promise.resolve(),
+            status === "entregado" ? reloadSummary() : Promise.resolve(),
+          ]);
+          if (ordersRes.success) setOrders((ordersRes.data as PrintOrder[]) ?? []);
+          toast.success(
+            status === "entregado"
+              ? "Pedido entregado: se crearon las ventas a liquidar"
+              : `Pedido ${status}`,
+          );
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error actualizando pedido:", error);
+        toast.error(error instanceof Error ? error.message : "No se pudo actualizar");
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [reloadSales, reloadSummary],
+  );
+
+  const deleteOrder = useCallback(async (id: string) => {
+    try {
+      setIsSubmitting(true);
+      const res = await api.printing.orders.delete(id);
+      if (res.success) {
+        setOrders((prev) => prev.filter((o) => o.id !== id));
+        toast.success("Pedido borrado");
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error borrando pedido:", error);
+      toast.error(error instanceof Error ? error.message : "No se pudo borrar");
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, []);
+
+  const resolveNotice = useCallback(
+    async (id: string, status: "confirmado" | "descartado") => {
+      try {
+        const res = await api.printing.notices.resolve(id, status);
+        if (res.success) {
+          setNotices((prev) => prev.filter((n) => n.id !== id));
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error resolviendo aviso:", error);
+        return false;
+      }
+    },
+    [],
+  );
+
+  // ── Stock / impresiones ───────────────────────────────────
+  const checkStock = useCallback(
+    async (items: { productId: string; qty: number }[]) => {
+      try {
+        const res = await api.printing.stock.check(items);
+        return res.success ? (res.data as StockCheckResult) : null;
+      } catch (error) {
+        console.error("Error chequeando stock:", error);
+        return null;
+      }
+    },
+    [],
+  );
+
+  const finishFilament = useCallback(
+    async (id: string) => {
+      try {
+        setIsSubmitting(true);
+        const res = await api.printing.stock.finishFilament(id);
+        if (res.success) {
+          const [fRes] = await Promise.all([
+            api.printing.filaments.list(),
+            api.printing.stock.get().then((r) => {
+              if (r.success) setStock(r.data as StockSummary);
+            }),
+          ]);
+          if (fRes.success) setFilaments((fRes.data as Filament[]) ?? []);
+          toast.success("Rollo marcado como terminado");
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error terminando rollo:", error);
+        toast.error("No se pudo marcar el rollo");
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [],
+  );
+
+  const reloadJobsAndStock = useCallback(async () => {
+    const [jRes, stRes, fRes] = await Promise.all([
+      api.printing.jobs.list(),
+      api.printing.stock.get(),
+      api.printing.filaments.list(),
+    ]);
+    if (jRes.success) setJobs((jRes.data as PrintJob[]) ?? []);
+    if (stRes.success) setStock(stRes.data as StockSummary);
+    if (fRes.success) setFilaments((fRes.data as Filament[]) ?? []);
+  }, []);
+
+  const createJob = useCallback(
+    async (data: CreatePrintJobDto) => {
+      try {
+        setIsSubmitting(true);
+        const res = await api.printing.jobs.create(data);
+        if (res.success) {
+          await reloadJobsAndStock();
+          const d = res.data as { unmatchedGrams?: number };
+          if (d?.unmatchedGrams && d.unmatchedGrams > 0) {
+            toast.error(
+              `Impresión registrada, pero ${Math.round(d.unmatchedGrams)}g no matchearon ningún rollo`,
+            );
+          } else {
+            toast.success("Impresión registrada y stock descontado");
+          }
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error registrando impresión:", error);
+        toast.error(error instanceof Error ? error.message : "No se pudo registrar");
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [reloadJobsAndStock],
+  );
+
+  const deleteJob = useCallback(
+    async (id: string) => {
+      try {
+        setIsSubmitting(true);
+        const res = await api.printing.jobs.delete(id);
+        if (res.success) {
+          await reloadJobsAndStock();
+          toast.success("Impresión borrada (stock devuelto)");
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error borrando impresión:", error);
+        toast.error("No se pudo borrar");
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [reloadJobsAndStock],
+  );
+
+  const linkJob = useCallback(
+    async (id: string, productId: string | null) => {
+      try {
+        const res = await api.printing.jobs.link(id, productId);
+        if (res.success) {
+          const jRes = await api.printing.jobs.list();
+          if (jRes.success) setJobs((jRes.data as PrintJob[]) ?? []);
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error linkeando impresión:", error);
+        return false;
+      }
+    },
+    [],
+  );
+
+  const learnJob = useCallback(
+    async (id: string, units: number) => {
+      try {
+        setIsSubmitting(true);
+        const res = await api.printing.jobs.learn(id, units);
+        if (res.success) {
+          await reloadProducts();
+          toast.success("Consumo por color copiado al producto");
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error aprendiendo consumo:", error);
+        toast.error(error instanceof Error ? error.message : "No se pudo copiar");
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [reloadProducts],
+  );
+
+  // ── Bambu ─────────────────────────────────────────────────
+  const connectBambu = useCallback(async (token: string) => {
+    try {
+      setIsSubmitting(true);
+      const res = await api.printing.bambu.connect(token);
+      if (res.success) {
+        const st = await api.printing.bambu.status();
+        if (st.success) setBambuStatus(st.data as BambuStatus);
+        toast.success("Bambu conectado: las impresiones se van a sincronizar solas");
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error conectando Bambu:", error);
+      toast.error(error instanceof Error ? error.message : "No se pudo conectar");
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, []);
+
+  const disconnectBambu = useCallback(async () => {
+    try {
+      setIsSubmitting(true);
+      const res = await api.printing.bambu.disconnect();
+      if (res.success) {
+        setBambuStatus((prev) => (prev ? { ...prev, connected: false } : prev));
+        toast.success("Bambu desconectado");
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error desconectando Bambu:", error);
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, []);
+
+  const syncBambu = useCallback(async () => {
+    try {
+      setIsSubmitting(true);
+      const res = await api.printing.bambu.sync();
+      if (res.success) {
+        const d = res.data as { created: number; unmatchedGrams: number };
+        await reloadJobsAndStock();
+        const st = await api.printing.bambu.status();
+        if (st.success) setBambuStatus(st.data as BambuStatus);
+        toast.success(
+          d.created
+            ? `${d.created} impresión${d.created === 1 ? "" : "es"} sincronizada${d.created === 1 ? "" : "s"}`
+            : "Sin impresiones nuevas",
+        );
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error sincronizando Bambu:", error);
+      toast.error(error instanceof Error ? error.message : "No se pudo sincronizar");
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [reloadJobsAndStock]);
+
   return {
     settings,
     products,
     filaments,
     sales,
     summary,
+    orders,
+    notices,
+    stock,
+    jobs,
+    bambuStatus,
     isLoading,
     isSubmitting,
     loadAll,
+    addSettlement,
+    deleteSettlement,
+    addPhoto,
+    deletePhoto,
+    setCoverPhoto,
+    updateOrderStatus,
+    deleteOrder,
+    resolveNotice,
+    checkStock,
+    finishFilament,
+    createJob,
+    deleteJob,
+    linkJob,
+    learnJob,
+    connectBambu,
+    disconnectBambu,
+    syncBambu,
     updateSettings,
     regenerateToken,
     createProduct,

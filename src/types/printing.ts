@@ -28,14 +28,30 @@ export interface PrintProduct {
   licenseOk: boolean;
   markupOverride?: number | null;
   publicPrice?: number | null;
+  colorBreakdown?: ColorBreakdownEntry[] | null;
   active: boolean;
   notes?: string | null;
   createdAt: string;
   updatedAt: string;
+  photos: PrintProductPhoto[];
   // Calculados en vivo con las settings vigentes (no se guardan)
   cost: number;
   priceToMarcelito: number;
   profit: number;
+}
+
+export interface ColorBreakdownEntry {
+  color?: string | null;
+  colorHex?: string | null;
+  grams: number;
+}
+
+export interface PrintProductPhoto {
+  id: string;
+  productId: string;
+  path: string;
+  order: number;
+  url: string; // relativa al host de la API (/uploads/...)
 }
 
 export interface Filament {
@@ -51,6 +67,8 @@ export interface Filament {
   discarded: boolean;
   discardReason?: string | null;
   gramsLeft?: number | null;
+  colorHex?: string | null;
+  finishedAt?: string | null;
   expenseId?: string | null;
   notes?: string | null;
   createdAt: string;
@@ -58,7 +76,18 @@ export interface Filament {
 }
 
 export type PrintSaleKind = "venta" | "muestra";
-export type PrintSaleStatus = "a_liquidar" | "liquidado";
+export type PrintSaleStatus = "a_liquidar" | "parcial" | "liquidado";
+
+export interface PrintSaleSettlement {
+  id: string;
+  saleId: string;
+  date: string;
+  amount: number;
+  qty?: number | null;
+  incomeId?: string | null;
+  notes?: string | null;
+  createdAt: string;
+}
 
 export interface PrintSale {
   id: string;
@@ -74,8 +103,14 @@ export interface PrintSale {
   channel?: string | null;
   notes?: string | null;
   incomeId?: string | null;
+  orderId?: string | null;
   createdAt: string;
   updatedAt: string;
+  settlements: PrintSaleSettlement[];
+  // Computados por el backend (legacy-aware)
+  total: number;
+  settledAmount: number;
+  remaining: number;
 }
 
 export interface PrintingSummary {
@@ -98,6 +133,7 @@ export interface PublicCatalogItem {
   colorsLabel: string;
   sizeMm?: string | null;
   makerworldUrl?: string | null;
+  photos: string[]; // URLs relativas al host de la API
   priceToMarcelito: number; // lo que le cuesta a Marcelito
   publicPrice?: number | null; // precio sugerido de venta
   marcelitoProfit?: number | null; // su ganancia revendiendo
@@ -114,6 +150,7 @@ export interface CreatePrintProductDto {
   licenseOk?: boolean;
   markupOverride?: number | null;
   publicPrice?: number | null;
+  colorBreakdown?: ColorBreakdownEntry[] | null;
   active?: boolean;
   notes?: string;
 }
@@ -130,6 +167,7 @@ export interface CreateFilamentDto {
   discarded?: boolean;
   discardReason?: string;
   gramsLeft?: number;
+  colorHex?: string;
   notes?: string;
 }
 
@@ -155,3 +193,133 @@ export type UpdatePrintSettingsDto = Partial<
     "costPerGram" | "wastePct" | "powerPerHour" | "defaultMarkup" | "financingSurcharge"
   >
 >;
+
+
+// ── Pedidos (Marcelito) ──────────────────────────────────────
+
+export type PrintOrderStatus =
+  | "pedido"
+  | "confirmado"
+  | "imprimiendo"
+  | "listo"
+  | "entregado"
+  | "cancelado";
+
+export interface PrintOrderItem {
+  id: string;
+  orderId: string;
+  productId: string;
+  qty: number;
+  unitPrice: number;
+  product?: PrintProduct;
+}
+
+export interface PrintOrder {
+  id: string;
+  customerName: string;
+  status: PrintOrderStatus;
+  notes?: string | null;
+  createdAt: string;
+  items: PrintOrderItem[];
+  sales?: PrintSale[];
+}
+
+export interface PublicOrderItem {
+  productId: string;
+  name: string;
+  qty: number;
+  unitPrice: number;
+  subtotal: number;
+}
+
+export interface PublicOrder {
+  id: string;
+  customerName: string;
+  status: PrintOrderStatus;
+  notes?: string | null;
+  createdAt: string;
+  items: PublicOrderItem[];
+  total: number;
+}
+
+export interface PrintPaymentNotice {
+  id: string;
+  orderId?: string | null;
+  amount?: number | null;
+  message?: string | null;
+  status: "pendiente" | "confirmado" | "descartado";
+  createdAt: string;
+}
+
+// ── Stock / impresiones ──────────────────────────────────────
+
+export interface ColorStock {
+  color: string;
+  colorHex: string | null;
+  totalGrams: number;
+  rolls: {
+    id: string;
+    brand?: string;
+    material?: string;
+    gramsLeft: number;
+    purchasedAt: string;
+  }[];
+}
+
+export interface StockSummary {
+  colors: ColorStock[];
+  untrackedRolls: number;
+}
+
+export interface StockCheckResult {
+  ok: boolean;
+  perColor: {
+    color: string;
+    needed: number;
+    available: number;
+    missing: number;
+    matched: boolean;
+  }[];
+  fallback: { needed: number; available: number; ok: boolean } | null;
+  productsWithoutBreakdown: string[];
+  untrackedRolls: number;
+}
+
+export interface PrintJob {
+  id: string;
+  productId?: string | null;
+  product?: PrintProduct | null;
+  title: string;
+  date: string;
+  grams?: number | null;
+  hours?: number | null;
+  filamentsUsed?: ColorBreakdownEntry[] | null;
+  source: "manual" | "bambu";
+  status: "ok" | "fallida";
+  stockApplied: boolean;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface BambuStatus {
+  connected: boolean;
+  region: string;
+  lastSyncAt: string | null;
+}
+
+export interface AddSettlementDto {
+  amount?: number;
+  qty?: number;
+  date?: string;
+  notes?: string;
+}
+
+export interface CreatePrintJobDto {
+  title: string;
+  productId?: string;
+  date?: string;
+  grams?: number;
+  hours?: number;
+  filamentsUsed?: { color?: string; colorHex?: string; grams: number }[];
+  notes?: string;
+}

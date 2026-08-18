@@ -12,7 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Plus, X } from "lucide-react";
+import PhotoManager from "./PhotoManager";
 import type {
+  ColorBreakdownEntry,
   CreatePrintProductDto,
   PrintProduct,
 } from "@/types/printing";
@@ -23,6 +26,14 @@ interface ProductDialogProps {
   onSave: (data: CreatePrintProductDto) => Promise<boolean>;
   editingProduct?: PrintProduct | null;
   isSubmitting?: boolean;
+  // Fotos (solo disponibles al editar: necesitan el id del producto)
+  onAddPhoto?: (productId: string, dataUrl: string) => Promise<boolean>;
+  onDeletePhoto?: (photoId: string) => Promise<boolean>;
+  onSetCover?: (
+    productId: string,
+    photoId: string,
+    allIds: string[],
+  ) => Promise<boolean>;
 }
 
 const empty: CreatePrintProductDto = {
@@ -47,8 +58,12 @@ export default function ProductDialog({
   onSave,
   editingProduct,
   isSubmitting,
+  onAddPhoto,
+  onDeletePhoto,
+  onSetCover,
 }: ProductDialogProps) {
   const [form, setForm] = useState<CreatePrintProductDto>(empty);
+  const [breakdown, setBreakdown] = useState<ColorBreakdownEntry[]>([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -70,6 +85,7 @@ export default function ProductDialog({
             }
           : empty,
       );
+      setBreakdown(editingProduct?.colorBreakdown ?? []);
     }
   }, [isOpen, editingProduct]);
 
@@ -84,9 +100,18 @@ export default function ProductDialog({
       notes: form.notes?.trim() || undefined,
       markupOverride: form.markupOverride || null,
       publicPrice: form.publicPrice || null,
+      colorBreakdown: breakdown.filter((b) => b.color?.trim() && b.grams > 0)
+        .length
+        ? breakdown.filter((b) => b.color?.trim() && b.grams > 0)
+        : null,
     });
     if (ok) onClose();
   };
+
+  const totalBreakdown = breakdown.reduce(
+    (a, b) => a + (Number(b.grams) || 0),
+    0,
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => !o && onClose()}>
@@ -218,7 +243,7 @@ export default function ProductDialog({
                 Licencia OK para vender
               </Label>
               <p className="text-xs text-muted-foreground">
-                Si no esta activo, no aparece en el catalogo publico
+                Aviso interno: el catalogo publico lo muestra igual
               </p>
             </div>
             <Switch
@@ -237,6 +262,94 @@ export default function ProductDialog({
               onCheckedChange={(v) => setForm({ ...form, active: v })}
             />
           </div>
+          {editingProduct && onAddPhoto && onDeletePhoto && onSetCover && (
+            <div className="space-y-1.5">
+              <Label>Fotos (la portada es la que ve Marcelito)</Label>
+              <PhotoManager
+                productId={editingProduct.id}
+                photos={editingProduct.photos ?? []}
+                onAdd={onAddPhoto}
+                onDelete={onDeletePhoto}
+                onSetCover={onSetCover}
+              />
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label>Consumo por color (para el stock)</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() =>
+                  setBreakdown([...breakdown, { color: "", grams: 0 }])
+                }
+              >
+                <Plus className="mr-0.5 h-3.5 w-3.5" />
+                Color
+              </Button>
+            </div>
+            {breakdown.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Sin desglose: el chequeo de stock usa los gramos totales.
+                Cargalo (o aprendelo de una impresion real) para que avise
+                por color.
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {breakdown.map((b, i) => (
+                  <div key={i} className="flex items-center gap-1.5">
+                    <Input
+                      value={b.color ?? ""}
+                      onChange={(e) => {
+                        const next = [...breakdown];
+                        next[i] = { ...next[i], color: e.target.value };
+                        setBreakdown(next);
+                      }}
+                      placeholder="Color (ej: negro)"
+                      className="flex-1"
+                    />
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      value={b.grams || ""}
+                      onChange={(e) => {
+                        const next = [...breakdown];
+                        next[i] = { ...next[i], grams: Number(e.target.value) };
+                        setBreakdown(next);
+                      }}
+                      placeholder="g"
+                      className="w-20"
+                    />
+                    <button
+                      type="button"
+                      aria-label="Sacar color"
+                      className="p-1 text-muted-foreground hover:text-destructive"
+                      onClick={() =>
+                        setBreakdown(breakdown.filter((_, j) => j !== i))
+                      }
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+                <p className="text-[11px] text-muted-foreground">
+                  Suma {totalBreakdown}g
+                  {form.grams
+                    ? ` de ${form.grams}g del producto${
+                        Math.abs(totalBreakdown - Number(form.grams)) >
+                        Number(form.grams) * 0.1
+                          ? " ⚠️ (difiere bastante)"
+                          : ""
+                      }`
+                    : ""}
+                </p>
+              </div>
+            )}
+          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="p-notes">Notas</Label>
             <Textarea

@@ -8,9 +8,15 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ActionIconButton } from "@/components/ui/action-icon-button";
 import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
 import { fmtARS } from "@/lib/utils";
-import { ShoppingBag, Plus, Trash2, CheckCircle2 } from "lucide-react";
+import { ShoppingBag, Plus, Trash2, HandCoins } from "lucide-react";
 import SaleDialog from "./SaleDialog";
-import type { CreatePrintSaleDto, PrintProduct, PrintSale } from "@/types/printing";
+import SettleDialog from "./SettleDialog";
+import type {
+  AddSettlementDto,
+  CreatePrintSaleDto,
+  PrintProduct,
+  PrintSale,
+} from "@/types/printing";
 
 interface SalesTabProps {
   sales: PrintSale[];
@@ -18,7 +24,8 @@ interface SalesTabProps {
   isSubmitting: boolean;
   onCreate: (data: CreatePrintSaleDto) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
-  onLiquidar: (id: string) => Promise<boolean>;
+  onAddSettlement: (saleId: string, data: AddSettlementDto) => Promise<boolean>;
+  onDeleteSettlement: (id: string) => Promise<boolean>;
 }
 
 export default function SalesTab({
@@ -27,14 +34,17 @@ export default function SalesTab({
   isSubmitting,
   onCreate,
   onDelete,
-  onLiquidar,
+  onAddSettlement,
+  onDeleteSettlement,
 }: SalesTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [settling, setSettling] = useState<PrintSale | null>(null);
   const deleteConfirm = useConfirm<PrintSale>();
 
+  // Lo que falta cobrar de verdad (contempla pagos parciales)
   const pendingTotal = sales
-    .filter((s) => s.kind === "venta" && s.status === "a_liquidar")
-    .reduce((a, s) => a + s.qty * s.chargedUnit, 0);
+    .filter((s) => s.kind === "venta")
+    .reduce((a, s) => a + (s.remaining ?? 0), 0);
 
   return (
     <div className="space-y-3">
@@ -83,10 +93,20 @@ export default function SalesTab({
                     {s.channel && <span>· {s.channel}</span>}
                     {s.kind === "venta" ? (
                       <Badge
-                        variant={s.status === "liquidado" ? "success" : "warning"}
+                        variant={
+                          s.status === "liquidado"
+                            ? "success"
+                            : s.status === "parcial"
+                              ? "info"
+                              : "warning"
+                        }
                         className="ml-0.5"
                       >
-                        {s.status === "liquidado" ? "liquidado" : "a liquidar"}
+                        {s.status === "liquidado"
+                          ? "liquidado"
+                          : s.status === "parcial"
+                            ? `cobrado ${fmtARS(s.settledAmount)} · restan ${fmtARS(s.remaining)}`
+                            : "a liquidar"}
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="ml-0.5">
@@ -103,11 +123,11 @@ export default function SalesTab({
                   {s.kind === "muestra" ? "regalada" : fmtARS(total)}
                 </span>
                 <div className="flex shrink-0 items-center gap-0.5">
-                  {s.kind === "venta" && s.status === "a_liquidar" && (
+                  {s.kind === "venta" && (s.remaining ?? 0) > 0 && (
                     <ActionIconButton
-                      icon={CheckCircle2}
-                      aria-label="Liquidar venta"
-                      onClick={() => onLiquidar(s.id)}
+                      icon={HandCoins}
+                      aria-label="Registrar pago"
+                      onClick={() => setSettling(s)}
                     />
                   )}
                   <ActionIconButton
@@ -131,13 +151,22 @@ export default function SalesTab({
         isSubmitting={isSubmitting}
       />
 
+      <SettleDialog
+        isOpen={settling !== null}
+        onClose={() => setSettling(null)}
+        sale={settling ? (sales.find((x) => x.id === settling.id) ?? settling) : null}
+        isSubmitting={isSubmitting}
+        onAdd={onAddSettlement}
+        onDeleteSettlement={onDeleteSettlement}
+      />
+
       <ConfirmDialog
         open={deleteConfirm.open}
         onOpenChange={deleteConfirm.onOpenChange}
         title="Borrar este movimiento?"
         description={
-          deleteConfirm.payload?.status === "liquidado"
-            ? "Ya estaba liquidado: tambien se borra el ingreso que generó."
+          deleteConfirm.payload && deleteConfirm.payload.settledAmount > 0
+            ? "Tiene pagos registrados: tambien se borran los ingresos que generaron."
             : undefined
         }
         destructive

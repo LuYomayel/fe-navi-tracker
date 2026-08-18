@@ -41,9 +41,14 @@ import {
 import { useAuthStore } from "@/modules/auth/store";
 
 // Configuración de la API
-const API_BASE_URL =
+export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "https://api-navi-tracker.luciano-yomayel.com";
+
+/** URL absoluta de un archivo subido (fotos del catalogo 3D, etc.). */
+export function uploadUrl(relative: string): string {
+  return relative.startsWith("http") ? relative : `${API_BASE_URL}${relative}`;
+}
 // Función helper para obtener el token desde el store.
 // Fuente de verdad: el auth store en memoria (ya rehidratado), NO localStorage.
 // En nativo (Capacitor) el persist vive en @capacitor/preferences; leer
@@ -457,7 +462,7 @@ export const api = {
         qty?: number;
         chargedUnit?: number;
         costUnit?: number;
-        status?: "a_liquidar" | "liquidado";
+        status?: "a_liquidar" | "parcial" | "liquidado";
         channel?: string;
         notes?: string;
       }) => apiClient.post("/printing/sales", data),
@@ -476,6 +481,65 @@ export const api = {
       delete: (id: string) => apiClient.delete(`/printing/sales/${id}`),
       liquidar: (id: string) =>
         apiClient.patch(`/printing/sales/${id}/liquidar`),
+      settlements: {
+        list: (saleId: string) =>
+          apiClient.get(`/printing/sales/${saleId}/settlements`),
+        add: (
+          saleId: string,
+          data: { amount?: number; qty?: number; date?: string; notes?: string }
+        ) => apiClient.post(`/printing/sales/${saleId}/settlements`, data),
+        delete: (id: string) => apiClient.delete(`/printing/settlements/${id}`),
+      },
+    },
+    photos: {
+      add: (productId: string, dataUrl: string) =>
+        apiClient.post(`/printing/products/${productId}/photos`, { dataUrl }),
+      delete: (id: string) => apiClient.delete(`/printing/photos/${id}`),
+      reorder: (productId: string, ids: string[]) =>
+        apiClient.put(`/printing/products/${productId}/photos/order`, { ids }),
+    },
+    orders: {
+      list: () => apiClient.get("/printing/orders"),
+      updateStatus: (id: string, status: string) =>
+        apiClient.patch(`/printing/orders/${id}/status`, { status }),
+      delete: (id: string) => apiClient.delete(`/printing/orders/${id}`),
+    },
+    notices: {
+      list: () => apiClient.get("/printing/payment-notices"),
+      resolve: (id: string, status: "confirmado" | "descartado") =>
+        apiClient.patch(`/printing/payment-notices/${id}`, { status }),
+    },
+    stock: {
+      get: () => apiClient.get("/printing/stock"),
+      check: (items: { productId: string; qty: number }[]) =>
+        apiClient.post("/printing/stock/check", { items }),
+      finishFilament: (id: string, date?: string) =>
+        apiClient.post(`/printing/filaments/${id}/finish`, { date }),
+    },
+    jobs: {
+      list: () => apiClient.get("/printing/jobs"),
+      create: (data: {
+        title: string;
+        productId?: string;
+        date?: string;
+        grams?: number;
+        hours?: number;
+        filamentsUsed?: { color?: string; colorHex?: string; grams: number }[];
+        notes?: string;
+      }) => apiClient.post("/printing/jobs", data),
+      delete: (id: string) => apiClient.delete(`/printing/jobs/${id}`),
+      link: (id: string, productId: string | null) =>
+        apiClient.patch(`/printing/jobs/${id}`, { productId }),
+      learn: (id: string, units: number) =>
+        apiClient.post(`/printing/jobs/${id}/learn`, { units }),
+    },
+    bambu: {
+      status: () => apiClient.get("/printing/bambu/status"),
+      connect: (token: string, region?: "global" | "china") =>
+        apiClient.post("/printing/bambu/connect", { token, region }),
+      disconnect: () => apiClient.delete("/printing/bambu"),
+      sync: (importHistory?: boolean) =>
+        apiClient.post("/printing/bambu/sync", { importHistory }),
     },
     // Catalogo publico: SIN auth, se llama tambien desde /catalogo/[token]
     // (fuera del grupo (app), sin login). fetchAPI manda el token si hay
