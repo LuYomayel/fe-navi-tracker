@@ -500,9 +500,25 @@ export const api = {
     },
     orders: {
       list: () => apiClient.get("/printing/orders"),
+      create: (data: {
+        customerName?: string;
+        items: { productId: string; qty: number; unitPrice?: number }[];
+        notes?: string;
+        status?: string;
+      }) => apiClient.post("/printing/orders", data),
+      update: (
+        id: string,
+        data: {
+          customerName?: string;
+          notes?: string;
+          items?: { productId: string; qty: number; unitPrice?: number }[];
+        }
+      ) => apiClient.put(`/printing/orders/${id}`, data),
       updateStatus: (id: string, status: string) =>
         apiClient.patch(`/printing/orders/${id}/status`, { status }),
       delete: (id: string) => apiClient.delete(`/printing/orders/${id}`),
+      pay: (id: string, amount?: number) =>
+        apiClient.post(`/printing/orders/${id}/pay`, { amount }),
     },
     notices: {
       list: () => apiClient.get("/printing/payment-notices"),

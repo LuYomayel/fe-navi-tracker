@@ -240,6 +240,10 @@ export interface PublicOrder {
   createdAt: string;
   items: PublicOrderItem[];
   total: number;
+  paid: number;
+  due: number;
+  paymentStatus: "pagado" | "parcial" | "debe" | null;
+  noticePending: boolean;
 }
 
 export interface PrintPaymentNotice {
@@ -249,6 +253,12 @@ export interface PrintPaymentNotice {
   message?: string | null;
   status: "pendiente" | "confirmado" | "descartado";
   createdAt: string;
+}
+
+export interface PayOrderResult {
+  applied: { saleId: string; amount: number }[];
+  totalApplied: number;
+  remaining: number;
 }
 
 // ── Stock / impresiones ──────────────────────────────────────

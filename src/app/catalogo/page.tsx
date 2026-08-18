@@ -139,6 +139,7 @@ function CatalogoPublico() {
       setNoticeAmount("");
       setNoticeMsg("");
       setNoticeSent(true);
+      await loadOrders(); // que se vea "pago avisado ⏳" al toque
       setTimeout(() => setNoticeSent(false), 4000);
     } catch {
       alert("No se pudo mandar el aviso. Probá de nuevo.");
@@ -356,6 +357,30 @@ function CatalogoPublico() {
                         })}
                       </span>
                     </div>
+                    {o.paymentStatus && (
+                      <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] font-semibold">
+                        {o.paymentStatus === "pagado" && (
+                          <span className="rounded bg-green-600/10 px-1.5 py-0.5 text-green-700 dark:text-green-400">
+                            ✅ Pagado
+                          </span>
+                        )}
+                        {o.paymentStatus === "parcial" && (
+                          <span className="rounded bg-blue-600/10 px-1.5 py-0.5 text-blue-700 dark:text-blue-400">
+                            Pagaste {fmtARS(o.paid)} · debés {fmtARS(o.due)}
+                          </span>
+                        )}
+                        {o.paymentStatus === "debe" && (
+                          <span className="rounded bg-amber-600/10 px-1.5 py-0.5 text-amber-700 dark:text-amber-400">
+                            Debés {fmtARS(o.due)}
+                          </span>
+                        )}
+                        {o.noticePending && (
+                          <span className="rounded bg-muted px-1.5 py-0.5 text-muted-foreground">
+                            ⏳ Pago avisado, esperando confirmación
+                          </span>
+                        )}
+                      </div>
+                    )}
                     <ul className="mt-2 space-y-0.5 text-sm">
                       {o.items.map((i, idx) => (
                         <li key={idx} className="flex justify-between">
@@ -374,14 +399,16 @@ function CatalogoPublico() {
                         {fmtARS(o.total)}
                       </span>
                     </div>
-                    {o.status === "entregado" && (
-                      <button
-                        onClick={() => setNoticeFor(o)}
-                        className="mt-2 w-full rounded-md border border-border py-1.5 text-xs font-semibold text-primary"
-                      >
-                        💸 Avisar que pagué
-                      </button>
-                    )}
+                    {o.status === "entregado" &&
+                      o.due > 0 &&
+                      !o.noticePending && (
+                        <button
+                          onClick={() => setNoticeFor(o)}
+                          className="mt-2 w-full rounded-md border border-border py-1.5 text-xs font-semibold text-primary"
+                        >
+                          💸 Avisar que pagué
+                        </button>
+                      )}
                   </div>
                 );
               })
@@ -431,17 +458,18 @@ function CatalogoPublico() {
           >
             <h3 className="text-sm font-bold">Avisar un pago</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Le llega a Luciano y lo confirma. Podés avisar un pago parcial
-              (ej: pagaste 3 de 5).
+              Le llega a Luciano y al confirmarlo se registra. Si no ponés
+              nada, vale por TODO lo que debés de este pedido (
+              {fmtARS(noticeFor.due)}). Para un pago parcial, poné el monto.
             </p>
             <label className="mt-3 block text-xs font-medium">
-              ¿Cuánto pagaste? (opcional)
+              ¿Cuánto pagaste? (vacío = {fmtARS(noticeFor.due)})
               <input
                 type="number"
                 inputMode="decimal"
                 value={noticeAmount}
                 onChange={(e) => setNoticeAmount(e.target.value)}
-                placeholder={`${noticeFor.total}`}
+                placeholder={`${noticeFor.due}`}
                 className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               />
             </label>
@@ -456,10 +484,11 @@ function CatalogoPublico() {
             </label>
             <button
               onClick={sendNotice}
-              disabled={!noticeAmount && !noticeMsg}
-              className="mt-3 w-full rounded-lg bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-60"
+              className="mt-3 w-full rounded-lg bg-primary py-2.5 text-sm font-bold text-primary-foreground"
             >
-              Mandar aviso
+              {noticeAmount
+                ? `Avisar pago de ${fmtARS(Number(noticeAmount))}`
+                : `Avisar pago total (${fmtARS(noticeFor.due)})`}
             </button>
           </div>
         </div>

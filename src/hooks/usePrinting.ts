@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { api } from "@/lib/api-client";
 import { toast } from "@/lib/toast-helper";
+import { fmtARS } from "@/lib/utils";
 import type {
   AddSettlementDto,
   BambuStatus,
@@ -563,18 +564,136 @@ export function usePrinting() {
   const resolveNotice = useCallback(
     async (id: string, status: "confirmado" | "descartado") => {
       try {
+        setIsSubmitting(true);
         const res = await api.printing.notices.resolve(id, status);
         if (res.success) {
           setNotices((prev) => prev.filter((n) => n.id !== id));
+          if (status === "confirmado") {
+            // Confirmar REGISTRA el pago: refrescar ventas, pedidos y balance
+            const d = res.data as { applied?: { totalApplied: number } | null };
+            const [ordersRes] = await Promise.all([
+              api.printing.orders.list(),
+              reloadSales(),
+              reloadSummary(),
+            ]);
+            if (ordersRes.success)
+              setOrders((ordersRes.data as PrintOrder[]) ?? []);
+            toast.success(
+              d.applied
+                ? `Pago registrado: ${fmtARS(d.applied.totalApplied)}`
+                : "Aviso confirmado (el pedido ya estaba saldado)",
+            );
+          }
           return true;
         }
         return false;
       } catch (error) {
         console.error("Error resolviendo aviso:", error);
+        toast.error(error instanceof Error ? error.message : "No se pudo resolver el aviso");
         return false;
+      } finally {
+        setIsSubmitting(false);
       }
     },
-    [],
+    [reloadSales, reloadSummary],
+  );
+
+  const reloadOrders = useCallback(async () => {
+    const res = await api.printing.orders.list();
+    if (res.success) setOrders((res.data as PrintOrder[]) ?? []);
+  }, []);
+
+  const createOrder = useCallback(
+    async (data: {
+      customerName?: string;
+      items: { productId: string; qty: number; unitPrice?: number }[];
+      notes?: string;
+      status?: PrintOrderStatus;
+    }) => {
+      try {
+        setIsSubmitting(true);
+        const res = await api.printing.orders.create(data);
+        if (res.success) {
+          await Promise.all([
+            reloadOrders(),
+            // un pedido creado ya entregado genera ventas
+            data.status === "entregado" ? reloadSales() : Promise.resolve(),
+          ]);
+          toast.success("Pedido creado");
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error creando pedido:", error);
+        toast.error(error instanceof Error ? error.message : "No se pudo crear el pedido");
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [reloadOrders, reloadSales],
+  );
+
+  const updateOrder = useCallback(
+    async (
+      id: string,
+      data: {
+        customerName?: string;
+        notes?: string;
+        items?: { productId: string; qty: number; unitPrice?: number }[];
+      },
+    ) => {
+      try {
+        setIsSubmitting(true);
+        const res = await api.printing.orders.update(id, data);
+        if (res.success) {
+          await reloadOrders();
+          toast.success("Pedido actualizado");
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error editando pedido:", error);
+        toast.error(error instanceof Error ? error.message : "No se pudo editar el pedido");
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [reloadOrders],
+  );
+
+  const payOrder = useCallback(
+    async (id: string, amount?: number) => {
+      try {
+        setIsSubmitting(true);
+        const res = await api.printing.orders.pay(id, amount);
+        if (res.success) {
+          const d = res.data as { totalApplied: number; remaining: number };
+          const [ordersRes] = await Promise.all([
+            api.printing.orders.list(),
+            reloadSales(),
+            reloadSummary(),
+          ]);
+          if (ordersRes.success)
+            setOrders((ordersRes.data as PrintOrder[]) ?? []);
+          toast.success(
+            d.remaining > 0
+              ? `Pago de ${fmtARS(d.totalApplied)} registrado · restan ${fmtARS(d.remaining)}`
+              : `Cobrado ${fmtARS(d.totalApplied)}: pedido saldado`,
+          );
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error cobrando pedido:", error);
+        toast.error(error instanceof Error ? error.message : "No se pudo cobrar");
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [reloadSales, reloadSummary],
   );
 
   // ── Stock / impresiones ───────────────────────────────────
@@ -807,7 +926,10 @@ export function usePrinting() {
     setCoverPhoto,
     updateOrderStatus,
     deleteOrder,
+    createOrder,
+    updateOrder,
     resolveNotice,
+    payOrder,
     checkStock,
     finishFilament,
     createJob,

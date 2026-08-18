@@ -65,6 +65,9 @@ export default function NegocioPage() {
     setCoverPhoto,
     updateOrderStatus,
     deleteOrder,
+    createOrder,
+    updateOrder,
+    payOrder,
     resolveNotice,
     finishFilament,
     createJob,
@@ -143,9 +146,13 @@ export default function NegocioPage() {
         <OrdersTab
           orders={orders}
           notices={notices}
+          products={products}
           isSubmitting={isSubmitting}
           onUpdateStatus={updateOrderStatus}
           onDelete={deleteOrder}
+          onCreate={createOrder}
+          onUpdate={updateOrder}
+          onPay={payOrder}
           onResolveNotice={resolveNotice}
         />
       )}
