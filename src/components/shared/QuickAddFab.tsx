@@ -115,8 +115,14 @@ export function QuickAddFab() {
         }`}
       />
 
-      {/* Acciones: se despliegan hacia arriba desde el botón */}
-      <div className="fixed bottom-[136px] right-4 z-50 flex flex-col-reverse items-end gap-2">
+      {/* Acciones: se despliegan hacia arriba desde el botón.
+          OJO con el pointer-events-none del contenedor: aunque los items estén
+          en opacity-0 siguen ocupando layout, así que el div queda como una
+          columna invisible de ~128x440 sobre el lado derecho de la pantalla.
+          Sin esto se comía los taps de todo lo que quedara debajo (los botones
+          de editar/borrar de gastos, agenda, etc). Los items se reactivan con
+          pointer-events-auto al abrir. */}
+      <div className="pointer-events-none fixed bottom-[136px] right-4 z-50 flex flex-col-reverse items-end gap-2">
         {ACTIONS.map((a, i) => {
           const Icon = a.icon;
           return (
