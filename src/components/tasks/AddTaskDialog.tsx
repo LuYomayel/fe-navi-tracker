@@ -35,6 +35,8 @@ interface AddTaskDialogProps {
   onClose: () => void;
   onSave: (data: Partial<Task>) => void;
   editingTask?: Task | null;
+  /** Fecha pre-cargada al crear (ej: el dia que se esta viendo en la agenda). */
+  defaultDate?: string;
 }
 
 export default function AddTaskDialog({
@@ -42,6 +44,7 @@ export default function AddTaskDialog({
   onClose,
   onSave,
   editingTask,
+  defaultDate,
 }: AddTaskDialogProps) {
   const [title, setTitle] = useState(editingTask?.title || "");
   const [description, setDescription] = useState(
@@ -61,12 +64,12 @@ export default function AddTaskDialog({
     if (isOpen) {
       setTitle(editingTask?.title || "");
       setDescription(editingTask?.description || "");
-      setDueDate(editingTask?.dueDate || "");
+      setDueDate(editingTask?.dueDate || defaultDate || "");
       setDueTime(editingTask?.dueTime || "");
       setPriority(editingTask?.priority || "medium");
       setCategory(editingTask?.category || "");
     }
-  }, [isOpen, editingTask]);
+  }, [isOpen, editingTask, defaultDate]);
 
   const handleSave = () => {
     if (!title.trim()) return;
@@ -88,16 +91,9 @@ export default function AddTaskDialog({
     onClose();
   };
 
-  // Sync form when editingTask changes
+  // El form se puebla en el useEffect de arriba; aca solo cerramos cuando
+  // Radix avisa (Esc / click fuera).
   const handleOpenChange = (open: boolean) => {
-    if (open && editingTask) {
-      setTitle(editingTask.title);
-      setDescription(editingTask.description || "");
-      setDueDate(editingTask.dueDate || "");
-      setDueTime(editingTask.dueTime || "");
-      setPriority(editingTask.priority);
-      setCategory(editingTask.category || "");
-    }
     if (!open) onClose();
   };
 

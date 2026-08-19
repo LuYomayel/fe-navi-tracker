@@ -2,18 +2,35 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useNaviTrackerStore } from "@/store";
-import { CalendarEvent } from "@/types";
+import { CalendarEvent, Task } from "@/types";
 import { ChevronLeft, ChevronRight, Calendar, CheckCircle2, Circle, Utensils, Dumbbell, BookOpen, Droplets, Moon, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { ActionIconButton } from "@/components/ui/action-icon-button";
+import { ConfirmDialog, useConfirm } from "@/components/ui/confirm-dialog";
 import Link from "next/link";
 import { getDateKey } from "@/lib/utils";
 import { api } from "@/lib/api-client";
 import AddEventDialog from "./AddEventDialog";
+import AddTaskDialog from "@/components/tasks/AddTaskDialog";
 
 const dayNames = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+const priorityDotColors: Record<string, string> = {
+  urgent: "bg-red-500",
+  high: "bg-orange-500",
+  medium: "bg-blue-500",
+  low: "bg-muted-foreground",
+};
+
+const priorityLabels: Record<string, string> = {
+  urgent: "Urgente",
+  high: "Alta",
+  medium: "Media",
+  low: "Baja",
+};
 
 // Meta de sueno: 7 horas (misma constante que day-score.service.ts en el backend)
 const SLEEP_GOAL_MINUTES = 7 * 60;
@@ -28,6 +45,10 @@ export default function DailyAgenda() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showEventDialog, setShowEventDialog] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [showTaskDialog, setShowTaskDialog] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const deleteTaskConfirm = useConfirm<Task>();
+  const deleteEventConfirm = useConfirm<CalendarEvent>();
 
   const {
     tasks,
@@ -40,6 +61,9 @@ export default function DailyAgenda() {
     todayHydration,
     hydrationGoal,
     toggleTask,
+    createTask,
+    updateTask,
+    deleteTask,
     toggleCompletion,
     fetchCalendarEvents,
     fetchDayScore,
@@ -246,28 +270,40 @@ export default function DailyAgenda() {
                         minute: "2-digit",
                       })}
                 </span>
-                <span className="flex-1">{event.title}</span>
+                {event.source === "google" ? (
+                  <span className="flex-1 min-w-0 truncate">{event.title}</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingEvent(event);
+                      setShowEventDialog(true);
+                    }}
+                    className="flex-1 min-w-0 truncate py-2 text-left"
+                  >
+                    {event.title}
+                  </button>
+                )}
                 {event.source === "google" ? (
                   <span className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 px-1.5 rounded">
                     Google
                   </span>
                 ) : (
-                  <div className="flex gap-0.5">
-                    <button
+                  <div className="flex shrink-0 gap-0.5">
+                    <ActionIconButton
+                      icon={Pencil}
                       onClick={() => {
                         setEditingEvent(event);
                         setShowEventDialog(true);
                       }}
-                      className="p-1 hover:bg-muted rounded"
-                    >
-                      <Pencil className="h-3 w-3 text-muted-foreground" />
-                    </button>
-                    <button
-                      onClick={() => deleteCalendarEvent(event.id)}
-                      className="p-1 hover:bg-muted rounded"
-                    >
-                      <Trash2 className="h-3 w-3 text-muted-foreground" />
-                    </button>
+                      aria-label={`Editar evento ${event.title}`}
+                    />
+                    <ActionIconButton
+                      icon={Trash2}
+                      variant="destructive"
+                      onClick={() => deleteEventConfirm.confirm(event)}
+                      aria-label={`Borrar evento ${event.title}`}
+                    />
                   </div>
                 )}
               </div>
@@ -319,31 +355,95 @@ export default function DailyAgenda() {
       )}
 
       {/* Tasks */}
-      {dayTasks.length > 0 && (
-        <div className="bg-card rounded-lg border p-4">
-          <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+      <div className="bg-card rounded-lg border p-4">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
             <Circle className="h-4 w-4 text-orange-500" />
-            Tareas ({dayTasks.filter((t) => t.completed).length}/{dayTasks.length})
+            Tareas
+            {dayTasks.length > 0 && (
+              <span className="text-muted-foreground font-normal">
+                ({dayTasks.filter((t) => t.completed).length}/{dayTasks.length})
+              </span>
+            )}
           </h3>
-          <div className="space-y-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={() => {
+              setEditingTask(null);
+              setShowTaskDialog(true);
+            }}
+          >
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            Agregar
+          </Button>
+        </div>
+        {dayTasks.length > 0 ? (
+          <div className="space-y-1">
             {dayTasks.map((task) => (
               <div key={task.id} className="flex items-center gap-2">
                 <Checkbox
                   checked={task.completed}
                   onCheckedChange={() => toggleTask(task.id)}
+                  aria-label={`Completar ${task.title}`}
                 />
-                <span
-                  className={`text-sm ${
-                    task.completed ? "line-through text-muted-foreground" : ""
-                  }`}
+                {/* La fila entera abre la edicion: en mobile es mucho mas
+                    facil de acertar que solo el icono. */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingTask(task);
+                    setShowTaskDialog(true);
+                  }}
+                  className="flex-1 min-w-0 py-2 text-left"
                 >
-                  {task.title}
-                </span>
+                  <span
+                    className={`block truncate text-sm ${
+                      task.completed ? "line-through text-muted-foreground" : ""
+                    }`}
+                  >
+                    {task.title}
+                  </span>
+                  {(task.dueTime || task.priority) && (
+                    <span className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                      {task.dueTime && <span>{task.dueTime}</span>}
+                      {task.priority && (
+                        <span className="flex items-center gap-1">
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full ${
+                              priorityDotColors[task.priority] || "bg-muted-foreground"
+                            }`}
+                          />
+                          {priorityLabels[task.priority] || task.priority}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </button>
+                <div className="flex shrink-0 gap-0.5">
+                  <ActionIconButton
+                    icon={Pencil}
+                    onClick={() => {
+                      setEditingTask(task);
+                      setShowTaskDialog(true);
+                    }}
+                    aria-label={`Editar tarea ${task.title}`}
+                  />
+                  <ActionIconButton
+                    icon={Trash2}
+                    variant="destructive"
+                    onClick={() => deleteTaskConfirm.confirm(task)}
+                    aria-label={`Borrar tarea ${task.title}`}
+                  />
+                </div>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-xs text-muted-foreground">Sin tareas para este dia</p>
+        )}
+      </div>
 
       {/* Day status modules */}
       <div className="bg-card rounded-lg border p-4">
@@ -440,6 +540,55 @@ export default function DailyAgenda() {
         onClose={() => {
           setShowEventDialog(false);
           setEditingEvent(null);
+        }}
+      />
+
+      <AddTaskDialog
+        isOpen={showTaskDialog}
+        editingTask={editingTask}
+        defaultDate={dateKey}
+        onSave={async (data) => {
+          if (editingTask) {
+            await updateTask(editingTask.id, data);
+          } else {
+            await createTask(data);
+          }
+          setEditingTask(null);
+          fetchDayScore(dateKey);
+        }}
+        onClose={() => {
+          setShowTaskDialog(false);
+          setEditingTask(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={deleteTaskConfirm.open}
+        onOpenChange={deleteTaskConfirm.onOpenChange}
+        title={`Borrar "${deleteTaskConfirm.payload?.title}"?`}
+        description="La tarea se elimina para siempre."
+        destructive
+        confirmLabel="Borrar"
+        onConfirm={() => {
+          const task = deleteTaskConfirm.payload;
+          deleteTaskConfirm.onConfirm();
+          if (task) {
+            deleteTask(task.id).then(() => fetchDayScore(dateKey));
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        open={deleteEventConfirm.open}
+        onOpenChange={deleteEventConfirm.onOpenChange}
+        title={`Borrar "${deleteEventConfirm.payload?.title}"?`}
+        description="El evento se elimina de la agenda."
+        destructive
+        confirmLabel="Borrar"
+        onConfirm={() => {
+          const event = deleteEventConfirm.payload;
+          deleteEventConfirm.onConfirm();
+          if (event) deleteCalendarEvent(event.id);
         }}
       />
     </div>
