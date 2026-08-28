@@ -13,6 +13,7 @@ import {
 import { MoreVertical, Pencil, Trash2, Clock, GripVertical } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { PRIORITY_LABELS, categoryLabel } from "@/lib/task-filters";
 
 const priorityColors: Record<string, string> = {
   urgent: "bg-red-500 text-white",
@@ -21,21 +22,6 @@ const priorityColors: Record<string, string> = {
   low: "bg-muted-foreground text-background",
 };
 
-const priorityLabels: Record<string, string> = {
-  urgent: "Urgente",
-  high: "Alta",
-  medium: "Media",
-  low: "Baja",
-};
-
-const categoryLabels: Record<string, string> = {
-  work: "Trabajo",
-  personal: "Personal",
-  health: "Salud",
-  finance: "Finanzas",
-  study: "Estudio",
-  other: "Otro",
-};
 
 interface TaskItemProps {
   task: Task;
@@ -105,11 +91,11 @@ export default function TaskItem({
             variant="secondary"
             className={`text-[10px] px-1.5 py-0 ${priorityColors[task.priority]}`}
           >
-            {priorityLabels[task.priority]}
+            {PRIORITY_LABELS[task.priority]}
           </Badge>
           {task.category && (
             <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-              {categoryLabels[task.category] || task.category}
+              {categoryLabel(task.category)}
             </Badge>
           )}
         </div>

@@ -4,10 +4,25 @@ import { useState, useMemo, useCallback } from "react";
 import { useNaviTrackerStore } from "@/store";
 import { Task } from "@/types";
 import { getDateKey } from "@/lib/utils";
+import {
+  filterTasks,
+  countByCategory,
+  countUncategorized,
+  activeFilterCount,
+  getWeekEnd,
+  CATEGORY_META,
+  PRIORITY_LABELS,
+  PRIORITY_ORDER,
+  EMPTY_FILTERS,
+  type TaskFilters,
+  type DateRange,
+  type StatusFilter,
+} from "@/lib/task-filters";
 import TaskItem from "./TaskItem";
 import AddTaskDialog from "./AddTaskDialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Filter } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Plus, SlidersHorizontal, Search, X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import {
   DndContext,
@@ -25,84 +40,88 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 
-type FilterType = "today" | "week" | "all" | "overdue" | "nz";
+const RANGES: { key: DateRange; label: string }[] = [
+  { key: "today", label: "Hoy" },
+  { key: "week", label: "Semana" },
+  { key: "overdue", label: "Vencidas" },
+  { key: "all", label: "Todas" },
+];
+
+const STATUSES: { key: StatusFilter; label: string }[] = [
+  { key: "all", label: "Todas" },
+  { key: "pending", label: "Pendientes" },
+  { key: "completed", label: "Completadas" },
+];
+
+/** Chip redondeado. Es el unico control de filtro de la pantalla. */
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`shrink-0 rounded-full px-3 py-2 text-xs font-medium whitespace-nowrap transition-all active:scale-[0.97] ${
+        active
+          ? "bg-primary text-primary-foreground"
+          : "bg-muted text-muted-foreground hover:bg-muted/80"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
 
 export default function TaskList() {
   const { tasks, createTask, updateTask, deleteTask, toggleTask, reorderTasks } =
     useNaviTrackerStore();
-  const [filter, setFilter] = useState<FilterType>("today");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [filters, setFilters] = useState<TaskFilters>(EMPTY_FILTERS);
+  const [showPanel, setShowPanel] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const today = getDateKey(new Date());
+  const weekEnd = useMemo(() => getWeekEnd(new Date()), []);
 
-  const getWeekEnd = () => {
-    const d = new Date();
-    const day = d.getDay();
-    const diff = day === 0 ? 0 : 7 - day;
-    d.setDate(d.getDate() + diff);
-    return getDateKey(d);
-  };
+  const filteredTasks = useMemo(
+    () => filterTasks(tasks, filters, today, weekEnd),
+    [tasks, filters, today, weekEnd],
+  );
 
-  const filteredTasks = useMemo(() => {
-    let result = [...tasks];
+  // Solo se ofrecen las categorias que EXISTEN en las tareas, con cuantas
+  // caen en cada una segun los demas filtros. Un chip nunca lleva a una
+  // lista vacia, y se ve de una si algo esta sin categorizar.
+  const categoryCounts = useMemo(
+    () => countByCategory(tasks, filters, today, weekEnd),
+    [tasks, filters, today, weekEnd],
+  );
+  const uncategorized = useMemo(
+    () => countUncategorized(tasks, filters, today, weekEnd),
+    [tasks, filters, today, weekEnd],
+  );
 
-    // Date filter. Las tareas de categoría "nz" (roadmap Nueva Zelanda / 3D) son
-    // backlog sin fecha: se excluyen de Hoy/Semana para no mezclarlas con lo
-    // operativo, y tienen su propio filtro dedicado.
-    if (filter === "today") {
-      result = result.filter(
-        (t) =>
-          t.dueDate === today ||
-          (!t.dueDate && !t.completed && t.category !== "nz")
-      );
-    } else if (filter === "week") {
-      const weekEnd = getWeekEnd();
-      result = result.filter(
-        (t) =>
-          (t.dueDate && t.dueDate >= today && t.dueDate <= weekEnd) ||
-          (!t.dueDate && !t.completed && t.category !== "nz")
-      );
-    } else if (filter === "overdue") {
-      result = result.filter(
-        (t) => t.dueDate && t.dueDate < today && !t.completed
-      );
-    } else if (filter === "nz") {
-      result = result.filter((t) => t.category === "nz");
-    }
+  const activeCount = activeFilterCount(filters);
 
-    // Status filter
-    if (statusFilter === "pending") {
-      result = result.filter((t) => !t.completed);
-    } else if (statusFilter === "completed") {
-      result = result.filter((t) => t.completed);
-    }
-
-    // Sort by order field (from drag & drop), then fallback to priority
-    result.sort((a, b) => {
-      if (a.completed !== b.completed) return a.completed ? 1 : -1;
-      if (a.order !== b.order) return a.order - b.order;
-      const priorityOrder: Record<string, number> = {
-        urgent: 0,
-        high: 1,
-        medium: 2,
-        low: 3,
-      };
-      const pA = priorityOrder[a.priority] ?? 2;
-      const pB = priorityOrder[b.priority] ?? 2;
-      if (pA !== pB) return pA - pB;
-      if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
-      return 0;
-    });
-
-    return result;
-  }, [tasks, filter, statusFilter, today]);
+  const patch = useCallback(
+    (p: Partial<TaskFilters>) => setFilters((f) => ({ ...f, ...p })),
+    [],
+  );
+  const toggleIn = useCallback(
+    <T,>(list: T[], value: T): T[] =>
+      list.includes(value) ? list.filter((x) => x !== value) : [...list, value],
+    [],
+  );
 
   const todayTasks = tasks.filter(
     (t) =>
-      t.dueDate === today ||
-      (!t.dueDate && !t.completed && t.category !== "nz")
+      t.dueDate === today || (!t.dueDate && !t.completed && t.category !== "nz"),
   );
   const todayCompleted = todayTasks.filter((t) => t.completed).length;
   const todayProgress =
@@ -121,140 +140,267 @@ export default function TaskList() {
 
   // Drag & drop
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
-    }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
       if (!over || active.id === over.id) return;
-
       const oldIndex = filteredTasks.findIndex((t) => t.id === active.id);
       const newIndex = filteredTasks.findIndex((t) => t.id === over.id);
-
       if (oldIndex === -1 || newIndex === -1) return;
-
       const reordered = arrayMove(filteredTasks, oldIndex, newIndex);
       reorderTasks(reordered.map((t) => t.id));
     },
-    [filteredTasks, reorderTasks]
+    [filteredTasks, reorderTasks],
   );
 
   const taskIds = useMemo(() => filteredTasks.map((t) => t.id), [filteredTasks]);
 
-  const filters: { key: FilterType; label: string }[] = [
-    { key: "today", label: "Hoy" },
-    { key: "week", label: "Semana" },
-    { key: "all", label: "Todas" },
-    { key: "overdue", label: "Vencidas" },
-    { key: "nz", label: "🇳🇿 NZ" },
-  ];
-
   return (
     <div className="space-y-4">
-      {/* Progress bar */}
+      {/* Progreso de hoy */}
       <div className="bg-card rounded-lg border p-4">
-        <div className="flex justify-between items-center mb-2">
+        <div className="mb-2 flex items-center justify-between">
           <span className="text-sm font-medium">Progreso de hoy</span>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-muted-foreground text-sm">
             {todayCompleted}/{todayTasks.length} completadas
           </span>
         </div>
         <Progress value={todayProgress} className="h-2" />
       </div>
 
-      {/* Filters + Add button */}
+      {/* Cuando: rango de fechas + nueva tarea */}
       <div className="flex items-center justify-between gap-2">
         <div className="scrollbar-hide flex min-w-0 gap-1 overflow-x-auto py-0.5">
-          {filters.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className={`shrink-0 rounded-full px-3 py-2 text-xs font-medium whitespace-nowrap transition-all active:scale-[0.97] ${
-                filter === f.key
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80"
-              }`}
+          {RANGES.map((r) => (
+            <Chip
+              key={r.key}
+              active={filters.range === r.key}
+              onClick={() => patch({ range: r.key })}
             >
-              {f.label}
-            </button>
+              {r.label}
+            </Chip>
           ))}
         </div>
-
-        <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() =>
-              setStatusFilter(
-                statusFilter === "all"
-                  ? "pending"
-                  : statusFilter === "pending"
-                    ? "completed"
-                    : "all"
-              )
-            }
-          >
-            <Filter className="h-4 w-4" />
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => {
-              setEditingTask(null);
-              setShowAddDialog(true);
-            }}
-            className="h-8"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Nueva
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          className="h-8 shrink-0"
+          onClick={() => {
+            setEditingTask(null);
+            setShowAddDialog(true);
+          }}
+        >
+          <Plus className="mr-1 h-4 w-4" />
+          Nueva
+        </Button>
       </div>
 
-      {/* Status filter badge */}
-      {statusFilter !== "all" && (
-        <div className="flex">
-          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
-            {statusFilter === "pending" ? "Pendientes" : "Completadas"}
+      {/* Buscador + acceso al panel */}
+      <div className="flex items-center gap-2">
+        <div className="relative min-w-0 flex-1">
+          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2" />
+          <Input
+            value={filters.search}
+            onChange={(e) => patch({ search: e.target.value })}
+            placeholder="Buscar (ej: stampia, pulpou)"
+            className="h-9 pr-8 pl-8 text-sm"
+            aria-label="Buscar tareas por texto"
+          />
+          {filters.search && (
             <button
-              onClick={() => setStatusFilter("all")}
-              className="ml-1 hover:text-primary/70"
+              type="button"
+              onClick={() => patch({ search: "" })}
+              aria-label="Limpiar la busqueda"
+              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2"
             >
-              ×
+              <X className="h-4 w-4" />
             </button>
-          </span>
+          )}
+        </div>
+        <Button
+          variant={showPanel ? "default" : "outline"}
+          size="sm"
+          className="h-9 shrink-0"
+          onClick={() => setShowPanel((v) => !v)}
+          aria-expanded={showPanel}
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          {activeCount > 0 && (
+            <span className="bg-primary text-primary-foreground ml-1.5 rounded-full px-1.5 text-[10px] font-bold">
+              {activeCount}
+            </span>
+          )}
+        </Button>
+      </div>
+
+      {/* Panel de filtros */}
+      {showPanel && (
+        <div className="bg-card space-y-3 rounded-lg border p-3">
+          <div>
+            <p className="text-muted-foreground mb-1.5 text-[11px] font-medium">
+              Estado
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {STATUSES.map((s) => (
+                <Chip
+                  key={s.key}
+                  active={filters.status === s.key}
+                  onClick={() => patch({ status: s.key })}
+                >
+                  {s.label}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          {categoryCounts.size > 0 && (
+            <div>
+              <p className="text-muted-foreground mb-1.5 text-[11px] font-medium">
+                Categoría
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {[...categoryCounts.entries()].map(([cat, n]) => (
+                  <Chip
+                    key={cat}
+                    active={filters.categories.includes(cat)}
+                    onClick={() =>
+                      patch({
+                        categories: toggleIn(filters.categories, cat),
+                      })
+                    }
+                  >
+                    {CATEGORY_META[cat].emoji} {CATEGORY_META[cat].label} ({n})
+                  </Chip>
+                ))}
+              </div>
+              {uncategorized > 0 && (
+                <p className="text-muted-foreground mt-1.5 text-[11px]">
+                  {uncategorized} sin categoría (no salen en ningún chip)
+                </p>
+              )}
+            </div>
+          )}
+
+          <div>
+            <p className="text-muted-foreground mb-1.5 text-[11px] font-medium">
+              Prioridad
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {PRIORITY_ORDER.map((p) => (
+                <Chip
+                  key={p}
+                  active={filters.priorities.includes(p)}
+                  onClick={() =>
+                    patch({ priorities: toggleIn(filters.priorities, p) })
+                  }
+                >
+                  {PRIORITY_LABELS[p]}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          {activeCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-full text-xs"
+              onClick={() =>
+                setFilters((f) => ({ ...EMPTY_FILTERS, range: f.range }))
+              }
+            >
+              Limpiar filtros
+            </Button>
+          )}
         </div>
       )}
 
-      {/* Task list with drag & drop */}
+      {/* Resumen de lo que esta filtrando + cuantas quedaron */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-muted-foreground text-xs">
+          {filteredTasks.length}{" "}
+          {filteredTasks.length === 1 ? "tarea" : "tareas"}
+        </span>
+        {!showPanel &&
+          filters.categories.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() =>
+                patch({ categories: toggleIn(filters.categories, cat) })
+              }
+              className="bg-primary/10 text-primary flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px]"
+            >
+              {CATEGORY_META[cat].emoji} {CATEGORY_META[cat].label}
+              <X className="h-3 w-3" />
+            </button>
+          ))}
+        {!showPanel &&
+          filters.priorities.map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() =>
+                patch({ priorities: toggleIn(filters.priorities, p) })
+              }
+              className="bg-primary/10 text-primary flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px]"
+            >
+              {PRIORITY_LABELS[p]}
+              <X className="h-3 w-3" />
+            </button>
+          ))}
+        {!showPanel && filters.status !== "all" && (
+          <button
+            type="button"
+            onClick={() => patch({ status: "all" })}
+            className="bg-primary/10 text-primary flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px]"
+          >
+            {filters.status === "pending" ? "Pendientes" : "Completadas"}
+            <X className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+
+      {/* Lista */}
       <div className="space-y-2">
         {filteredTasks.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-muted-foreground py-8 text-center">
             <p className="text-sm">
-              {filter === "today"
-                ? "No hay tareas para hoy"
-                : filter === "overdue"
-                  ? "No hay tareas vencidas"
-                  : filter === "nz"
-                    ? "No hay tareas de NZ/3D"
+              {activeCount > 0
+                ? "Ninguna tarea coincide con estos filtros"
+                : filters.range === "today"
+                  ? "No hay tareas para hoy"
+                  : filters.range === "overdue"
+                    ? "No hay tareas vencidas"
                     : "No hay tareas"}
             </p>
-            <Button
-              variant="link"
-              className="mt-2"
-              onClick={() => {
-                setEditingTask(null);
-                setShowAddDialog(true);
-              }}
-            >
-              Crear una tarea
-            </Button>
+            {activeCount > 0 ? (
+              <Button
+                variant="link"
+                className="mt-2"
+                onClick={() =>
+                  setFilters((f) => ({ ...EMPTY_FILTERS, range: f.range }))
+                }
+              >
+                Limpiar filtros
+              </Button>
+            ) : (
+              <Button
+                variant="link"
+                className="mt-2"
+                onClick={() => {
+                  setEditingTask(null);
+                  setShowAddDialog(true);
+                }}
+              >
+                Crear una tarea
+              </Button>
+            )}
           </div>
         ) : (
           <DndContext
