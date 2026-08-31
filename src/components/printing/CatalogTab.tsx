@@ -140,7 +140,7 @@ export default function CatalogTab({
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="rounded-md bg-muted/50 p-1.5">
                   <div className="text-[10px] text-muted-foreground">
-                    Costo real
+                    Costo real{p.costIsManual ? " ✎" : ""}
                   </div>
                   <div className="font-mono text-xs font-bold tabular-nums">
                     {fmtARS(p.cost)}
@@ -148,17 +148,21 @@ export default function CatalogTab({
                 </div>
                 <div className="rounded-md bg-muted/50 p-1.5">
                   <div className="text-[10px] text-muted-foreground">
-                    A Marcelito
+                    A Marcelito{p.priceIsManual ? " ✎" : ""}
                   </div>
                   <div className="font-mono text-xs font-bold tabular-nums">
                     {fmtARS(p.priceToMarcelito)}
                   </div>
                 </div>
-                <div className="rounded-md bg-success/10 p-1.5">
+                <div
+                  className={`rounded-md p-1.5 ${p.profit <= 0 ? "bg-destructive/10" : "bg-success/10"}`}
+                >
                   <div className="text-[10px] text-muted-foreground">
                     Ganancia
                   </div>
-                  <div className="font-mono text-xs font-bold tabular-nums text-success">
+                  <div
+                    className={`font-mono text-xs font-bold tabular-nums ${p.profit <= 0 ? "text-destructive" : "text-success"}`}
+                  >
                     {fmtARS(p.profit)}
                   </div>
                 </div>

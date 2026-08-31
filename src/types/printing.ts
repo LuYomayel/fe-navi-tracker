@@ -27,6 +27,8 @@ export interface PrintProduct {
   sizeMm?: string | null;
   licenseOk: boolean;
   markupOverride?: number | null;
+  costOverride?: number | null; // costo cargado a mano (pisa la formula)
+  priceOverride?: number | null; // precio a Marcelito cargado a mano
   publicPrice?: number | null;
   colorBreakdown?: ColorBreakdownEntry[] | null;
   active: boolean;
@@ -38,6 +40,8 @@ export interface PrintProduct {
   cost: number;
   priceToMarcelito: number;
   profit: number;
+  costIsManual: boolean; // el costo salio de costOverride, no de la formula
+  priceIsManual: boolean;
 }
 
 export interface ColorBreakdownEntry {
@@ -149,6 +153,8 @@ export interface CreatePrintProductDto {
   sizeMm?: string;
   licenseOk?: boolean;
   markupOverride?: number | null;
+  costOverride?: number | null;
+  priceOverride?: number | null;
   publicPrice?: number | null;
   colorBreakdown?: ColorBreakdownEntry[] | null;
   active?: boolean;

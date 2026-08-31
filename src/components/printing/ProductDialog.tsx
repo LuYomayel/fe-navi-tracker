@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Plus, X } from "lucide-react";
 import PhotoManager from "./PhotoManager";
+import { fmtARS } from "@/lib/utils";
 import type {
   ColorBreakdownEntry,
   CreatePrintProductDto,
@@ -46,6 +47,8 @@ const empty: CreatePrintProductDto = {
   sizeMm: "",
   licenseOk: false,
   markupOverride: null,
+  costOverride: null,
+  priceOverride: null,
   publicPrice: null,
   active: true,
   notes: "",
@@ -79,6 +82,8 @@ export default function ProductDialog({
               sizeMm: editingProduct.sizeMm || "",
               licenseOk: editingProduct.licenseOk,
               markupOverride: editingProduct.markupOverride ?? null,
+              costOverride: editingProduct.costOverride ?? null,
+              priceOverride: editingProduct.priceOverride ?? null,
               publicPrice: editingProduct.publicPrice ?? null,
               active: editingProduct.active,
               notes: editingProduct.notes || "",
@@ -99,6 +104,9 @@ export default function ProductDialog({
       sizeMm: form.sizeMm?.trim() || undefined,
       notes: form.notes?.trim() || undefined,
       markupOverride: form.markupOverride || null,
+      // `?? null` y no `|| null`: 0 es un valor manual valido (muestra)
+      costOverride: form.costOverride ?? null,
+      priceOverride: form.priceOverride ?? null,
       publicPrice: form.publicPrice || null,
       colorBreakdown: breakdown.filter((b) => b.color?.trim() && b.grams > 0)
         .length
@@ -112,6 +120,24 @@ export default function ProductDialog({
     (a, b) => a + (Number(b.grams) || 0),
     0,
   );
+
+  // Costo automatico del producto que se esta editando (para mostrarlo como
+  // referencia al lado del manual). Solo lo sabemos si hoy NO es manual: el
+  // backend manda el vigente, no los dos.
+  const autoCost =
+    editingProduct && !editingProduct.costIsManual ? editingProduct.cost : null;
+
+  // Preview de como queda el pricing con lo tipeado (misma regla que el
+  // backend: el precio sale del costo vigente x markup si no hay manual).
+  const preview = (() => {
+    const cost = form.costOverride ?? autoCost;
+    if (cost === null || cost === undefined) return null;
+    const markup =
+      form.markupOverride ?? (editingProduct?.markupOverride || null) ?? 1.3;
+    const price =
+      form.priceOverride ?? Math.round((cost * markup) / 100) * 100;
+    return { cost, price, profit: price - cost };
+  })();
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => !o && onClose()}>
@@ -236,6 +262,79 @@ export default function ProductDialog({
                 }
               />
             </div>
+          </div>
+          <div className="space-y-2 rounded-lg border border-dashed p-3">
+            <div className="flex items-baseline justify-between gap-2">
+              <Label className="text-sm">Valores a mano (opcional)</Label>
+              {(form.costOverride !== null && form.costOverride !== undefined) ||
+              (form.priceOverride !== null &&
+                form.priceOverride !== undefined) ? (
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground underline"
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      costOverride: null,
+                      priceOverride: null,
+                    })
+                  }
+                >
+                  Volver al automatico
+                </button>
+              ) : null}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              La formula usa un solo $/g, asi que no ve los filamentos caros
+              (ej PLA Wood). Si lo cargas aca, manda este valor.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="p-cost-override">Costo real</Label>
+                <Input
+                  id="p-cost-override"
+                  type="number"
+                  inputMode="decimal"
+                  value={form.costOverride ?? ""}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      costOverride:
+                        e.target.value === "" ? null : Number(e.target.value),
+                    })
+                  }
+                  placeholder={
+                    autoCost !== null ? `Auto: ${fmtARS(autoCost)}` : "Automatico"
+                  }
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="p-price-override">Precio a Marcelito</Label>
+                <Input
+                  id="p-price-override"
+                  type="number"
+                  inputMode="decimal"
+                  value={form.priceOverride ?? ""}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      priceOverride:
+                        e.target.value === "" ? null : Number(e.target.value),
+                    })
+                  }
+                  placeholder="Costo x markup"
+                />
+              </div>
+            </div>
+            {preview ? (
+              <p
+                className={`text-xs ${preview.profit <= 0 ? "text-destructive" : "text-muted-foreground"}`}
+              >
+                Quedaria: costo {fmtARS(preview.cost)} · a Marcelito{" "}
+                {fmtARS(preview.price)} · ganancia {fmtARS(preview.profit)}
+                {preview.profit <= 0 ? " — asi no ganas nada" : ""}
+              </p>
+            ) : null}
           </div>
           <div className="flex items-center justify-between rounded-lg border p-3">
             <div className="min-w-0">
