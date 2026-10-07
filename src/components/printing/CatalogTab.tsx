@@ -100,6 +100,11 @@ export default function CatalogTab({
                         inactivo
                       </Badge>
                     )}
+                    {p.publicVisible === false && (
+                      <Badge variant="outline" className="shrink-0">
+                        oculto a Marcelito
+                      </Badge>
+                    )}
                     {!p.licenseOk && (
                       <Badge variant="warning" className="shrink-0">
                         sin licencia

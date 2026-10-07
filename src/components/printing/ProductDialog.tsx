@@ -51,6 +51,7 @@ const empty: CreatePrintProductDto = {
   priceOverride: null,
   publicPrice: null,
   active: true,
+  publicVisible: true,
   notes: "",
 };
 
@@ -86,6 +87,7 @@ export default function ProductDialog({
               priceOverride: editingProduct.priceOverride ?? null,
               publicPrice: editingProduct.publicPrice ?? null,
               active: editingProduct.active,
+              publicVisible: editingProduct.publicVisible ?? true,
               notes: editingProduct.notes || "",
             }
           : empty,
@@ -359,6 +361,16 @@ export default function ProductDialog({
               id="p-active"
               checked={form.active ?? true}
               onCheckedChange={(v) => setForm({ ...form, active: v })}
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <Label htmlFor="p-public" className="text-sm">
+              Visible para Marcelito
+            </Label>
+            <Switch
+              id="p-public"
+              checked={form.publicVisible ?? true}
+              onCheckedChange={(v) => setForm({ ...form, publicVisible: v })}
             />
           </div>
           {editingProduct && onAddPhoto && onDeletePhoto && onSetCover && (
