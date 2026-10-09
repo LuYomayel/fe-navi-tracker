@@ -110,7 +110,7 @@ export default function ProjectDetail({ projectId }: { projectId: string }) {
 
   const refreshAfterTaskChange = () => useNaviTrackerStore.getState().fetchProjects();
 
-  const renderTasks = (list: Task[]) =>
+  const renderTasks = (list: Task[], inMilestone = false) =>
     list.length === 0 ? null : (
       // TaskItem usa useSortable: necesita contexto aunque aca no se reordene.
       <DndContext>
@@ -121,6 +121,7 @@ export default function ProjectDetail({ projectId }: { projectId: string }) {
                 key={t.id}
                 task={t}
                 hideProject
+                hideMilestone={inMilestone}
                 onToggle={async (id) => {
                   await toggleTask(id);
                   refreshAfterTaskChange();
@@ -191,7 +192,7 @@ export default function ProjectDetail({ projectId }: { projectId: string }) {
           </DropdownMenu>
         </div>
         <div className="pl-6">
-          {renderTasks(mTasks) ?? (
+          {renderTasks(mTasks, true) ?? (
             <button
               type="button"
               onClick={() => setTaskDialog({ open: true, milestoneId: m.id })}

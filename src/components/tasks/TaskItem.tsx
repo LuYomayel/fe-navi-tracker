@@ -41,6 +41,8 @@ interface TaskItemProps {
   onPauseProject?: (projectId: string) => void;
   /** En la vista de un proyecto el badge del proyecto sobra. */
   hideProject?: boolean;
+  /** Dentro de la seccion de su hito, el badge del hito sobra. */
+  hideMilestone?: boolean;
 }
 
 export default function TaskItem({
@@ -51,6 +53,7 @@ export default function TaskItem({
   onToggleInProgress,
   onPauseProject,
   hideProject,
+  hideMilestone,
 }: TaskItemProps) {
   const inProgress = !task.completed && task.status === "in_progress";
   const {
@@ -119,7 +122,7 @@ export default function TaskItem({
               {task.project}
             </Badge>
           )}
-          {task.milestone && (
+          {task.milestone && !hideMilestone && (
             <Badge variant="outline" className="text-[10px] px-1.5 py-0">
               🏁 {task.milestone.name}
             </Badge>
