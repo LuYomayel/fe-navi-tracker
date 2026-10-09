@@ -767,6 +767,8 @@ export interface Task {
   completed: boolean;
   completedAt?: string;
   category?: TaskCategory;
+  /** Proyecto (EaseTrain, Stampia...). El back lo infiere del prefijo del titulo si no se eligio. */
+  project?: string | null;
   tags?: string[];
   order: number;
   isRecurring: boolean;

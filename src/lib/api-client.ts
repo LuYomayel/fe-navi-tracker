@@ -901,6 +901,9 @@ export const api = {
     toggle: (id: string) => apiClient.post<Task>(`/tasks/${id}/toggle`),
     reorder: (taskIds: string[]) =>
       apiClient.put("/tasks/reorder", { taskIds }),
+    getPausedProjects: () => apiClient.get<string[]>("/tasks/projects/paused"),
+    setProjectPaused: (project: string, paused: boolean) =>
+      apiClient.put<string[]>("/tasks/projects/paused", { project, paused }),
   },
 
   // CALENDAR

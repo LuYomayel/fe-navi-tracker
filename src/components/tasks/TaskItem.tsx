@@ -10,7 +10,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreVertical, Pencil, Trash2, Clock, GripVertical } from "lucide-react";
+import {
+  MoreVertical,
+  Pencil,
+  Trash2,
+  Clock,
+  GripVertical,
+  PlayCircle,
+  CircleDashed,
+  Pause,
+} from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { PRIORITY_LABELS, categoryLabel } from "@/lib/task-filters";
@@ -28,6 +37,8 @@ interface TaskItemProps {
   onToggle: (id: string) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
+  onToggleInProgress?: (task: Task) => void;
+  onPauseProject?: (project: string) => void;
 }
 
 export default function TaskItem({
@@ -35,7 +46,10 @@ export default function TaskItem({
   onToggle,
   onEdit,
   onDelete,
+  onToggleInProgress,
+  onPauseProject,
 }: TaskItemProps) {
+  const inProgress = !task.completed && task.status === "in_progress";
   const {
     attributes,
     listeners,
@@ -59,7 +73,9 @@ export default function TaskItem({
           ? "opacity-50 shadow-lg z-50"
           : task.completed
             ? "bg-muted/30 border-muted"
-            : "bg-card border-border hover:border-primary/30"
+            : inProgress
+              ? "bg-card border-primary/50"
+              : "bg-card border-border hover:border-primary/30"
       }`}
     >
       <button
@@ -87,6 +103,19 @@ export default function TaskItem({
           >
             {task.title}
           </span>
+          {inProgress && (
+            <Badge className="text-[10px] px-1.5 py-0 bg-primary text-primary-foreground">
+              En curso
+            </Badge>
+          )}
+          {task.project && (
+            <Badge
+              variant="outline"
+              className="text-[10px] px-1.5 py-0 border-primary/40 text-primary"
+            >
+              {task.project}
+            </Badge>
+          )}
           <Badge
             variant="secondary"
             className={`text-[10px] px-1.5 py-0 ${priorityColors[task.priority]}`}
@@ -135,10 +164,26 @@ export default function TaskItem({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          {onToggleInProgress && !task.completed && (
+            <DropdownMenuItem onClick={() => onToggleInProgress(task)}>
+              {inProgress ? (
+                <CircleDashed className="mr-2 h-4 w-4" />
+              ) : (
+                <PlayCircle className="mr-2 h-4 w-4" />
+              )}
+              {inProgress ? "Volver a pendiente" : "Marcar en curso"}
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={() => onEdit(task)}>
             <Pencil className="mr-2 h-4 w-4" />
             Editar
           </DropdownMenuItem>
+          {onPauseProject && task.project && (
+            <DropdownMenuItem onClick={() => onPauseProject(task.project!)}>
+              <Pause className="mr-2 h-4 w-4" />
+              Pausar {task.project}
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             onClick={() => onDelete(task.id)}
             className="text-destructive"

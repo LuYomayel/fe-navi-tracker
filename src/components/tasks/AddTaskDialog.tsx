@@ -37,6 +37,8 @@ interface AddTaskDialogProps {
   editingTask?: Task | null;
   /** Fecha pre-cargada al crear (ej: el dia que se esta viendo en la agenda). */
   defaultDate?: string;
+  /** Proyectos existentes, para elegir con un tap en vez de tipear. */
+  projectSuggestions?: string[];
 }
 
 export default function AddTaskDialog({
@@ -45,6 +47,7 @@ export default function AddTaskDialog({
   onSave,
   editingTask,
   defaultDate,
+  projectSuggestions = [],
 }: AddTaskDialogProps) {
   const [title, setTitle] = useState(editingTask?.title || "");
   const [description, setDescription] = useState(
@@ -56,6 +59,7 @@ export default function AddTaskDialog({
     editingTask?.priority || "medium"
   );
   const [category, setCategory] = useState<TaskCategory | "">(editingTask?.category || "");
+  const [project, setProject] = useState(editingTask?.project || "");
 
   // Poblar/resetear el form CADA vez que el diálogo se abre: onOpenChange de
   // Radix no se dispara cuando el padre abre por prop (open={isOpen}), así
@@ -68,6 +72,7 @@ export default function AddTaskDialog({
       setDueTime(editingTask?.dueTime || "");
       setPriority(editingTask?.priority || "medium");
       setCategory(editingTask?.category || "");
+      setProject(editingTask?.project || "");
     }
   }, [isOpen, editingTask, defaultDate]);
 
@@ -80,6 +85,9 @@ export default function AddTaskDialog({
       dueTime: dueTime || undefined,
       priority,
       category: category || undefined,
+      // Al editar, "" = sacarle el proyecto. Al crear, sin proyecto el back
+      // lo infiere del prefijo del titulo ("Stampia - ...").
+      project: project.trim() || (editingTask ? "" : undefined),
     });
     // Reset form
     setTitle("");
@@ -88,6 +96,7 @@ export default function AddTaskDialog({
     setDueTime("");
     setPriority("medium");
     setCategory("");
+    setProject("");
     onClose();
   };
 
@@ -144,6 +153,38 @@ export default function AddTaskDialog({
                 onChange={(e) => setDueTime(e.target.value)}
               />
             </div>
+          </div>
+
+          <div>
+            <Label>Proyecto</Label>
+            <Input
+              value={project}
+              onChange={(e) => setProject(e.target.value)}
+              placeholder="Ej: Stampia, EaseTrain (opcional)"
+              maxLength={40}
+            />
+            {projectSuggestions.length > 0 && (
+              <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                {projectSuggestions.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() =>
+                      setProject(
+                        project.trim().toLowerCase() === p.toLowerCase() ? "" : p,
+                      )
+                    }
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                      project.trim().toLowerCase() === p.toLowerCase()
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div>

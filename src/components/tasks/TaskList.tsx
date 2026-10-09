@@ -1,11 +1,17 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNaviTrackerStore } from "@/store";
 import { Task } from "@/types";
 import { getDateKey } from "@/lib/utils";
 import {
   filterTasks,
+  countByProject,
+  knownProjects,
+  todayTasksFor,
+  loadFilters,
+  saveFilters,
+  projectKey,
   countByCategory,
   countUncategorized,
   activeFilterCount,
@@ -22,7 +28,7 @@ import TaskItem from "./TaskItem";
 import AddTaskDialog from "./AddTaskDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, SlidersHorizontal, Search, X } from "lucide-react";
+import { Plus, SlidersHorizontal, Search, X, Pause, Play } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import {
   DndContext,
@@ -50,8 +56,16 @@ const RANGES: { key: DateRange; label: string }[] = [
 const STATUSES: { key: StatusFilter; label: string }[] = [
   { key: "all", label: "Todas" },
   { key: "pending", label: "Pendientes" },
+  { key: "in_progress", label: "En curso" },
   { key: "completed", label: "Completadas" },
 ];
+
+const STATUS_LABEL: Record<StatusFilter, string> = {
+  all: "Todas",
+  pending: "Pendientes",
+  in_progress: "En curso",
+  completed: "Completadas",
+};
 
 /** Chip redondeado. Es el unico control de filtro de la pantalla. */
 function Chip({
@@ -80,9 +94,30 @@ function Chip({
 }
 
 export default function TaskList() {
-  const { tasks, createTask, updateTask, deleteTask, toggleTask, reorderTasks } =
-    useNaviTrackerStore();
+  const {
+    tasks,
+    createTask,
+    updateTask,
+    deleteTask,
+    toggleTask,
+    reorderTasks,
+    pausedProjects,
+    fetchPausedProjects,
+    setProjectPaused,
+  } = useNaviTrackerStore();
   const [filters, setFilters] = useState<TaskFilters>(EMPTY_FILTERS);
+  const [filtersLoaded, setFiltersLoaded] = useState(false);
+
+  // Los filtros se restauran despues del mount (localStorage no existe en SSR)
+  // y recien ahi se empiezan a guardar, para no pisarlos con los vacios.
+  useEffect(() => {
+    setFilters(loadFilters());
+    setFiltersLoaded(true);
+    fetchPausedProjects();
+  }, [fetchPausedProjects]);
+  useEffect(() => {
+    if (filtersLoaded) saveFilters(filters);
+  }, [filters, filtersLoaded]);
   const [showPanel, setShowPanel] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -91,20 +126,41 @@ export default function TaskList() {
   const weekEnd = useMemo(() => getWeekEnd(new Date()), []);
 
   const filteredTasks = useMemo(
-    () => filterTasks(tasks, filters, today, weekEnd),
-    [tasks, filters, today, weekEnd],
+    () => filterTasks(tasks, filters, today, weekEnd, pausedProjects),
+    [tasks, filters, today, weekEnd, pausedProjects],
+  );
+
+  // Chips de proyecto: los activos van en la fila principal; los pausados
+  // solo se nombran abajo ("EaseTrain en pausa · 10 ocultas").
+  const projectCounts = useMemo(
+    () => countByProject(tasks, filters, today, weekEnd, pausedProjects),
+    [tasks, filters, today, weekEnd, pausedProjects],
+  );
+  const activeProjects = projectCounts.filter(
+    (p) => !p.paused || filters.showPaused || filters.projects.includes(p.key),
+  );
+  const pausedHere = projectCounts.filter(
+    (p) => p.paused && !filters.projects.includes(p.key),
+  );
+  const hiddenByPause = filters.showPaused
+    ? 0
+    : pausedHere.reduce((n, p) => n + p.count, 0);
+  const allProjectNames = useMemo(() => knownProjects(tasks), [tasks]);
+  const pausedKeys = useMemo(
+    () => new Set(pausedProjects.map(projectKey)),
+    [pausedProjects],
   );
 
   // Solo se ofrecen las categorias que EXISTEN en las tareas, con cuantas
   // caen en cada una segun los demas filtros. Un chip nunca lleva a una
   // lista vacia, y se ve de una si algo esta sin categorizar.
   const categoryCounts = useMemo(
-    () => countByCategory(tasks, filters, today, weekEnd),
-    [tasks, filters, today, weekEnd],
+    () => countByCategory(tasks, filters, today, weekEnd, pausedProjects),
+    [tasks, filters, today, weekEnd, pausedProjects],
   );
   const uncategorized = useMemo(
-    () => countUncategorized(tasks, filters, today, weekEnd),
-    [tasks, filters, today, weekEnd],
+    () => countUncategorized(tasks, filters, today, weekEnd, pausedProjects),
+    [tasks, filters, today, weekEnd, pausedProjects],
   );
 
   const activeCount = activeFilterCount(filters);
@@ -119,15 +175,20 @@ export default function TaskList() {
     [],
   );
 
-  const todayTasks = tasks.filter(
-    (t) =>
-      t.dueDate === today || (!t.dueDate && !t.completed && t.category !== "nz"),
-  );
+  const todayTasks = todayTasksFor(tasks, today, pausedProjects);
   const todayCompleted = todayTasks.filter((t) => t.completed).length;
   const todayProgress =
     todayTasks.length > 0
       ? Math.round((todayCompleted / todayTasks.length) * 100)
       : 0;
+
+  const clearFilters = () =>
+    setFilters((f) => ({ ...EMPTY_FILTERS, range: f.range }));
+
+  const toggleInProgress = (task: Task) =>
+    updateTask(task.id, {
+      status: task.status === "in_progress" ? "pending" : "in_progress",
+    });
 
   const handleSave = async (data: Partial<Task>) => {
     if (editingTask) {
@@ -199,6 +260,31 @@ export default function TaskList() {
           Nueva
         </Button>
       </div>
+
+      {/* De quien: proyectos. Es el filtro de todos los dias, por eso esta
+          siempre visible y no escondido en el panel. */}
+      {activeProjects.length > 1 && (
+        <div className="scrollbar-hide -mx-1 flex gap-1 overflow-x-auto px-1 py-0.5">
+          <Chip
+            active={filters.projects.length === 0}
+            onClick={() => patch({ projects: [] })}
+          >
+            Todos
+          </Chip>
+          {activeProjects.map((p) => (
+            <Chip
+              key={p.key}
+              active={filters.projects.includes(p.key)}
+              onClick={() =>
+                patch({ projects: toggleIn(filters.projects, p.key) })
+              }
+            >
+              {p.paused && "⏸ "}
+              {p.label} <span className="opacity-70">{p.count}</span>
+            </Chip>
+          ))}
+        </div>
+      )}
 
       {/* Buscador + acceso al panel */}
       <div className="flex items-center gap-2">
@@ -305,14 +391,59 @@ export default function TaskList() {
             </div>
           </div>
 
+          {allProjectNames.length > 0 && (
+            <div>
+              <p className="text-muted-foreground mb-1.5 text-[11px] font-medium">
+                Proyectos en pausa{" "}
+                <span className="font-normal">
+                  · sus tareas no aparecen (en la web y en el celu)
+                </span>
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {allProjectNames.map((name) => {
+                  const isPaused = pausedKeys.has(projectKey(name));
+                  return (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => setProjectPaused(name, !isPaused)}
+                      aria-pressed={isPaused}
+                      className={`flex shrink-0 items-center gap-1 rounded-full px-3 py-2 text-xs font-medium transition-all active:scale-[0.97] ${
+                        isPaused
+                          ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      {isPaused ? (
+                        <Play className="h-3 w-3" />
+                      ) : (
+                        <Pause className="h-3 w-3" />
+                      )}
+                      {name}
+                    </button>
+                  );
+                })}
+              </div>
+              {pausedProjects.length > 0 && (
+                <label className="text-muted-foreground mt-2 flex items-center gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={filters.showPaused}
+                    onChange={(e) => patch({ showPaused: e.target.checked })}
+                    className="accent-primary h-4 w-4"
+                  />
+                  Mostrar igual las tareas pausadas
+                </label>
+              )}
+            </div>
+          )}
+
           {activeCount > 0 && (
             <Button
               variant="ghost"
               size="sm"
               className="h-7 w-full text-xs"
-              onClick={() =>
-                setFilters((f) => ({ ...EMPTY_FILTERS, range: f.range }))
-              }
+              onClick={clearFilters}
             >
               Limpiar filtros
             </Button>
@@ -360,7 +491,31 @@ export default function TaskList() {
             onClick={() => patch({ status: "all" })}
             className="bg-primary/10 text-primary flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px]"
           >
-            {filters.status === "pending" ? "Pendientes" : "Completadas"}
+            {STATUS_LABEL[filters.status]}
+            <X className="h-3 w-3" />
+          </button>
+        )}
+        {hiddenByPause > 0 && (
+          <button
+            type="button"
+            onClick={() => patch({ showPaused: true })}
+            className="text-muted-foreground hover:text-foreground ml-auto flex items-center gap-1 text-[11px] underline-offset-2 hover:underline"
+          >
+            <Pause className="h-3 w-3" />
+            {pausedHere
+              .filter((p) => p.count > 0)
+              .map((p) => p.label)
+              .join(", ")}{" "}
+            en pausa · {hiddenByPause} oculta{hiddenByPause === 1 ? "" : "s"}
+          </button>
+        )}
+        {filters.showPaused && pausedProjects.length > 0 && (
+          <button
+            type="button"
+            onClick={() => patch({ showPaused: false })}
+            className="bg-amber-500/15 flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] text-amber-700 dark:text-amber-400"
+          >
+            Mostrando pausadas
             <X className="h-3 w-3" />
           </button>
         )}
@@ -380,13 +535,7 @@ export default function TaskList() {
                     : "No hay tareas"}
             </p>
             {activeCount > 0 ? (
-              <Button
-                variant="link"
-                className="mt-2"
-                onClick={() =>
-                  setFilters((f) => ({ ...EMPTY_FILTERS, range: f.range }))
-                }
-              >
+              <Button variant="link" className="mt-2" onClick={clearFilters}>
                 Limpiar filtros
               </Button>
             ) : (
@@ -422,6 +571,8 @@ export default function TaskList() {
                     setShowAddDialog(true);
                   }}
                   onDelete={deleteTask}
+                  onToggleInProgress={toggleInProgress}
+                  onPauseProject={(name) => setProjectPaused(name, true)}
                 />
               ))}
             </SortableContext>
@@ -437,6 +588,7 @@ export default function TaskList() {
         }}
         onSave={handleSave}
         editingTask={editingTask}
+        projectSuggestions={allProjectNames}
       />
     </div>
   );
