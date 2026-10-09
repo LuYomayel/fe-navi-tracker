@@ -38,7 +38,9 @@ interface TaskItemProps {
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
   onToggleInProgress?: (task: Task) => void;
-  onPauseProject?: (project: string) => void;
+  onPauseProject?: (projectId: string) => void;
+  /** En la vista de un proyecto el badge del proyecto sobra. */
+  hideProject?: boolean;
 }
 
 export default function TaskItem({
@@ -48,6 +50,7 @@ export default function TaskItem({
   onDelete,
   onToggleInProgress,
   onPauseProject,
+  hideProject,
 }: TaskItemProps) {
   const inProgress = !task.completed && task.status === "in_progress";
   const {
@@ -108,12 +111,17 @@ export default function TaskItem({
               En curso
             </Badge>
           )}
-          {task.project && (
+          {task.project && !hideProject && (
             <Badge
               variant="outline"
               className="text-[10px] px-1.5 py-0 border-primary/40 text-primary"
             >
               {task.project}
+            </Badge>
+          )}
+          {task.milestone && (
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+              🏁 {task.milestone.name}
             </Badge>
           )}
           <Badge
@@ -178,8 +186,8 @@ export default function TaskItem({
             <Pencil className="mr-2 h-4 w-4" />
             Editar
           </DropdownMenuItem>
-          {onPauseProject && task.project && (
-            <DropdownMenuItem onClick={() => onPauseProject(task.project!)}>
+          {onPauseProject && task.projectId && task.projectStatus === "active" && (
+            <DropdownMenuItem onClick={() => onPauseProject(task.projectId!)}>
               <Pause className="mr-2 h-4 w-4" />
               Pausar {task.project}
             </DropdownMenuItem>

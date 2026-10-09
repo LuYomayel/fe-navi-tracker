@@ -7,11 +7,9 @@ import { getDateKey } from "@/lib/utils";
 import {
   filterTasks,
   countByProject,
-  knownProjects,
   todayTasksFor,
   loadFilters,
   saveFilters,
-  projectKey,
   countByCategory,
   countUncategorized,
   activeFilterCount,
@@ -28,7 +26,8 @@ import TaskItem from "./TaskItem";
 import AddTaskDialog from "./AddTaskDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, SlidersHorizontal, Search, X, Pause, Play } from "lucide-react";
+import { Plus, SlidersHorizontal, Search, X, Pause, FolderKanban } from "lucide-react";
+import Link from "next/link";
 import { Progress } from "@/components/ui/progress";
 import {
   DndContext,
@@ -101,9 +100,9 @@ export default function TaskList() {
     deleteTask,
     toggleTask,
     reorderTasks,
-    pausedProjects,
-    fetchPausedProjects,
-    setProjectPaused,
+    projects,
+    fetchProjects,
+    setProjectStatus,
   } = useNaviTrackerStore();
   const [filters, setFilters] = useState<TaskFilters>(EMPTY_FILTERS);
   const [filtersLoaded, setFiltersLoaded] = useState(false);
@@ -113,8 +112,8 @@ export default function TaskList() {
   useEffect(() => {
     setFilters(loadFilters());
     setFiltersLoaded(true);
-    fetchPausedProjects();
-  }, [fetchPausedProjects]);
+    fetchProjects();
+  }, [fetchProjects]);
   useEffect(() => {
     if (filtersLoaded) saveFilters(filters);
   }, [filters, filtersLoaded]);
@@ -126,15 +125,15 @@ export default function TaskList() {
   const weekEnd = useMemo(() => getWeekEnd(new Date()), []);
 
   const filteredTasks = useMemo(
-    () => filterTasks(tasks, filters, today, weekEnd, pausedProjects),
-    [tasks, filters, today, weekEnd, pausedProjects],
+    () => filterTasks(tasks, filters, today, weekEnd),
+    [tasks, filters, today, weekEnd],
   );
 
   // Chips de proyecto: los activos van en la fila principal; los pausados
   // solo se nombran abajo ("EaseTrain en pausa · 10 ocultas").
   const projectCounts = useMemo(
-    () => countByProject(tasks, filters, today, weekEnd, pausedProjects),
-    [tasks, filters, today, weekEnd, pausedProjects],
+    () => countByProject(tasks, projects, filters, today, weekEnd),
+    [tasks, projects, filters, today, weekEnd],
   );
   const activeProjects = projectCounts.filter(
     (p) => !p.paused || filters.showPaused || filters.projects.includes(p.key),
@@ -145,22 +144,18 @@ export default function TaskList() {
   const hiddenByPause = filters.showPaused
     ? 0
     : pausedHere.reduce((n, p) => n + p.count, 0);
-  const allProjectNames = useMemo(() => knownProjects(tasks), [tasks]);
-  const pausedKeys = useMemo(
-    () => new Set(pausedProjects.map(projectKey)),
-    [pausedProjects],
-  );
+  const pausedCount = projects.filter((p) => p.status === "paused").length;
 
   // Solo se ofrecen las categorias que EXISTEN en las tareas, con cuantas
   // caen en cada una segun los demas filtros. Un chip nunca lleva a una
   // lista vacia, y se ve de una si algo esta sin categorizar.
   const categoryCounts = useMemo(
-    () => countByCategory(tasks, filters, today, weekEnd, pausedProjects),
-    [tasks, filters, today, weekEnd, pausedProjects],
+    () => countByCategory(tasks, filters, today, weekEnd),
+    [tasks, filters, today, weekEnd],
   );
   const uncategorized = useMemo(
-    () => countUncategorized(tasks, filters, today, weekEnd, pausedProjects),
-    [tasks, filters, today, weekEnd, pausedProjects],
+    () => countUncategorized(tasks, filters, today, weekEnd),
+    [tasks, filters, today, weekEnd],
   );
 
   const activeCount = activeFilterCount(filters);
@@ -175,7 +170,7 @@ export default function TaskList() {
     [],
   );
 
-  const todayTasks = todayTasksFor(tasks, today, pausedProjects);
+  const todayTasks = todayTasksFor(tasks, today);
   const todayCompleted = todayTasks.filter((t) => t.completed).length;
   const todayProgress =
     todayTasks.length > 0
@@ -248,6 +243,11 @@ export default function TaskList() {
             </Chip>
           ))}
         </div>
+        <Button asChild variant="outline" size="sm" className="h-8 shrink-0 px-2.5">
+          <Link href="/proyectos" aria-label="Proyectos">
+            <FolderKanban className="h-4 w-4" />
+          </Link>
+        </Button>
         <Button
           size="sm"
           className="h-8 shrink-0"
@@ -280,6 +280,7 @@ export default function TaskList() {
               }
             >
               {p.paused && "⏸ "}
+              {p.emoji ? `${p.emoji} ` : ""}
               {p.label} <span className="opacity-70">{p.count}</span>
             </Chip>
           ))}
@@ -391,52 +392,27 @@ export default function TaskList() {
             </div>
           </div>
 
-          {allProjectNames.length > 0 && (
-            <div>
-              <p className="text-muted-foreground mb-1.5 text-[11px] font-medium">
-                Proyectos en pausa{" "}
-                <span className="font-normal">
-                  · sus tareas no aparecen (en la web y en el celu)
-                </span>
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {allProjectNames.map((name) => {
-                  const isPaused = pausedKeys.has(projectKey(name));
-                  return (
-                    <button
-                      key={name}
-                      type="button"
-                      onClick={() => setProjectPaused(name, !isPaused)}
-                      aria-pressed={isPaused}
-                      className={`flex shrink-0 items-center gap-1 rounded-full px-3 py-2 text-xs font-medium transition-all active:scale-[0.97] ${
-                        isPaused
-                          ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
-                          : "bg-muted text-muted-foreground hover:bg-muted/80"
-                      }`}
-                    >
-                      {isPaused ? (
-                        <Play className="h-3 w-3" />
-                      ) : (
-                        <Pause className="h-3 w-3" />
-                      )}
-                      {name}
-                    </button>
-                  );
-                })}
-              </div>
-              {pausedProjects.length > 0 && (
-                <label className="text-muted-foreground mt-2 flex items-center gap-2 text-xs">
-                  <input
-                    type="checkbox"
-                    checked={filters.showPaused}
-                    onChange={(e) => patch({ showPaused: e.target.checked })}
-                    className="accent-primary h-4 w-4"
-                  />
-                  Mostrar igual las tareas pausadas
-                </label>
-              )}
-            </div>
-          )}
+          <div className="flex items-center justify-between gap-2">
+            {pausedCount > 0 ? (
+              <label className="text-muted-foreground flex items-center gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  checked={filters.showPaused}
+                  onChange={(e) => patch({ showPaused: e.target.checked })}
+                  className="accent-primary h-4 w-4"
+                />
+                Mostrar tareas de proyectos pausados
+              </label>
+            ) : (
+              <span />
+            )}
+            <Link
+              href="/proyectos"
+              className="text-primary shrink-0 text-xs font-medium hover:underline"
+            >
+              Gestionar proyectos →
+            </Link>
+          </div>
 
           {activeCount > 0 && (
             <Button
@@ -509,7 +485,7 @@ export default function TaskList() {
             en pausa · {hiddenByPause} oculta{hiddenByPause === 1 ? "" : "s"}
           </button>
         )}
-        {filters.showPaused && pausedProjects.length > 0 && (
+        {filters.showPaused && pausedCount > 0 && (
           <button
             type="button"
             onClick={() => patch({ showPaused: false })}
@@ -572,7 +548,7 @@ export default function TaskList() {
                   }}
                   onDelete={deleteTask}
                   onToggleInProgress={toggleInProgress}
-                  onPauseProject={(name) => setProjectPaused(name, true)}
+                  onPauseProject={(id) => setProjectStatus(id, "paused")}
                 />
               ))}
             </SortableContext>
@@ -588,7 +564,11 @@ export default function TaskList() {
         }}
         onSave={handleSave}
         editingTask={editingTask}
-        projectSuggestions={allProjectNames}
+        defaultProjectId={
+          filters.projects.length === 1 && filters.projects[0] !== "__none__"
+            ? filters.projects[0]
+            : undefined
+        }
       />
     </div>
   );

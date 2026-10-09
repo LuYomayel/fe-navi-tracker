@@ -755,6 +755,39 @@ export type TaskCategory =
   | "other"
   | "nz";
 
+export type ProjectStatus = "active" | "paused" | "archived";
+
+export interface ProjectStats {
+  total: number;
+  done: number;
+  pending: number;
+  overdue: number;
+  nextDue: string | null;
+  progress: number;
+}
+
+export interface Milestone {
+  id: string;
+  projectId: string;
+  name: string;
+  dueDate?: string | null;
+  done: boolean;
+  order: number;
+  stats: ProjectStats;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  emoji?: string | null;
+  color?: string | null;
+  description?: string | null;
+  status: ProjectStatus;
+  order: number;
+  stats: ProjectStats;
+  milestones: Milestone[];
+}
+
 export interface Task {
   id: string;
   userId: string;
@@ -767,8 +800,12 @@ export interface Task {
   completed: boolean;
   completedAt?: string;
   category?: TaskCategory;
-  /** Proyecto (EaseTrain, Stampia...). El back lo infiere del prefijo del titulo si no se eligio. */
+  /** Nombre del proyecto (EaseTrain, Stampia...). */
   project?: string | null;
+  projectId?: string | null;
+  projectStatus?: ProjectStatus | null;
+  milestoneId?: string | null;
+  milestone?: { id: string; name: string } | null;
   tags?: string[];
   order: number;
   isRecurring: boolean;

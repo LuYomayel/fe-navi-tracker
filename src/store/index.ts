@@ -6,6 +6,7 @@ import { createNotesSlice } from "./slices/notes";
 import { createNutritionSlice } from "./slices/nutrition";
 import { createChatSlice } from "./slices/chat";
 import { createTasksSlice } from "./slices/tasks";
+import { createProjectsSlice } from "./slices/projects";
 import { createCalendarSlice } from "./slices/calendar";
 import { createDayScoreSlice } from "./slices/day-score";
 import { createHydrationSlice } from "./slices/hydration";
@@ -24,6 +25,7 @@ export const useNaviTrackerStore = create<NaviTrackerState>()(
       ...createNutritionSlice(set, get),
       ...createChatSlice(set, get),
       ...createTasksSlice(set, get),
+      ...createProjectsSlice(set, get),
       ...createCalendarSlice(set, get),
       ...createDayScoreSlice(set, get),
       ...createHydrationSlice(set, get),

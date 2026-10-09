@@ -25,6 +25,8 @@ import {
   UpdateSlotDto,
   MarkSlotEatenDto,
   Task,
+  Project,
+  Milestone,
   CalendarEvent,
   GoogleCalendarStatus,
   DayScore,
@@ -901,9 +903,30 @@ export const api = {
     toggle: (id: string) => apiClient.post<Task>(`/tasks/${id}/toggle`),
     reorder: (taskIds: string[]) =>
       apiClient.put("/tasks/reorder", { taskIds }),
-    getPausedProjects: () => apiClient.get<string[]>("/tasks/projects/paused"),
-    setProjectPaused: (project: string, paused: boolean) =>
-      apiClient.put<string[]>("/tasks/projects/paused", { project, paused }),
+  },
+
+  // PROYECTOS + HITOS (de tareas)
+  projects: {
+    list: (includeArchived = false) =>
+      apiClient.get<Project[]>(
+        `/projects${includeArchived ? "?includeArchived=true" : ""}`,
+      ),
+    create: (data: {
+      name: string;
+      emoji?: string;
+      color?: string;
+      description?: string;
+    }) => apiClient.post<Project>("/projects", data),
+    update: (id: string, data: Partial<Omit<Project, "id" | "stats" | "milestones">>) =>
+      apiClient.put<Project>(`/projects/${id}`, data),
+    delete: (id: string) => apiClient.delete(`/projects/${id}`),
+    createMilestone: (projectId: string, data: { name: string; dueDate?: string }) =>
+      apiClient.post<Milestone>(`/projects/${projectId}/milestones`, data),
+    updateMilestone: (
+      id: string,
+      data: { name?: string; dueDate?: string | null; done?: boolean },
+    ) => apiClient.put<Milestone>(`/milestones/${id}`, data),
+    deleteMilestone: (id: string) => apiClient.delete(`/milestones/${id}`),
   },
 
   // CALENDAR

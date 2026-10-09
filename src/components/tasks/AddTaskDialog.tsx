@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useNaviTrackerStore } from "@/store";
+import { Plus } from "lucide-react";
 
 const priorities = [
   { value: "low", label: "Baja", color: "bg-muted-foreground" },
@@ -37,8 +39,9 @@ interface AddTaskDialogProps {
   editingTask?: Task | null;
   /** Fecha pre-cargada al crear (ej: el dia que se esta viendo en la agenda). */
   defaultDate?: string;
-  /** Proyectos existentes, para elegir con un tap en vez de tipear. */
-  projectSuggestions?: string[];
+  /** Proyecto / hito pre-elegidos al crear (ej: desde la vista del proyecto). */
+  defaultProjectId?: string;
+  defaultMilestoneId?: string;
 }
 
 export default function AddTaskDialog({
@@ -47,8 +50,13 @@ export default function AddTaskDialog({
   onSave,
   editingTask,
   defaultDate,
-  projectSuggestions = [],
+  defaultProjectId,
+  defaultMilestoneId,
 }: AddTaskDialogProps) {
+  const projects = useNaviTrackerStore((s) => s.projects);
+  const projectsLoaded = useNaviTrackerStore((s) => s.projectsLoaded);
+  const fetchProjects = useNaviTrackerStore((s) => s.fetchProjects);
+  const createProject = useNaviTrackerStore((s) => s.createProject);
   const [title, setTitle] = useState(editingTask?.title || "");
   const [description, setDescription] = useState(
     editingTask?.description || ""
@@ -59,7 +67,9 @@ export default function AddTaskDialog({
     editingTask?.priority || "medium"
   );
   const [category, setCategory] = useState<TaskCategory | "">(editingTask?.category || "");
-  const [project, setProject] = useState(editingTask?.project || "");
+  const [projectId, setProjectId] = useState<string>("");
+  const [milestoneId, setMilestoneId] = useState<string>("");
+  const [newProject, setNewProject] = useState<string | null>(null);
 
   // Poblar/resetear el form CADA vez que el diálogo se abre: onOpenChange de
   // Radix no se dispara cuando el padre abre por prop (open={isOpen}), así
@@ -72,9 +82,39 @@ export default function AddTaskDialog({
       setDueTime(editingTask?.dueTime || "");
       setPriority(editingTask?.priority || "medium");
       setCategory(editingTask?.category || "");
-      setProject(editingTask?.project || "");
+      setProjectId(editingTask ? editingTask.projectId || "" : defaultProjectId || "");
+      setMilestoneId(
+        editingTask ? editingTask.milestoneId || "" : defaultMilestoneId || "",
+      );
+      setNewProject(null);
+      if (!projectsLoaded) fetchProjects();
     }
-  }, [isOpen, editingTask, defaultDate]);
+  }, [isOpen, editingTask, defaultDate, defaultProjectId, defaultMilestoneId, projectsLoaded, fetchProjects]);
+
+  // Se ofrecen los activos + el que ya tiene la tarea (aunque este pausado).
+  const selectable = projects.filter(
+    (p) => p.status === "active" || p.id === projectId,
+  );
+  const milestones =
+    projects.find((p) => p.id === projectId)?.milestones.filter(
+      (m) => !m.done || m.id === milestoneId,
+    ) ?? [];
+
+  const pickProject = (id: string) => {
+    setProjectId(projectId === id ? "" : id);
+    setMilestoneId("");
+  };
+
+  const addProject = async () => {
+    const name = newProject?.trim();
+    if (!name) return;
+    const p = await createProject({ name });
+    if (p) {
+      setProjectId(p.id);
+      setMilestoneId("");
+      setNewProject(null);
+    }
+  };
 
   const handleSave = () => {
     if (!title.trim()) return;
@@ -85,9 +125,10 @@ export default function AddTaskDialog({
       dueTime: dueTime || undefined,
       priority,
       category: category || undefined,
-      // Al editar, "" = sacarle el proyecto. Al crear, sin proyecto el back
-      // lo infiere del prefijo del titulo ("Stampia - ...").
-      project: project.trim() || (editingTask ? "" : undefined),
+      // Al editar, null = sacarle el proyecto/hito. Al crear sin proyecto,
+      // el back lo infiere del prefijo del titulo ("Stampia - ...").
+      projectId: projectId || (editingTask ? null : undefined),
+      milestoneId: milestoneId || (editingTask ? null : undefined),
     });
     // Reset form
     setTitle("");
@@ -96,7 +137,8 @@ export default function AddTaskDialog({
     setDueTime("");
     setPriority("medium");
     setCategory("");
-    setProject("");
+    setProjectId("");
+    setMilestoneId("");
     onClose();
   };
 
@@ -157,35 +199,84 @@ export default function AddTaskDialog({
 
           <div>
             <Label>Proyecto</Label>
-            <Input
-              value={project}
-              onChange={(e) => setProject(e.target.value)}
-              placeholder="Ej: Stampia, EaseTrain (opcional)"
-              maxLength={40}
-            />
-            {projectSuggestions.length > 0 && (
-              <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                {projectSuggestions.map((p) => (
+            <div className="flex gap-1.5 mt-1 flex-wrap">
+              {selectable.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => pickProject(p.id)}
+                  className={`px-2.5 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    projectId === p.id
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  }`}
+                >
+                  {p.emoji ? `${p.emoji} ` : ""}
+                  {p.name}
+                  {p.status !== "active" && " ⏸"}
+                </button>
+              ))}
+              {newProject === null ? (
+                <button
+                  type="button"
+                  onClick={() => setNewProject("")}
+                  className="flex items-center gap-1 rounded-full border border-dashed px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <Plus className="h-3 w-3" /> Nuevo
+                </button>
+              ) : (
+                <div className="flex w-full gap-1.5">
+                  <Input
+                    value={newProject}
+                    onChange={(e) => setNewProject(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addProject();
+                      }
+                    }}
+                    placeholder="Nombre del proyecto"
+                    maxLength={40}
+                    className="h-8 text-sm"
+                    autoFocus
+                  />
+                  <Button size="sm" className="h-8" onClick={addProject} disabled={!newProject.trim()}>
+                    Crear
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-8" onClick={() => setNewProject(null)}>
+                    ✕
+                  </Button>
+                </div>
+              )}
+            </div>
+            {!projectId && !editingTask && (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Sin elegir, se toma del título (“Stampia - …”).
+              </p>
+            )}
+          </div>
+
+          {milestones.length > 0 && (
+            <div>
+              <Label>Hito</Label>
+              <div className="flex gap-1.5 mt-1 flex-wrap">
+                {milestones.map((m) => (
                   <button
-                    key={p}
+                    key={m.id}
                     type="button"
-                    onClick={() =>
-                      setProject(
-                        project.trim().toLowerCase() === p.toLowerCase() ? "" : p,
-                      )
-                    }
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                      project.trim().toLowerCase() === p.toLowerCase()
+                    onClick={() => setMilestoneId(milestoneId === m.id ? "" : m.id)}
+                    className={`px-2.5 py-1.5 rounded-full text-xs font-medium transition-all ${
+                      milestoneId === m.id
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-muted-foreground hover:bg-muted/80"
                     }`}
                   >
-                    {p}
+                    🏁 {m.name}
                   </button>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           <div>
             <Label>Prioridad</Label>

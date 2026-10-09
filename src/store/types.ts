@@ -3,6 +3,7 @@ import type { NotesSlice } from "./slices/notes";
 import type { NutritionSlice } from "./slices/nutrition";
 import type { ChatSlice } from "./slices/chat";
 import type { TasksSlice } from "./slices/tasks";
+import type { ProjectsSlice } from "./slices/projects";
 import type { CalendarSlice } from "./slices/calendar";
 import type { DayScoreSlice } from "./slices/day-score";
 import type { HydrationSlice } from "./slices/hydration";
@@ -15,6 +16,7 @@ export type NaviTrackerState = ActivitiesSlice &
   NutritionSlice &
   ChatSlice &
   TasksSlice &
+  ProjectsSlice &
   CalendarSlice &
   DayScoreSlice &
   HydrationSlice &

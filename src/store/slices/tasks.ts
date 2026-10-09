@@ -6,10 +6,6 @@ import type { StoreSet, StoreGet } from "../types";
 export interface TasksSlice {
   tasks: Task[];
   tasksLoading: boolean;
-  /** Proyectos en pausa (sus tareas no se muestran). Vive en el back: se comparte web/celu. */
-  pausedProjects: string[];
-  fetchPausedProjects: () => Promise<void>;
-  setProjectPaused: (project: string, paused: boolean) => Promise<void>;
   fetchTasks: (params?: {
     date?: string;
     status?: string;
@@ -27,34 +23,6 @@ export interface TasksSlice {
 export const createTasksSlice = (set: StoreSet, get: StoreGet): TasksSlice => ({
   tasks: [],
   tasksLoading: false,
-  pausedProjects: [],
-
-  fetchPausedProjects: async () => {
-    try {
-      const res = await api.tasks.getPausedProjects();
-      if (Array.isArray(res.data)) set({ pausedProjects: res.data });
-    } catch (e) {
-      console.error("Error fetching paused projects:", e);
-    }
-  },
-
-  setProjectPaused: async (project, paused) => {
-    const prev = get().pausedProjects;
-    const key = project.trim().toLowerCase();
-    const rest = prev.filter((p) => p.trim().toLowerCase() !== key);
-    set({ pausedProjects: paused ? [...rest, project] : rest });
-    try {
-      const res = await api.tasks.setProjectPaused(project, paused);
-      if (Array.isArray(res.data)) set({ pausedProjects: res.data });
-      toast.success(
-        paused ? `${project} en pausa` : `${project} reanudado`,
-        paused ? "Sus tareas quedan ocultas" : undefined,
-      );
-    } catch {
-      set({ pausedProjects: prev });
-      toast.error("Error", "No se pudo cambiar la pausa del proyecto");
-    }
-  },
 
   fetchTasks: async (params) => {
     set({ tasksLoading: true });

@@ -8,11 +8,13 @@
  *   3. que      -> categories + priorities + search
  *   4. estado   -> status   (pendientes / en curso / completadas / todas)
  *
- * Y uno transversal: los proyectos EN PAUSA no aparecen en ningun lado,
- * salvo que se elija ese proyecto a mano o se active "mostrar pausados".
- * Es lo que saca el ruido de un proyecto que hoy no se puede tocar.
+ * Y uno transversal: los proyectos EN PAUSA (o archivados) no aparecen en
+ * ningun lado, salvo que se elija ese proyecto a mano o se active "mostrar
+ * pausados". Es lo que saca el ruido de un proyecto que hoy no se puede tocar.
+ * El estado viene en cada tarea (`projectStatus`), no hace falta la lista
+ * de proyectos para filtrar.
  */
-import type { Task, TaskCategory, TaskPriority } from "@/types";
+import type { Project, Task, TaskCategory, TaskPriority } from "@/types";
 
 export type DateRange = "today" | "week" | "overdue" | "all";
 export type StatusFilter = "all" | "pending" | "in_progress" | "completed";
@@ -20,7 +22,7 @@ export type StatusFilter = "all" | "pending" | "in_progress" | "completed";
 export interface TaskFilters {
   range: DateRange;
   status: StatusFilter;
-  projects: string[]; // projectKey(); NO_PROJECT = sin proyecto; vacio = todos
+  projects: string[]; // projectId; NO_PROJECT = sin proyecto; vacio = todos
   showPaused: boolean;
   categories: TaskCategory[]; // vacio = todas
   priorities: TaskPriority[]; // vacio = todas
@@ -40,10 +42,13 @@ export const EMPTY_FILTERS: TaskFilters = {
 /** Clave del chip "Sin proyecto". */
 export const NO_PROJECT = "__none__";
 
-/** Comparacion sin mayusculas: "PulpoU" y "Pulpou" son el mismo proyecto. */
-export function projectKey(p: string | null | undefined): string {
-  const k = (p ?? "").trim().toLowerCase();
-  return k || NO_PROJECT;
+export function projectKey(t: Pick<Task, "projectId">): string {
+  return t.projectId || NO_PROJECT;
+}
+
+/** Pausado o archivado: sus tareas no se muestran por defecto. */
+export function isHiddenStatus(status?: string | null): boolean {
+  return status === "paused" || status === "archived";
 }
 
 /** Categoria "de fondo": el roadmap NZ no debe ensuciar el dia a dia. */
@@ -163,17 +168,12 @@ export function getWeekEnd(today: Date): string {
 }
 
 /**
- * Una tarea queda oculta por pausa si su proyecto esta pausado y no se pidio
- * verla: ni con "mostrar pausados" ni eligiendo ese proyecto en los chips.
+ * Una tarea queda oculta por pausa si su proyecto esta pausado/archivado y
+ * no se pidio verla: ni con "mostrar pausados" ni eligiendo ese proyecto.
  */
-function hiddenByPause(
-  task: Task,
-  filters: TaskFilters,
-  paused: Set<string>,
-): boolean {
-  if (filters.showPaused || paused.size === 0) return false;
-  const key = projectKey(task.project);
-  return paused.has(key) && !filters.projects.includes(key);
+function hiddenByPause(task: Task, filters: TaskFilters): boolean {
+  if (filters.showPaused || !isHiddenStatus(task.projectStatus)) return false;
+  return !filters.projects.includes(projectKey(task));
 }
 
 export function filterTasks(
@@ -181,20 +181,18 @@ export function filterTasks(
   filters: TaskFilters,
   today: string,
   weekEnd: string,
-  pausedProjects: string[] = [],
 ): Task[] {
   // Si el usuario pidio explicitamente la categoria de fondo, no la escondemos.
   const hideBacklog = !filters.categories.includes(BACKLOG_CATEGORY);
-  const paused = new Set(pausedProjects.map(projectKey));
 
   return tasks
     .filter(
       (t) =>
-        !hiddenByPause(t, filters, paused) &&
+        !hiddenByPause(t, filters) &&
         matchesRange(t, filters.range, today, weekEnd, hideBacklog) &&
         matchesStatus(t, filters.status) &&
         (filters.projects.length === 0 ||
-          filters.projects.includes(projectKey(t.project))) &&
+          filters.projects.includes(projectKey(t))) &&
         (filters.categories.length === 0 ||
           (!!t.category && filters.categories.includes(t.category))) &&
         (filters.priorities.length === 0 ||
@@ -207,57 +205,52 @@ export function filterTasks(
 export interface ProjectCount {
   key: string;
   label: string;
+  emoji?: string | null;
+  color?: string | null;
   count: number;
   paused: boolean;
 }
 
 /**
- * Proyectos que existen en las tareas, con cuantas caerian en cada uno segun
- * los OTROS filtros. Los pausados se cuentan igual (para decir "EaseTrain:
- * 10 ocultas"). Orden: mas tareas primero, "Sin proyecto" al final.
+ * Proyectos con cuantas tareas caerian en cada uno segun los OTROS filtros.
+ * Salen los que tienen tareas (no un chip por cada proyecto vacio). Los
+ * pausados se cuentan igual, para decir "EaseTrain: 10 ocultas".
+ * Orden: mas tareas primero, "Sin proyecto" al final.
  */
 export function countByProject(
   tasks: Task[],
+  projects: Project[],
   filters: TaskFilters,
   today: string,
   weekEnd: string,
-  pausedProjects: string[] = [],
 ): ProjectCount[] {
-  const paused = new Set(pausedProjects.map(projectKey));
-  const labels = new Map<string, string>();
-  for (const t of tasks) {
-    const key = projectKey(t.project);
-    if (!labels.has(key)) {
-      labels.set(key, key === NO_PROJECT ? "Sin proyecto" : t.project!.trim());
-    }
-  }
+  const byId = new Map(projects.map((p) => [p.id, p]));
+  const keys = new Set(tasks.map(projectKey));
 
   const out: ProjectCount[] = [];
-  for (const [key, label] of labels) {
+  for (const key of keys) {
+    const p = byId.get(key);
+    const sample = tasks.find((t) => projectKey(t) === key);
     const count = filterTasks(
       tasks,
       { ...filters, projects: [key] },
       today,
       weekEnd,
-      pausedProjects,
     ).length;
-    out.push({ key, label, count, paused: paused.has(key) });
+    out.push({
+      key,
+      label: key === NO_PROJECT ? "Sin proyecto" : p?.name ?? sample?.project ?? "?",
+      emoji: p?.emoji,
+      color: p?.color,
+      count,
+      paused: isHiddenStatus(p?.status ?? sample?.projectStatus),
+    });
   }
   return out.sort((a, b) => {
     if (a.key === NO_PROJECT) return 1;
     if (b.key === NO_PROJECT) return -1;
     return b.count - a.count || a.label.localeCompare(b.label);
   });
-}
-
-/** Nombres de proyecto existentes (para sugerir al crear/editar). */
-export function knownProjects(tasks: Task[]): string[] {
-  const byKey = new Map<string, string>();
-  for (const t of tasks) {
-    const key = projectKey(t.project);
-    if (key !== NO_PROJECT && !byKey.has(key)) byKey.set(key, t.project!.trim());
-  }
-  return [...byKey.values()].sort((a, b) => a.localeCompare(b));
 }
 
 /**
@@ -270,7 +263,6 @@ export function countByCategory(
   filters: TaskFilters,
   today: string,
   weekEnd: string,
-  pausedProjects: string[] = [],
 ): Map<TaskCategory, number> {
   const counts = new Map<TaskCategory, number>();
   for (const cat of Object.keys(CATEGORY_META) as TaskCategory[]) {
@@ -279,7 +271,6 @@ export function countByCategory(
       { ...filters, categories: [cat] },
       today,
       weekEnd,
-      pausedProjects,
     ).length;
     if (n > 0) counts.set(cat, n);
   }
@@ -292,15 +283,8 @@ export function countUncategorized(
   filters: TaskFilters,
   today: string,
   weekEnd: string,
-  pausedProjects: string[] = [],
 ): number {
-  return filterTasks(
-    tasks,
-    { ...filters, categories: [] },
-    today,
-    weekEnd,
-    pausedProjects,
-  )
+  return filterTasks(tasks, { ...filters, categories: [] }, today, weekEnd)
     .filter((t) => !t.category).length;
 }
 
@@ -316,15 +300,10 @@ export function activeFilterCount(filters: TaskFilters): number {
 }
 
 /** Como el filtro de rango "hoy", sin los proyectos en pausa: el progreso del dia. */
-export function todayTasksFor(
-  tasks: Task[],
-  today: string,
-  pausedProjects: string[] = [],
-): Task[] {
-  const paused = new Set(pausedProjects.map(projectKey));
+export function todayTasksFor(tasks: Task[], today: string): Task[] {
   return tasks.filter(
     (t) =>
-      !paused.has(projectKey(t.project)) &&
+      !isHiddenStatus(t.projectStatus) &&
       (t.dueDate === today ||
         (!t.dueDate && !t.completed && t.category !== BACKLOG_CATEGORY)),
   );
@@ -333,7 +312,8 @@ export function todayTasksFor(
 // ── Persistencia de filtros (por dispositivo) ───────────────────
 // La busqueda no se guarda: es de un momento. Todo lo demas si, para que
 // volver a /tasks no te devuelva a "Hoy · todo" cada vez.
-const STORAGE_KEY = "navi.tasks.filters.v1";
+// v2: los proyectos pasaron de nombre a id (los v1 guardados ya no matchean).
+const STORAGE_KEY = "navi.tasks.filters.v2";
 
 export function loadFilters(): TaskFilters {
   try {
