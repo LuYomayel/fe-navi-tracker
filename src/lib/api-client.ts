@@ -500,9 +500,18 @@ export const api = {
       reorder: (productId: string, ids: string[]) =>
         apiClient.put(`/printing/products/${productId}/photos/order`, { ids }),
     },
+    resellers: {
+      list: () => apiClient.get("/printing/resellers"),
+      create: (name: string) => apiClient.post("/printing/resellers", { name }),
+      update: (id: string, data: { name?: string; active?: boolean }) =>
+        apiClient.put(`/printing/resellers/${id}`, data),
+      regenerateToken: (id: string) =>
+        apiClient.post(`/printing/resellers/${id}/regenerate-token`),
+    },
     orders: {
       list: () => apiClient.get("/printing/orders"),
       create: (data: {
+        resellerId?: string | null;
         customerName?: string;
         items: { productId: string; qty: number; unitPrice?: number }[];
         notes?: string;
@@ -511,6 +520,7 @@ export const api = {
       update: (
         id: string,
         data: {
+          resellerId?: string | null;
           customerName?: string;
           notes?: string;
           items?: { productId: string; qty: number; unitPrice?: number }[];

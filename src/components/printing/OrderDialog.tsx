@@ -12,21 +12,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, X } from "lucide-react";
 import { fmtARS } from "@/lib/utils";
-import type { PrintOrder, PrintOrderStatus, PrintProduct } from "@/types/printing";
+import type {
+  PrintOrder,
+  PrintOrderStatus,
+  PrintProduct,
+  PrintReseller,
+} from "@/types/printing";
 
 interface ItemRow {
   productId: string;
   qty: number;
-  unitPrice: number | ""; // vacio = precio a Marcelito vigente
+  unitPrice: number | ""; // vacio = precio de reventa vigente
 }
 
 interface OrderDialogProps {
   isOpen: boolean;
   onClose: () => void;
   products: PrintProduct[];
+  resellers: PrintReseller[];
   editingOrder?: PrintOrder | null;
   isSubmitting?: boolean;
   onCreate: (data: {
+    resellerId?: string | null;
     customerName?: string;
     items: { productId: string; qty: number; unitPrice?: number }[];
     notes?: string;
@@ -35,6 +42,7 @@ interface OrderDialogProps {
   onUpdate: (
     id: string,
     data: {
+      resellerId?: string | null;
       customerName?: string;
       notes?: string;
       items?: { productId: string; qty: number; unitPrice?: number }[];
@@ -43,31 +51,39 @@ interface OrderDialogProps {
 }
 
 /**
- * Alta/edicion manual de un pedido por Luciano (ej: Marce lo pidio por
- * WhatsApp). Si el pedido ya genero ventas, los items quedan bloqueados:
+ * Alta/edicion manual de un pedido por Luciano (ej: un revendedor lo pidio
+ * por WhatsApp, o es una venta directa sin revendedor). Si el pedido ya genero ventas, los items quedan bloqueados:
  * la plata se corrige desde Ventas.
  */
 export default function OrderDialog({
   isOpen,
   onClose,
   products,
+  resellers,
   editingOrder,
   isSubmitting,
   onCreate,
   onUpdate,
 }: OrderDialogProps) {
-  const [customerName, setCustomerName] = useState("Marcelito");
+  // "" = pedido suelto (venta directa): ahi el nombre se escribe a mano.
+  const [resellerId, setResellerId] = useState("");
+  const [customerName, setCustomerName] = useState("");
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState<PrintOrderStatus>("pedido");
   const [items, setItems] = useState<ItemRow[]>([]);
 
   const hasSales = (editingOrder?.sales?.length ?? 0) > 0;
   const activeProducts = products.filter((p) => p.active);
+  // Los desactivados solo aparecen si el pedido que se edita ya era suyo.
+  const selectableResellers = resellers.filter(
+    (r) => r.active || r.id === editingOrder?.resellerId,
+  );
 
   useEffect(() => {
     if (!isOpen) return;
     if (editingOrder) {
-      setCustomerName(editingOrder.customerName);
+      setResellerId(editingOrder.resellerId ?? "");
+      setCustomerName(editingOrder.resellerId ? "" : editingOrder.customerName);
       setNotes(editingOrder.notes ?? "");
       setStatus(editingOrder.status);
       setItems(
@@ -78,7 +94,8 @@ export default function OrderDialog({
         })),
       );
     } else {
-      setCustomerName("Marcelito");
+      setResellerId(resellers.find((r) => r.active)?.id ?? "");
+      setCustomerName("");
       setNotes("");
       setStatus("pedido");
       setItems([
@@ -104,14 +121,17 @@ export default function OrderDialog({
       qty: i.qty,
       ...(i.unitPrice !== "" ? { unitPrice: Number(i.unitPrice) } : {}),
     }));
+    const customer = resellerId
+      ? { resellerId }
+      : { resellerId: null, customerName: customerName.trim() || undefined };
     const ok = editingOrder
       ? await onUpdate(editingOrder.id, {
-          customerName: customerName.trim() || undefined,
+          ...customer,
           notes,
           ...(hasSales ? {} : { items: payloadItems }),
         })
       : await onCreate({
-          customerName: customerName.trim() || undefined,
+          ...customer,
           items: payloadItems,
           notes: notes.trim() || undefined,
           status,
@@ -129,13 +149,29 @@ export default function OrderDialog({
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="o-customer">Cliente</Label>
-            <Input
-              id="o-customer"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Marcelito"
-            />
+            <Label htmlFor="o-reseller">Quién lo pide</Label>
+            <select
+              id="o-reseller"
+              className="h-10 w-full rounded-md border border-input bg-background px-2 text-sm"
+              value={resellerId}
+              onChange={(e) => setResellerId(e.target.value)}
+            >
+              {selectableResellers.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+              <option value="">Otro (venta directa)</option>
+            </select>
+            {!resellerId && (
+              <Input
+                id="o-customer"
+                aria-label="Nombre del cliente"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="Nombre del cliente"
+              />
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -212,7 +248,7 @@ export default function OrderDialog({
             ))}
             {!hasSales && (
               <p className="text-[11px] text-muted-foreground">
-                Precio: el vigente a Marcelito (se congela al crear el pedido).
+                Precio: el de reventa vigente (se congela al crear el pedido).
               </p>
             )}
           </div>

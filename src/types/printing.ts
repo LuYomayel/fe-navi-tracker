@@ -203,7 +203,18 @@ export type UpdatePrintSettingsDto = Partial<
 >;
 
 
-// ── Pedidos (Marcelito) ──────────────────────────────────────
+// ── Revendedores ─────────────────────────────────────────────
+
+/** Quien revende (Marcelito, Miguelito...). Cada uno tiene su link al catalogo. */
+export interface PrintReseller {
+  id: string;
+  name: string;
+  token: string; // va en /catalogo?t=<token>
+  active: boolean; // false = su link no funciona
+  createdAt: string;
+}
+
+// ── Pedidos (de revendedores o sueltos) ──────────────────────
 
 export type PrintOrderStatus =
   | "pedido"
@@ -224,6 +235,7 @@ export interface PrintOrderItem {
 
 export interface PrintOrder {
   id: string;
+  resellerId?: string | null; // null = pedido suelto (venta directa)
   customerName: string;
   status: PrintOrderStatus;
   notes?: string | null;
@@ -256,6 +268,7 @@ export interface PublicOrder {
 
 export interface PrintPaymentNotice {
   id: string;
+  resellerId?: string | null; // quien aviso
   orderId?: string | null;
   amount?: number | null;
   message?: string | null;

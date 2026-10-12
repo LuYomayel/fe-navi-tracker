@@ -23,7 +23,8 @@ const STATUS_LABEL: Record<PrintOrderStatus, { label: string; emoji: string }> =
 };
 
 /**
- * Catálogo público (el link que se le manda a Marcelito por WhatsApp).
+ * Catálogo público (el link propio que se le manda a cada revendedor por
+ * WhatsApp; el token dice quién es, así ve solo sus pedidos y su deuda).
  *
  * Fuera del grupo (app): sin login, sin nav y sin store. Muestra SOLO lo que
  * le corresponde ver — lo que le cuesta, el precio sugerido y su ganancia.
@@ -43,6 +44,7 @@ function CatalogoPublico() {
   const [items, setItems] = useState<PublicCatalogItem[] | null>(null);
   const [orders, setOrders] = useState<PublicOrder[]>([]);
   const [debt, setDebt] = useState(0);
+  const [resellerName, setResellerName] = useState("");
   const [cart, setCart] = useState<Record<string, number>>({});
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -60,6 +62,7 @@ function CatalogoPublico() {
       const json = await r.json();
       setOrders((json?.data?.orders as PublicOrder[]) ?? []);
       setDebt((json?.data?.debt as number) ?? 0);
+      setResellerName((json?.data?.resellerName as string) ?? "");
     } catch {
       /* la vista de pedidos es secundaria: el catálogo sigue andando */
     }
@@ -166,6 +169,11 @@ function CatalogoPublico() {
           <p className="mt-0.5 text-sm text-muted-foreground">
             Juegos didácticos en impresión 3D · precios en pesos
           </p>
+          {resellerName && (
+            <p className="mt-1 text-sm font-medium">
+              Hola, {resellerName} 👋 Este es tu link: acá ves solo tus pedidos.
+            </p>
+          )}
         </header>
 
         {/* Toggle catálogo / pedidos */}

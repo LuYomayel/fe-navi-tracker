@@ -49,7 +49,10 @@ export default function NegocioPage() {
     isSubmitting,
     loadAll,
     updateSettings,
-    regenerateToken,
+    resellers,
+    createReseller,
+    updateReseller,
+    regenerateResellerToken,
     createProduct,
     updateProduct,
     deleteProduct,
@@ -125,7 +128,7 @@ export default function NegocioPage() {
           <ActionIconButton
             icon={Settings}
             onClick={() => setShowSettings(true)}
-            aria-label="Parámetros de costeo y link para Marcelito"
+            aria-label="Parámetros de costeo y revendedores"
           />
         }
       />
@@ -147,6 +150,7 @@ export default function NegocioPage() {
           orders={orders}
           notices={notices}
           products={products}
+          resellers={resellers}
           isSubmitting={isSubmitting}
           onUpdateStatus={updateOrderStatus}
           onDelete={deleteOrder}
@@ -207,7 +211,10 @@ export default function NegocioPage() {
         onClose={() => setShowSettings(false)}
         settings={settings}
         onSave={updateSettings}
-        onRegenerateToken={regenerateToken}
+        resellers={resellers}
+        onCreateReseller={createReseller}
+        onUpdateReseller={updateReseller}
+        onRegenerateResellerToken={regenerateResellerToken}
         isSubmitting={isSubmitting}
         bambuStatus={bambuStatus}
         onConnectBambu={connectBambu}

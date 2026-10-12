@@ -17,6 +17,7 @@ import type {
   PrintOrderStatus,
   PrintPaymentNotice,
   PrintProduct,
+  PrintReseller,
   PrintSale,
   PrintSettings,
   PrintingSummary,
@@ -40,6 +41,7 @@ export function usePrinting() {
   const [summary, setSummary] = useState<PrintingSummary | null>(null);
   const [orders, setOrders] = useState<PrintOrder[]>([]);
   const [notices, setNotices] = useState<PrintPaymentNotice[]>([]);
+  const [resellers, setResellers] = useState<PrintReseller[]>([]);
   const [stock, setStock] = useState<StockSummary | null>(null);
   const [jobs, setJobs] = useState<PrintJob[]>([]);
   const [bambuStatus, setBambuStatus] = useState<BambuStatus | null>(null);
@@ -51,7 +53,7 @@ export function usePrinting() {
       setIsLoading(true);
       // allSettled, no all: si una sola llamada falla, con Promise.all no se
       // setea NADA y la pantalla queda en esqueleto para siempre.
-      const [s, p, f, v, r, o, n, st, j, b] = await Promise.allSettled([
+      const [s, p, f, v, r, o, n, st, j, b, rs] = await Promise.allSettled([
         api.printing.settings.get(),
         api.printing.products.list(),
         api.printing.filaments.list(),
@@ -62,6 +64,7 @@ export function usePrinting() {
         api.printing.stock.get(),
         api.printing.jobs.list(),
         api.printing.bambu.status(),
+        api.printing.resellers.list(),
       ]);
       const ok = <T,>(res: PromiseSettledResult<{ success: boolean; data: unknown }>): T | null =>
         res.status === "fulfilled" && res.value?.success
@@ -82,8 +85,9 @@ export function usePrinting() {
       setJobs(ok<PrintJob[]>(j) ?? []);
       const bambuData = ok<BambuStatus>(b);
       if (bambuData) setBambuStatus(bambuData);
+      setResellers(ok<PrintReseller[]>(rs) ?? []);
 
-      if ([s, p, f, v, r, o, n, st, j, b].some((x) => x.status === "rejected")) {
+      if ([s, p, f, v, r, o, n, st, j, b, rs].some((x) => x.status === "rejected")) {
         toast.error("Algunos datos del negocio 3D no cargaron");
       }
     } catch (error) {
@@ -128,18 +132,66 @@ export function usePrinting() {
     [reloadSummary],
   );
 
-  const regenerateToken = useCallback(async () => {
+  // ── Revendedores ──────────────────────────────────────────
+
+  const createReseller = useCallback(async (name: string) => {
     try {
       setIsSubmitting(true);
-      const res = await api.printing.settings.regenerateToken();
+      const res = await api.printing.resellers.create(name);
       if (res.success) {
-        setSettings(res.data as PrintSettings);
+        setResellers((prev) => [...prev, res.data as PrintReseller]);
+        toast.success("Revendedor creado: ya podes copiarle su link");
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error creando revendedor:", error);
+      toast.error(
+        error instanceof Error ? error.message : "No se pudo crear el revendedor",
+      );
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, []);
+
+  const updateReseller = useCallback(
+    async (id: string, data: { name?: string; active?: boolean }) => {
+      try {
+        setIsSubmitting(true);
+        const res = await api.printing.resellers.update(id, data);
+        if (res.success) {
+          const updated = res.data as PrintReseller;
+          setResellers((prev) => prev.map((r) => (r.id === id ? updated : r)));
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error editando revendedor:", error);
+        toast.error(
+          error instanceof Error ? error.message : "No se pudo editar el revendedor",
+        );
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [],
+  );
+
+  const regenerateResellerToken = useCallback(async (id: string) => {
+    try {
+      setIsSubmitting(true);
+      const res = await api.printing.resellers.regenerateToken(id);
+      if (res.success) {
+        const updated = res.data as PrintReseller;
+        setResellers((prev) => prev.map((r) => (r.id === id ? updated : r)));
         toast.success("Nuevo link generado (el anterior dejo de funcionar)");
         return true;
       }
       return false;
     } catch (error) {
-      console.error("Error regenerando token:", error);
+      console.error("Error regenerando link:", error);
       toast.error("No se pudo regenerar el link");
       return false;
     } finally {
@@ -605,6 +657,7 @@ export function usePrinting() {
 
   const createOrder = useCallback(
     async (data: {
+      resellerId?: string | null;
       customerName?: string;
       items: { productId: string; qty: number; unitPrice?: number }[];
       notes?: string;
@@ -638,6 +691,7 @@ export function usePrinting() {
     async (
       id: string,
       data: {
+        resellerId?: string | null;
         customerName?: string;
         notes?: string;
         items?: { productId: string; qty: number; unitPrice?: number }[];
@@ -913,6 +967,10 @@ export function usePrinting() {
     summary,
     orders,
     notices,
+    resellers,
+    createReseller,
+    updateReseller,
+    regenerateResellerToken,
     stock,
     jobs,
     bambuStatus,
@@ -940,7 +998,6 @@ export function usePrinting() {
     disconnectBambu,
     syncBambu,
     updateSettings,
-    regenerateToken,
     createProduct,
     updateProduct,
     deleteProduct,

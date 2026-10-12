@@ -24,6 +24,7 @@ import type {
   PrintOrderStatus,
   PrintPaymentNotice,
   PrintProduct,
+  PrintReseller,
   PrintSale,
 } from "@/types/printing";
 
@@ -31,10 +32,12 @@ interface OrdersTabProps {
   orders: PrintOrder[];
   notices: PrintPaymentNotice[];
   products: PrintProduct[];
+  resellers: PrintReseller[];
   isSubmitting: boolean;
   onUpdateStatus: (id: string, status: PrintOrderStatus) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
   onCreate: (data: {
+    resellerId?: string | null;
     customerName?: string;
     items: { productId: string; qty: number; unitPrice?: number }[];
     notes?: string;
@@ -43,6 +46,7 @@ interface OrdersTabProps {
   onUpdate: (
     id: string,
     data: {
+      resellerId?: string | null;
       customerName?: string;
       notes?: string;
       items?: { productId: string; qty: number; unitPrice?: number }[];
@@ -118,7 +122,7 @@ function paymentInfo(o: PrintOrder): { paid: number; due: number } {
 }
 
 /**
- * Pedidos (del link de Marcelito o cargados a mano) + avisos de pago.
+ * Pedidos (del link de cada revendedor o cargados a mano) + avisos de pago.
  * El pedido es el ENCARGO; la venta linkeada es la plata. Entregar crea la
  * venta; retroceder/cancelar/borrar la limpia si no tiene pagos.
  */
@@ -126,6 +130,7 @@ export default function OrdersTab({
   orders,
   notices,
   products,
+  resellers,
   isSubmitting,
   onUpdateStatus,
   onDelete,
@@ -284,7 +289,7 @@ export default function OrdersTab({
         </Button>
       </div>
 
-      {/* Avisos de pago de Marcelito: confirmar REGISTRA el pago */}
+      {/* Avisos de pago de los revendedores: confirmar REGISTRA el pago */}
       {notices.length > 0 && (
         <div className="space-y-1.5">
           {notices.map((n) => (
@@ -295,7 +300,8 @@ export default function OrdersTab({
               <HandCoins className="h-4 w-4 shrink-0 text-warning-foreground dark:text-warning" />
               <div className="min-w-0 flex-1 text-xs">
                 <span className="font-semibold">
-                  Avisó que pagó{n.amount ? ` ${fmtARS(n.amount)}` : " (todo el pedido)"}
+                  {resellers.find((r) => r.id === n.resellerId)?.name ?? "Alguien"}{" "}
+                  avisó que pagó{n.amount ? ` ${fmtARS(n.amount)}` : " (todo el pedido)"}
                 </span>
                 {n.message && (
                   <span className="text-muted-foreground"> · “{n.message}”</span>
@@ -330,7 +336,7 @@ export default function OrdersTab({
         <EmptyState
           icon={Inbox}
           title="Sin pedidos todavia"
-          description="Los pedidos de Marcelito llegan solos desde su link, o cargá uno vos con +."
+          description="Los pedidos de los revendedores llegan solos desde su link, o cargá uno vos con +."
           action={
             <Button onClick={() => setDialogOpen(true)}>
               <Plus className="mr-1.5 h-4 w-4" />
@@ -358,6 +364,7 @@ export default function OrdersTab({
         isOpen={dialogOpen}
         onClose={() => setDialogOpen(false)}
         products={products}
+        resellers={resellers}
         editingOrder={
           editing ? (orders.find((o) => o.id === editing.id) ?? editing) : null
         }
@@ -386,7 +393,7 @@ export default function OrdersTab({
             ? `¿Confirmar el pago de ${fmtARS(noticeConfirm.payload.amount)}?`
             : "¿Confirmar el pago de todo el pedido?"
         }
-        description="Se registra el pago, se crea el ingreso y a Marcelito le baja la deuda."
+        description="Se registra el pago, se crea el ingreso y al revendedor le baja la deuda."
         confirmLabel="Confirmar pago"
         onConfirm={() => {
           noticeConfirm.onConfirm();
