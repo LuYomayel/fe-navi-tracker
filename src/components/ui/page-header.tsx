@@ -6,6 +6,8 @@ export interface PageHeaderProps {
   title: string;
   subtitle?: string;
   icon?: LucideIcon;
+  /** logo o imagen propia a la izquierda, en lugar del icono en caja */
+  leading?: React.ReactNode;
   /** métrica a la derecha (ej "1.842 / 2.200 kcal") */
   metric?: React.ReactNode;
   metricLabel?: string;
@@ -19,6 +21,7 @@ export function PageHeader({
   title,
   subtitle,
   icon: Icon,
+  leading,
   metric,
   metricLabel,
   action,
@@ -27,7 +30,8 @@ export function PageHeader({
   return (
     <div className={cn("flex items-start justify-between gap-3.5", className)}>
       <div className="flex min-w-0 gap-[11px]">
-        {Icon && (
+        {leading}
+        {!leading && Icon && (
           <div className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground">
             <Icon size={19} strokeWidth={2} />
           </div>

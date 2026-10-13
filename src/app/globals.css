@@ -304,3 +304,57 @@ input[type="time"] {
 .ios-section-item + .ios-section-item {
   @apply border-t border-border;
 }
+
+/* ── Marca LY Juegos (Manual de Marca v1.1) ────────────────────────────────
+   Todo lo que es del negocio de juegos (catalogo publico de revendedores y
+   la seccion Negocio) lleva .ly-brand: pisa los tokens del design system con
+   la paleta de la marca SOLO en ese subarbol, asi las clases de siempre
+   (bg-background, text-primary, border-border...) salen con sus colores.
+   Las tipografias las carga src/lib/ly-brand.ts. */
+.ly-brand {
+  --background: 216 83% 98%; /* Niebla #F4F8FE */
+  --foreground: 211 56% 20%; /* Marino pizarra #16324F */
+  --card: 0 0% 100%;
+  --card-foreground: 211 56% 20%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 211 56% 20%;
+  --primary: 212 92% 61%; /* Azul LY #3E94F7 */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 214 68% 95%;
+  --secondary-foreground: 211 56% 20%;
+  --muted: 214 68% 95%; /* entre Niebla y Borde: fondo de campos y pestanas */
+  --muted-foreground: 211 22% 41%; /* Tinta suave #51677E */
+  --accent: 213 62% 91%;
+  --accent-foreground: 212 74% 46%; /* Azul hondo #1E6FCB */
+  --border: 213 62% 91%;
+  --input: 213 62% 91%;
+  --ring: 212 92% 61%;
+  font-family: var(--font-ly-body), -apple-system, "Segoe UI", sans-serif;
+}
+
+/* Version oscura de la paleta, tal cual la define el manual. */
+.dark .ly-brand {
+  --background: 212 57% 11%; /* #0C1B2C */
+  --foreground: 212 70% 95%; /* #E8F1FB */
+  --card: 211 53% 18%; /* #152C45 */
+  --card-foreground: 212 70% 95%;
+  --popover: 211 53% 18%;
+  --popover-foreground: 212 70% 95%;
+  --primary: 212 92% 67%; /* #5CA5F8 */
+  --primary-foreground: 215 57% 9%; /* #0A1524 */
+  --secondary: 210 42% 26%;
+  --secondary-foreground: 212 70% 95%;
+  --muted: 210 42% 26%; /* #27435F */
+  --muted-foreground: 211 28% 67%; /* #93AAC2 */
+  --accent: 210 42% 26%;
+  --accent-foreground: 211 92% 76%; /* #8BC0FA */
+  --border: 210 42% 26%;
+  --input: 210 42% 26%;
+  --ring: 212 92% 67%;
+}
+
+/* Titulos de la marca: Varela Round (reemplazo web de Arial Rounded MT Bold). */
+.ly-brand h1 {
+  font-family: var(--font-ly-title), var(--font-ly-body), sans-serif;
+  font-weight: 400;
+}

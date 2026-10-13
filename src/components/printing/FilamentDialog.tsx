@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { LY_BRAND_CLASS } from "@/lib/ly-brand";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -86,7 +87,7 @@ export default function FilamentDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className={`${LY_BRAND_CLASS} max-w-md`}>
         <DialogHeader>
           <DialogTitle>
             {editingFilament ? "Editar filamento" : "Nueva compra de filamento"}

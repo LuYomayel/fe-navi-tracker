@@ -13,7 +13,8 @@ import BalanceTab from "@/components/printing/BalanceTab";
 import OrdersTab from "@/components/printing/OrdersTab";
 import SettingsDialog from "@/components/printing/SettingsDialog";
 import { fmtARS } from "@/lib/utils";
-import { Printer, Settings } from "lucide-react";
+import { LY_BRAND_CLASS } from "@/lib/ly-brand";
+import { Settings } from "lucide-react";
 
 type NegocioTab = "balance" | "pedidos" | "ventas" | "catalogo" | "filamentos";
 
@@ -108,11 +109,22 @@ export default function NegocioPage() {
   }, [searchParams]);
 
   return (
-    <div className="space-y-4">
+    <div className={`${LY_BRAND_CLASS} space-y-4`}>
       <PageHeader
-        title="Negocio 3D"
-        subtitle="Catálogo, filamentos y ventas"
-        icon={Printer}
+        title="LY Juegos"
+        subtitle="Pedidos, ventas, catálogo y filamentos"
+        leading={
+          // Version mini del sello: la unica variante autorizada para
+          // espacios chicos (el sello completo no baja de 96 px).
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src="/ly-juegos-mini.svg"
+            alt=""
+            width={38}
+            height={38}
+            className="h-[38px] w-[38px] shrink-0"
+          />
+        }
         metric={
           summary ? (
             <span
@@ -138,7 +150,7 @@ export default function NegocioPage() {
         value={tab}
         onChange={setTab}
         fullWidth
-        aria-label="Secciones del negocio 3D"
+        aria-label="Secciones de LY Juegos"
       />
 
       {tab === "balance" && (

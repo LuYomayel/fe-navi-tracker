@@ -78,7 +78,7 @@ export default function BalanceTab({ summary, isLoading }: BalanceTabProps) {
           <Row
             icon={<Clock className="h-4 w-4 text-warning-foreground dark:text-warning" />}
             label="Ganancia a liquidar"
-            detail="Marcelito todavía no te la pasó"
+            detail="Todavía no te la pasaron"
             value={profitSalesPending}
             tone="warning"
           />

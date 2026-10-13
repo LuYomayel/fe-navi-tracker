@@ -728,7 +728,7 @@ export default function GastosSection() {
           <div className="flex items-center justify-between">
             <h3 className="flex items-center gap-1.5 text-sm font-semibold">
               <Printer className="h-4 w-4 text-primary" />
-              Negocio 3D
+              LY Juegos
             </h3>
             <Button size="sm" onClick={() => openIncomeDialog(null, "3d")}>
               <Plus className="mr-1 h-4 w-4" />
@@ -1064,7 +1064,7 @@ function ExpenseDialog({
                 className="h-4 w-4 accent-[hsl(var(--primary))]"
               />
               <span>
-                🖨️ Inversión del negocio 3D
+                🖨️ Inversión de LY Juegos
                 <span className="block text-xs text-muted-foreground">
                   Filamento, repuestos, muestras… cuenta en el balance del
                   objetivo NZ
@@ -1092,7 +1092,7 @@ const SOURCE_OPTIONS: { value: IncomeSource; label: string }[] = [
   { value: "sueldo", label: "💼 Sueldo" },
   { value: "venta", label: "🏷️ Venta" },
   { value: "devolucion", label: "↩️ Devolución" },
-  { value: "3d", label: "🖨️ Negocio 3D" },
+  { value: "3d", label: "🖨️ LY Juegos" },
   { value: "otro", label: "💰 Otro" },
 ];
 
@@ -1215,7 +1215,7 @@ function IncomeDialog({
                 source === "sueldo"
                   ? 'Ej: "Sueldo agosto"'
                   : source === "3d"
-                  ? 'Ej: "Tetris x2 vendidos por Marcelito"'
+                  ? 'Ej: "Tetris x2 vendidos por un revendedor"'
                   : 'Ej: "Venta cafetera"'
               }
               value={description}

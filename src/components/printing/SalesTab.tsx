@@ -51,7 +51,7 @@ export default function SalesTab({
       <div className="flex items-center justify-between gap-2">
         <h2 className="min-w-0 truncate text-sm font-semibold text-muted-foreground">
           {sales.length} movimiento{sales.length === 1 ? "" : "s"}
-          {pendingTotal > 0 && ` · Marcelito debe ${fmtARS(pendingTotal)}`}
+          {pendingTotal > 0 && ` · te deben ${fmtARS(pendingTotal)}`}
         </h2>
         <Button size="sm" onClick={() => setDialogOpen(true)}>
           <Plus className="mr-1 h-4 w-4" />

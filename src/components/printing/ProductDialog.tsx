@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { LY_BRAND_CLASS } from "@/lib/ly-brand";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -149,7 +150,7 @@ export default function ProductDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className={`${LY_BRAND_CLASS} max-w-md`}>
         <DialogHeader>
           <DialogTitle>
             {editingProduct ? "Editar producto" : "Nuevo producto"}
@@ -338,7 +339,7 @@ export default function ProductDialog({
               <p
                 className={`text-xs ${preview.profit <= 0 ? "text-destructive" : "text-muted-foreground"}`}
               >
-                Quedaria: costo {fmtARS(preview.cost)} · a Marcelito{" "}
+                Quedaria: costo {fmtARS(preview.cost)} · a revendedores{" "}
                 {fmtARS(preview.price)} · ganancia {fmtARS(preview.profit)}
                 {preview.profit <= 0 ? " — asi no ganas nada" : ""}
               </p>

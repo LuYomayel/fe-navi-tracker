@@ -175,7 +175,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   <DropdownMenuItem asChild>
                     <Link href="/negocio">
                       <Printer className="mr-2 h-4 w-4" />
-                      Negocio 3D
+                      LY Juegos
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>

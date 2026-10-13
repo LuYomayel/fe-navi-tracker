@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { LY_AZUL } from "@/lib/ly-brand";
 import { fmtARS } from "@/lib/utils";
 import type {
   PrintOrderStatus,
@@ -41,7 +42,6 @@ export default function CatalogoPublicoPage() {
 // Marca LY Juegos (Manual de Marca v1.1). El sello completo va a 96 px, su
 // tamano minimo; el amarillo foco es acento chico: solo el precio.
 const LY_TITLE_FONT = "var(--font-ly-title), 'Nunito', sans-serif";
-const LY_AZUL = "#3E94F7"; // exacto: el circulo del sello se funde con la banda
 const LY_FOCO = "#FFC72C";
 const LY_MARINO = "#16324F";
 

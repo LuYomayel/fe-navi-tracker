@@ -88,11 +88,11 @@ export function usePrinting() {
       setResellers(ok<PrintReseller[]>(rs) ?? []);
 
       if ([s, p, f, v, r, o, n, st, j, b, rs].some((x) => x.status === "rejected")) {
-        toast.error("Algunos datos del negocio 3D no cargaron");
+        toast.error("Algunos datos de LY Juegos no cargaron");
       }
     } catch (error) {
       console.error("Error cargando el negocio 3D:", error);
-      toast.error("No se pudo cargar el negocio 3D");
+      toast.error("No se pudo cargar LY Juegos");
     } finally {
       setIsLoading(false);
     }
