@@ -19,6 +19,7 @@ import type {
   ColorBreakdownEntry,
   CreatePrintProductDto,
   PrintProduct,
+  PrintReseller,
 } from "@/types/printing";
 
 interface ProductDialogProps {
@@ -26,6 +27,7 @@ interface ProductDialogProps {
   onClose: () => void;
   onSave: (data: CreatePrintProductDto) => Promise<boolean>;
   editingProduct?: PrintProduct | null;
+  resellers?: PrintReseller[];
   isSubmitting?: boolean;
   // Fotos (solo disponibles al editar: necesitan el id del producto)
   onAddPhoto?: (productId: string, dataUrl: string) => Promise<boolean>;
@@ -52,6 +54,7 @@ const empty: CreatePrintProductDto = {
   publicPrice: null,
   active: true,
   publicVisible: true,
+  hiddenFor: [],
   notes: "",
 };
 
@@ -61,11 +64,13 @@ export default function ProductDialog({
   onClose,
   onSave,
   editingProduct,
+  resellers = [],
   isSubmitting,
   onAddPhoto,
   onDeletePhoto,
   onSetCover,
 }: ProductDialogProps) {
+  const activeResellers = resellers.filter((r) => r.active);
   const [form, setForm] = useState<CreatePrintProductDto>(empty);
   const [breakdown, setBreakdown] = useState<ColorBreakdownEntry[]>([]);
 
@@ -88,6 +93,7 @@ export default function ProductDialog({
               publicPrice: editingProduct.publicPrice ?? null,
               active: editingProduct.active,
               publicVisible: editingProduct.publicVisible ?? true,
+              hiddenFor: editingProduct.hiddenFor ?? [],
               notes: editingProduct.notes || "",
             }
           : empty,
@@ -311,7 +317,7 @@ export default function ProductDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="p-price-override">Precio a Marcelito</Label>
+                <Label htmlFor="p-price-override">Precio a revendedores</Label>
                 <Input
                   id="p-price-override"
                   type="number"
@@ -363,19 +369,51 @@ export default function ProductDialog({
               onCheckedChange={(v) => setForm({ ...form, active: v })}
             />
           </div>
-          <div className="flex items-center justify-between rounded-lg border p-3">
-            <Label htmlFor="p-public" className="text-sm">
-              Visible para Marcelito
-            </Label>
-            <Switch
-              id="p-public"
-              checked={form.publicVisible ?? true}
-              onCheckedChange={(v) => setForm({ ...form, publicVisible: v })}
-            />
+          <div className="space-y-2 rounded-lg border p-3">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="p-public" className="text-sm">
+                Visible en el catálogo de revendedores
+              </Label>
+              <Switch
+                id="p-public"
+                checked={form.publicVisible ?? true}
+                onCheckedChange={(v) => setForm({ ...form, publicVisible: v })}
+              />
+            </div>
+            {/* Con el catalogo prendido se puede esconder a alguno puntual */}
+            {(form.publicVisible ?? true) &&
+              activeResellers.map((r) => {
+                const hidden = (form.hiddenFor ?? []).includes(r.id);
+                return (
+                  <div
+                    key={r.id}
+                    className="flex items-center justify-between pl-3"
+                  >
+                    <Label
+                      htmlFor={`p-vis-${r.id}`}
+                      className="text-sm text-muted-foreground"
+                    >
+                      Lo ve {r.name}
+                    </Label>
+                    <Switch
+                      id={`p-vis-${r.id}`}
+                      checked={!hidden}
+                      onCheckedChange={(v) =>
+                        setForm({
+                          ...form,
+                          hiddenFor: v
+                            ? (form.hiddenFor ?? []).filter((id) => id !== r.id)
+                            : [...(form.hiddenFor ?? []), r.id],
+                        })
+                      }
+                    />
+                  </div>
+                );
+              })}
           </div>
           {editingProduct && onAddPhoto && onDeletePhoto && onSetCover && (
             <div className="space-y-1.5">
-              <Label>Fotos (la portada es la que ve Marcelito)</Label>
+              <Label>Fotos (la portada es la que ven los revendedores)</Label>
               <PhotoManager
                 productId={editingProduct.id}
                 photos={editingProduct.photos ?? []}

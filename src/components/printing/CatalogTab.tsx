@@ -11,10 +11,15 @@ import { fmtARS } from "@/lib/utils";
 import { uploadUrl } from "@/lib/api-client";
 import { Package, Plus, Pencil, Trash2, ExternalLink } from "lucide-react";
 import ProductDialog from "./ProductDialog";
-import type { CreatePrintProductDto, PrintProduct } from "@/types/printing";
+import type {
+  CreatePrintProductDto,
+  PrintProduct,
+  PrintReseller,
+} from "@/types/printing";
 
 interface CatalogTabProps {
   products: PrintProduct[];
+  resellers: PrintReseller[];
   isSubmitting: boolean;
   onCreate: (data: CreatePrintProductDto) => Promise<boolean>;
   onUpdate: (id: string, data: CreatePrintProductDto) => Promise<boolean>;
@@ -30,6 +35,7 @@ interface CatalogTabProps {
 
 export default function CatalogTab({
   products,
+  resellers,
   isSubmitting,
   onCreate,
   onUpdate,
@@ -38,6 +44,11 @@ export default function CatalogTab({
   onDeletePhoto,
   onSetCover,
 }: CatalogTabProps) {
+  // Nombres de los revendedores activos a los que se les oculta el producto.
+  const hiddenNames = (p: PrintProduct) =>
+    resellers
+      .filter((r) => r.active && (p.hiddenFor ?? []).includes(r.id))
+      .map((r) => r.name);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<PrintProduct | null>(null);
   const deleteConfirm = useConfirm<PrintProduct>();
@@ -100,10 +111,16 @@ export default function CatalogTab({
                         inactivo
                       </Badge>
                     )}
-                    {p.publicVisible === false && (
+                    {p.publicVisible === false ? (
                       <Badge variant="outline" className="shrink-0">
-                        oculto a Marcelito
+                        oculto a revendedores
                       </Badge>
+                    ) : (
+                      hiddenNames(p).length > 0 && (
+                        <Badge variant="outline" className="shrink-0">
+                          oculto a {hiddenNames(p).join(", ")}
+                        </Badge>
+                      )
                     )}
                     {!p.licenseOk && (
                       <Badge variant="warning" className="shrink-0">
@@ -153,7 +170,7 @@ export default function CatalogTab({
                 </div>
                 <div className="rounded-md bg-muted/50 p-1.5">
                   <div className="text-[10px] text-muted-foreground">
-                    A Marcelito{p.priceIsManual ? " ✎" : ""}
+                    A revendedor{p.priceIsManual ? " ✎" : ""}
                   </div>
                   <div className="font-mono text-xs font-bold tabular-nums">
                     {fmtARS(p.priceToMarcelito)}
@@ -186,6 +203,7 @@ export default function CatalogTab({
         editingProduct={
           editing ? (products.find((p) => p.id === editing.id) ?? editing) : null
         }
+        resellers={resellers}
         isSubmitting={isSubmitting}
         onAddPhoto={onAddPhoto}
         onDeletePhoto={onDeletePhoto}

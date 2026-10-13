@@ -176,6 +176,7 @@ export default function NegocioPage() {
       {tab === "catalogo" && (
         <CatalogTab
           products={products}
+          resellers={resellers}
           isSubmitting={isSubmitting}
           onCreate={createProduct}
           onUpdate={updateProduct}

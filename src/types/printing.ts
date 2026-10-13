@@ -32,7 +32,8 @@ export interface PrintProduct {
   publicPrice?: number | null;
   colorBreakdown?: ColorBreakdownEntry[] | null;
   active: boolean;
-  publicVisible?: boolean; // false = oculto en el catalogo publico de Marcelito
+  publicVisible?: boolean; // false = oculto en el catalogo de TODOS los revendedores
+  hiddenFor?: string[] | null; // ids de revendedores que no lo ven (el resto si)
   notes?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -160,6 +161,7 @@ export interface CreatePrintProductDto {
   colorBreakdown?: ColorBreakdownEntry[] | null;
   active?: boolean;
   publicVisible?: boolean;
+  hiddenFor?: string[] | null;
   notes?: string;
 }
 
