@@ -16,7 +16,10 @@ const badgeVariants = cva(
           "border-transparent bg-destructive/12 text-destructive",
         // Semánticos tintados (12-14%): día ganado / parcial / agua / IA
         success: "border-transparent bg-success/12 text-success",
-        warning: "border-transparent bg-warning/16 text-warning-foreground dark:text-warning",
+        // /15 y no /16: 16 no esta en la escala de opacidad y no generaba fondo.
+        // El texto claro en modo oscuro lo da .badge-warning (globals.css).
+        warning:
+          "badge-warning border-transparent bg-warning/15 text-warning-foreground",
         info: "border-transparent bg-info/12 text-info",
         outline: "text-foreground",
       },

@@ -305,6 +305,14 @@ input[type="time"] {
   @apply border-t border-border;
 }
 
+/* Etiqueta de aviso en modo oscuro: texto ambar sobre el tinte, no el marron
+   de --warning-foreground (pensado para ir sobre ambar pleno), que sobre
+   fondo oscuro no se lee. Va como regla propia porque las variantes dark:
+   de Tailwind hoy no se aplican (darkMode mal configurado). */
+.dark .badge-warning {
+  color: hsl(var(--warning));
+}
+
 /* ── Marca LY Juegos (Manual de Marca v1.1) ────────────────────────────────
    Todo lo que es del negocio de juegos (catalogo publico de revendedores y
    la seccion Negocio) lleva .ly-brand: pisa los tokens del design system con
