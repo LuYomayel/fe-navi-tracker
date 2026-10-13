@@ -38,6 +38,61 @@ export default function CatalogoPublicoPage() {
   );
 }
 
+// Marca LY Juegos: azul del sello y version mini del logo (monograma LY sobre
+// el circulo), tal cual el manual de marca. SVG inline: sin request extra.
+const LY_BLUE = "#3E94F7";
+
+function LyJuegosMark({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="344 335 1340 1340"
+      className={className}
+      role="img"
+      aria-label="LY Juegos"
+    >
+      <circle cx="1014" cy="1005" r="670" fill={LY_BLUE} />
+      <path
+        fill="none"
+        stroke="#ffffff"
+        strokeWidth="126"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M 786 666 L 786 1160 L 1061 1160"
+      />
+      <path
+        fill="none"
+        stroke={LY_BLUE}
+        strokeWidth="171"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M 935 854 L 1089 1073 L 1242 854"
+      />
+      <path
+        fill="none"
+        stroke={LY_BLUE}
+        strokeWidth="171"
+        strokeLinecap="round"
+        d="M 1089 1073 L 1089 1344"
+      />
+      <path
+        fill="none"
+        stroke="#ffffff"
+        strokeWidth="126"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M 935 854 L 1089 1073 L 1242 854"
+      />
+      <path
+        fill="none"
+        stroke="#ffffff"
+        strokeWidth="126"
+        strokeLinecap="round"
+        d="M 1089 1073 L 1089 1344"
+      />
+    </svg>
+  );
+}
+
 function CatalogoPublico() {
   const token = useSearchParams().get("t") ?? "";
   const [view, setView] = useState<"catalogo" | "pedidos">("catalogo");
@@ -163,12 +218,17 @@ function CatalogoPublico() {
     <main className="min-h-screen bg-background px-4 py-6 pb-28">
       <div className="mx-auto max-w-md">
         <header className="mb-4">
-          <h1 className="text-2xl font-bold tracking-tight">
-            Imprimime <span className="text-primary">3D</span>
-          </h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Juegos didácticos en impresión 3D · precios en pesos
-          </p>
+          <div className="flex items-center gap-3">
+            <LyJuegosMark className="h-12 w-12 shrink-0" />
+            <div>
+              <h1 className="text-2xl font-bold leading-tight tracking-tight">
+                LY <span style={{ color: LY_BLUE }}>Juegos</span>
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Juegos impresos en 3D · precios en pesos
+              </p>
+            </div>
+          </div>
           {resellerName && (
             <p className="mt-1 text-sm font-medium">
               Hola, {resellerName} 👋 Este es tu link: acá ves solo tus pedidos.
