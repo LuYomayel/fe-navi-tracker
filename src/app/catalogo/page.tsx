@@ -38,60 +38,12 @@ export default function CatalogoPublicoPage() {
   );
 }
 
-// Marca LY Juegos: azul del sello y version mini del logo (monograma LY sobre
-// el circulo), tal cual el manual de marca. SVG inline: sin request extra.
-const LY_BLUE = "#3E94F7";
-
-function LyJuegosMark({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="344 335 1340 1340"
-      className={className}
-      role="img"
-      aria-label="LY Juegos"
-    >
-      <circle cx="1014" cy="1005" r="670" fill={LY_BLUE} />
-      <path
-        fill="none"
-        stroke="#ffffff"
-        strokeWidth="126"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M 786 666 L 786 1160 L 1061 1160"
-      />
-      <path
-        fill="none"
-        stroke={LY_BLUE}
-        strokeWidth="171"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M 935 854 L 1089 1073 L 1242 854"
-      />
-      <path
-        fill="none"
-        stroke={LY_BLUE}
-        strokeWidth="171"
-        strokeLinecap="round"
-        d="M 1089 1073 L 1089 1344"
-      />
-      <path
-        fill="none"
-        stroke="#ffffff"
-        strokeWidth="126"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M 935 854 L 1089 1073 L 1242 854"
-      />
-      <path
-        fill="none"
-        stroke="#ffffff"
-        strokeWidth="126"
-        strokeLinecap="round"
-        d="M 1089 1073 L 1089 1344"
-      />
-    </svg>
-  );
-}
+// Marca LY Juegos (Manual de Marca v1.1). El sello completo va a 96 px, su
+// tamano minimo; el amarillo foco es acento chico: solo el precio.
+const LY_TITLE_FONT = "var(--font-ly-title), 'Nunito', sans-serif";
+const LY_AZUL = "#3E94F7"; // exacto: el circulo del sello se funde con la banda
+const LY_FOCO = "#FFC72C";
+const LY_MARINO = "#16324F";
 
 function CatalogoPublico() {
   const token = useSearchParams().get("t") ?? "";
@@ -218,22 +170,37 @@ function CatalogoPublico() {
     <main className="min-h-screen bg-background px-4 py-6 pb-28">
       <div className="mx-auto max-w-md">
         <header className="mb-4">
-          <div className="flex items-center gap-3">
-            <LyJuegosMark className="h-12 w-12 shrink-0" />
+          {/* Banda azul con el sello a la izquierda (plantilla del manual) */}
+          <div
+            className="flex items-center gap-4 rounded-2xl p-3 text-white"
+            style={{ backgroundColor: LY_AZUL }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/ly-juegos-sello.png"
+              alt="LY Juegos"
+              width={96}
+              height={96}
+              className="h-24 w-24 shrink-0"
+            />
             <div>
-              <h1 className="text-2xl font-bold leading-tight tracking-tight">
-                LY <span style={{ color: LY_BLUE }}>Juegos</span>
+              <h1
+                className="text-[26px] leading-tight"
+                style={{ fontFamily: LY_TITLE_FONT }}
+              >
+                LY Juegos
               </h1>
-              <p className="text-sm text-muted-foreground">
-                Juegos impresos en 3D · precios en pesos
+              <p className="text-[15px] font-bold leading-snug">
+                Juegos de ingenio hechos en Argentina
               </p>
             </div>
           </div>
-          {resellerName && (
-            <p className="mt-1 text-sm font-medium">
-              Hola, {resellerName} 👋 Este es tu link: acá ves solo tus pedidos.
-            </p>
-          )}
+          <p className="mt-3 text-sm text-muted-foreground">
+            {resellerName
+              ? `Hola, ${resellerName}. Este es tu link: acá ves solo tus pedidos. `
+              : ""}
+            Precios en pesos.
+          </p>
         </header>
 
         {/* Toggle catálogo / pedidos */}
@@ -297,15 +264,20 @@ function CatalogoPublico() {
                             alt={p.name}
                             loading="lazy"
                             onClick={() => setLightbox(`${API_BASE_URL}${url}`)}
-                            className={`h-36 shrink-0 cursor-zoom-in rounded-md object-cover ${
-                              p.photos.length === 1 ? "w-full" : "w-36"
+                            className={`shrink-0 cursor-zoom-in rounded-md object-cover ${
+                              p.photos.length === 1
+                                ? "aspect-[4/3] w-full"
+                                : "h-36 w-36"
                             }`}
                           />
                         ))}
                       </div>
                     )}
                     <div className="p-4">
-                      <h2 className="text-[15px] font-semibold leading-snug">
+                      <h2
+                        className="text-[17px] leading-snug"
+                        style={{ fontFamily: LY_TITLE_FONT }}
+                      >
                         {p.name}
                       </h2>
                       <p className="mt-0.5 text-xs text-muted-foreground">
@@ -318,7 +290,10 @@ function CatalogoPublico() {
                       <dl className="mt-3 space-y-1 text-sm">
                         <div className="flex justify-between">
                           <dt className="text-muted-foreground">Te cuesta</dt>
-                          <dd className="font-mono font-semibold tabular-nums">
+                          <dd
+                            className="rounded-full px-2.5 py-0.5 font-bold tabular-nums"
+                            style={{ backgroundColor: LY_FOCO, color: LY_MARINO }}
+                          >
                             {fmtARS(p.priceToMarcelito)}
                           </dd>
                         </div>
