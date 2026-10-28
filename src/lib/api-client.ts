@@ -563,7 +563,12 @@ export const api = {
       reassign: (
         id: string,
         filamentsUsed: { color?: string; filamentId?: string; grams?: number }[],
-      ) => apiClient.put(`/printing/jobs/${id}/consumos`, { filamentsUsed }),
+        learnHex = false,
+      ) =>
+        apiClient.put(`/printing/jobs/${id}/consumos`, {
+          filamentsUsed,
+          learnHex,
+        }),
     },
     bambu: {
       status: () => apiClient.get("/printing/bambu/status"),

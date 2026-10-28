@@ -47,7 +47,11 @@ interface FilamentsTabProps {
   onDeleteJob: (id: string) => Promise<boolean>;
   onLinkJob: (id: string, productId: string | null) => Promise<boolean>;
   onLearnJob: (id: string, units: number) => Promise<boolean>;
-  onReassignJob: (id: string, entries: ReassignJobEntry[]) => Promise<boolean>;
+  onReassignJob: (
+    id: string,
+    entries: ReassignJobEntry[],
+    learnHex: boolean,
+  ) => Promise<boolean>;
   onSyncBambu: () => Promise<boolean>;
 }
 

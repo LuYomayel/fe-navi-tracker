@@ -858,13 +858,23 @@ export function usePrinting() {
     async (
       id: string,
       entries: { color?: string; filamentId?: string; grams?: number }[],
+      learnHex = false,
     ) => {
       try {
         setIsSubmitting(true);
-        const res = await api.printing.jobs.reassign(id, entries);
+        const res = await api.printing.jobs.reassign(id, entries, learnHex);
         if (res.success) {
           await reloadJobsAndStock();
-          toast.success("Impresión corregida (stock recalculado)");
+          const learned =
+            ((res.data as { learned?: { color: string; hex: string }[] })
+              ?.learned ?? []);
+          toast.success(
+            learned.length
+              ? `Impresión corregida. Recordado: ${learned
+                  .map((l) => `${l.hex} = ${l.color}`)
+                  .join(", ")}`
+              : "Impresión corregida (stock recalculado)",
+          );
           return true;
         }
         return false;

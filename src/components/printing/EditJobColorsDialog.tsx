@@ -16,7 +16,11 @@ import type { PrintJob, ReassignJobEntry } from "@/types/printing";
 interface EditJobColorsDialogProps {
   job: PrintJob | null;
   onClose: () => void;
-  onSave: (id: string, entries: ReassignJobEntry[]) => Promise<boolean>;
+  onSave: (
+    id: string,
+    entries: ReassignJobEntry[],
+    learnHex: boolean,
+  ) => Promise<boolean>;
   isSubmitting?: boolean;
 }
 
@@ -38,9 +42,11 @@ export default function EditJobColorsDialog({
   isSubmitting,
 }: EditJobColorsDialogProps) {
   const [rows, setRows] = useState<Row[]>([]);
+  const [learnHex, setLearnHex] = useState(false);
 
   useEffect(() => {
     if (!job) return;
+    setLearnHex(false);
     const used = job.filamentsUsed ?? [];
     setRows(
       used.map((e, i) => ({
@@ -70,6 +76,7 @@ export default function EditJobColorsDialog({
     const ok = await onSave(
       job.id,
       rows.map((r) => ({ color: r.color, grams: Number(r.grams) })),
+      learnHex,
     );
     if (ok) onClose();
   };
@@ -141,6 +148,25 @@ export default function EditJobColorsDialog({
               </div>
             );
           })}
+          {rows.some((r) => r.reportedHex) && (
+            <label className="flex cursor-pointer items-start gap-2 rounded-md border p-2.5 text-xs">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 shrink-0"
+                checked={learnHex}
+                onChange={(e) => setLearnHex(e.target.checked)}
+              />
+              <span>
+                <span className="font-semibold">Recordar este color</span>
+                <span className="block text-muted-foreground">
+                  El color que mandó la impresora queda guardado en los rollos
+                  de ese color y la próxima vez se descuenta solo. No lo
+                  tildes si solo te olvidaste de cambiar el color del slot en
+                  Handy.
+                </span>
+              </span>
+            </label>
+          )}
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="outline" onClick={onClose}>
               Cancelar
