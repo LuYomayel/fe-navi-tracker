@@ -93,6 +93,7 @@ export default function FilamentsTab({
   const [learning, setLearning] = useState<PrintJob | null>(null);
   const [fixingColors, setFixingColors] = useState<PrintJob | null>(null);
   const [assigningParts, setAssigningParts] = useState<PrintJob | null>(null);
+  const [jobsShown, setJobsShown] = useState(10);
   const [learnUnits, setLearnUnits] = useState(1);
   const deleteConfirm = useConfirm<Filament>();
   const finishConfirm = useConfirm<Filament>();
@@ -192,7 +193,7 @@ export default function FilamentsTab({
           </Card>
         ) : (
           <div className="space-y-1.5">
-            {jobs.slice(0, 10).map((j) => {
+            {jobs.slice(0, jobsShown).map((j) => {
               const [, m, d] = j.date.split("-");
               return (
                 <Card
@@ -289,6 +290,16 @@ export default function FilamentsTab({
                 </Card>
               );
             })}
+            {jobs.length > jobsShown && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full"
+                onClick={() => setJobsShown((n) => n + 20)}
+              >
+                Ver más impresiones ({jobs.length - jobsShown})
+              </Button>
+            )}
           </div>
         )}
       </div>
