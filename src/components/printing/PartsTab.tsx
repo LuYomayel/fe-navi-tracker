@@ -44,6 +44,24 @@ const PALETTE_HEX: Record<string, string> = {
   "verde militar": "#5b6b3a",
 };
 
+const isPaletteColor = (c: string) =>
+  (FILAMENT_COLORS as readonly string[]).includes(c);
+
+/** Fondo del circulo: un color, o mitades si es combinacion ("rojo+blanco"). */
+function swatchStyle(
+  color: string,
+  hexOf: (c: string) => string | undefined,
+): React.CSSProperties | undefined {
+  const parts = color.split("+").map((c) => hexOf(c.trim()));
+  if (parts.some((h) => !h)) return undefined;
+  if (parts.length === 1) return { backgroundColor: parts[0] };
+  const step = 100 / parts.length;
+  const stops = parts
+    .map((h, i) => `${h} ${i * step}% ${(i + 1) * step}%`)
+    .join(", ");
+  return { background: `linear-gradient(90deg, ${stops})` };
+}
+
 interface PartsTabProps {
   parts: PartsOverview | null;
   isLoading: boolean;
@@ -226,7 +244,7 @@ export default function PartsTab({
                             >
                               <span
                                 className="h-3 w-3 shrink-0 rounded-full border border-border"
-                                style={{ backgroundColor: hexOf(s.color) }}
+                                style={swatchStyle(s.color, hexOf)}
                               />
                               <span className="font-mono font-bold">{s.qty}</span>
                               <span className="sr-only">{s.color}</span>
@@ -297,7 +315,7 @@ function AdjustPartDialog({
   const delta = typeof qty === "number" ? qty : 0;
   const valid =
     !!target &&
-    (FILAMENT_COLORS as readonly string[]).includes(color) &&
+    color.split("+").every((c) => isPaletteColor(c.trim())) &&
     Number.isInteger(delta) &&
     delta !== 0;
 
@@ -329,7 +347,7 @@ function AdjustPartDialog({
           <div className="flex items-center gap-2">
             <span
               className="h-6 w-6 shrink-0 rounded-full border"
-              style={color ? { backgroundColor: hexOf(color) } : undefined}
+              style={color ? swatchStyle(color, hexOf) : undefined}
             />
             <select
               aria-label="Color"
@@ -338,6 +356,9 @@ function AdjustPartDialog({
               onChange={(e) => setColor(e.target.value)}
             >
               <option value="">Elegí el color…</option>
+              {target && !isPaletteColor(target.color) && target.color && (
+                <option value={target.color}>{target.color}</option>
+              )}
               {FILAMENT_COLORS.map((c) => (
                 <option key={c} value={c}>
                   {c}
