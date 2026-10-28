@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import FilamentDialog from "./FilamentDialog";
 import PrintJobDialog from "./PrintJobDialog";
+import EditJobColorsDialog from "./EditJobColorsDialog";
 import type {
   CreateFilamentDto,
   CreatePrintJobDto,
@@ -28,6 +29,7 @@ import type {
   PrintProduct,
   StockSummary,
   BambuStatus,
+  ReassignJobEntry,
 } from "@/types/printing";
 
 interface FilamentsTabProps {
@@ -45,6 +47,7 @@ interface FilamentsTabProps {
   onDeleteJob: (id: string) => Promise<boolean>;
   onLinkJob: (id: string, productId: string | null) => Promise<boolean>;
   onLearnJob: (id: string, units: number) => Promise<boolean>;
+  onReassignJob: (id: string, entries: ReassignJobEntry[]) => Promise<boolean>;
   onSyncBambu: () => Promise<boolean>;
 }
 
@@ -63,12 +66,14 @@ export default function FilamentsTab({
   onDeleteJob,
   onLinkJob,
   onLearnJob,
+  onReassignJob,
   onSyncBambu,
 }: FilamentsTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [jobDialogOpen, setJobDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Filament | null>(null);
   const [learning, setLearning] = useState<PrintJob | null>(null);
+  const [fixingColors, setFixingColors] = useState<PrintJob | null>(null);
   const [learnUnits, setLearnUnits] = useState(1);
   const deleteConfirm = useConfirm<Filament>();
   const finishConfirm = useConfirm<Filament>();
@@ -186,9 +191,18 @@ export default function FilamentsTab({
                       {d}/{m}
                       {j.grams ? ` · ${Math.round(j.grams)}g` : ""}
                       {j.hours ? ` · ${j.hours}h` : ""}
+                      {j.printer ? ` · ${j.printer}` : ""}
                       {j.product ? ` · ${j.product.name}` : ""}
                       {!j.stockApplied ? " · sin descontar" : ""}
                     </div>
+                    {(j.deducted?.length ?? 0) > 0 && (
+                      <div className="truncate text-[11px] text-muted-foreground">
+                        descontó{" "}
+                        {j.deducted!
+                          .map((d) => `${Math.round(d.grams)}g ${d.color ?? "?"}`)
+                          .join(" + ")}
+                      </div>
+                    )}
                   </div>
                   <div className="flex shrink-0 items-center gap-0.5">
                     {!j.productId && (
@@ -218,6 +232,13 @@ export default function FilamentsTab({
                           setLearning(j);
                           setLearnUnits(1);
                         }}
+                      />
+                    )}
+                    {(j.filamentsUsed?.length ?? 0) > 0 && (
+                      <ActionIconButton
+                        icon={Pencil}
+                        aria-label="Corregir color"
+                        onClick={() => setFixingColors(j)}
                       />
                     )}
                     <ActionIconButton
@@ -369,6 +390,13 @@ export default function FilamentsTab({
           finishConfirm.onConfirm();
           if (finishConfirm.payload) onFinish(finishConfirm.payload.id);
         }}
+      />
+
+      <EditJobColorsDialog
+        job={fixingColors}
+        onClose={() => setFixingColors(null)}
+        onSave={onReassignJob}
+        isSubmitting={isSubmitting}
       />
 
       <ConfirmDialog

@@ -854,6 +854,31 @@ export function usePrinting() {
     [reloadJobsAndStock],
   );
 
+  const reassignJob = useCallback(
+    async (
+      id: string,
+      entries: { color?: string; filamentId?: string; grams?: number }[],
+    ) => {
+      try {
+        setIsSubmitting(true);
+        const res = await api.printing.jobs.reassign(id, entries);
+        if (res.success) {
+          await reloadJobsAndStock();
+          toast.success("Impresión corregida (stock recalculado)");
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error corrigiendo impresión:", error);
+        toast.error(error instanceof Error ? error.message : "No se pudo corregir");
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [reloadJobsAndStock],
+  );
+
   const linkJob = useCallback(
     async (id: string, productId: string | null) => {
       try {
@@ -994,6 +1019,7 @@ export function usePrinting() {
     deleteJob,
     linkJob,
     learnJob,
+    reassignJob,
     connectBambu,
     disconnectBambu,
     syncBambu,

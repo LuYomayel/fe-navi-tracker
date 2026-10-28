@@ -50,6 +50,25 @@ export interface ColorBreakdownEntry {
   color?: string | null;
   colorHex?: string | null;
   grams: number;
+  /** Solo en impresiones corregidas: el hex que habia reportado Bambu. */
+  reportedHex?: string | null;
+  filamentId?: string | null;
+}
+
+/** De que rollo/color desconto una impresion (lo arma el back). */
+export interface PrintJobDeduction {
+  filamentId: string;
+  grams: number;
+  color: string | null;
+  brand: string | null;
+  material: string | null;
+}
+
+/** Consumo corregido a mano de una impresion. */
+export interface ReassignJobEntry {
+  color?: string;
+  filamentId?: string;
+  grams?: number;
 }
 
 export interface PrintProductPhoto {
@@ -332,6 +351,8 @@ export interface PrintJob {
   stockApplied: boolean;
   notes?: string | null;
   createdAt: string;
+  printer?: string | null; // "P1S" | "A1 Mini" (sale de la serie que guarda el sync)
+  deducted?: PrintJobDeduction[];
 }
 
 export interface BambuStatus {

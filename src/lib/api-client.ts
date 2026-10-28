@@ -560,6 +560,10 @@ export const api = {
         apiClient.patch(`/printing/jobs/${id}`, { productId }),
       learn: (id: string, units: number) =>
         apiClient.post(`/printing/jobs/${id}/learn`, { units }),
+      reassign: (
+        id: string,
+        filamentsUsed: { color?: string; filamentId?: string; grams?: number }[],
+      ) => apiClient.put(`/printing/jobs/${id}/consumos`, { filamentsUsed }),
     },
     bambu: {
       status: () => apiClient.get("/printing/bambu/status"),

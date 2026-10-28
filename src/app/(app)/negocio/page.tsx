@@ -78,6 +78,7 @@ export default function NegocioPage() {
     deleteJob,
     linkJob,
     learnJob,
+    reassignJob,
     connectBambu,
     disconnectBambu,
     syncBambu,
@@ -215,6 +216,7 @@ export default function NegocioPage() {
           onDeleteJob={deleteJob}
           onLinkJob={linkJob}
           onLearnJob={learnJob}
+          onReassignJob={reassignJob}
           onSyncBambu={syncBambu}
         />
       )}
