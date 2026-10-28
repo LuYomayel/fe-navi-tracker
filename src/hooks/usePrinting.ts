@@ -12,6 +12,7 @@ import type {
   CreatePrintProductDto,
   CreatePrintSaleDto,
   Filament,
+  JobPartOutput,
   PartMoveDto,
   PartsOverview,
   PrintJob,
@@ -134,6 +135,39 @@ export function usePrinting() {
       } catch (error) {
         console.error("Error ajustando piezas:", error);
         toast.error(error instanceof Error ? error.message : "No se pudo ajustar");
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [loadParts],
+  );
+
+  const setJobParts = useCallback(
+    async (id: string, outputs: JobPartOutput[], remember: boolean) => {
+      try {
+        setIsSubmitting(true);
+        const res = await api.printing.jobs.setParts(id, outputs, remember);
+        if (res.success) {
+          const added =
+            (res.data as { added?: { qty: number }[] })?.added ?? [];
+          const total = added.reduce((a, m) => a + m.qty, 0);
+          const jRes = await api.printing.jobs.list();
+          if (jRes.success) setJobs((jRes.data as PrintJob[]) ?? []);
+          await loadParts();
+          toast.success(
+            `Se sumaron ${total} pieza${total === 1 ? "" : "s"}${
+              remember ? " · placa recordada" : ""
+            }`,
+          );
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error cargando piezas de la impresión:", error);
+        toast.error(
+          error instanceof Error ? error.message : "No se pudieron cargar las piezas",
+        );
         return false;
       } finally {
         setIsSubmitting(false);
@@ -1057,6 +1091,7 @@ export function usePrinting() {
     partsLoading,
     loadParts,
     movePart,
+    setJobParts,
     isLoading,
     isSubmitting,
     loadAll,

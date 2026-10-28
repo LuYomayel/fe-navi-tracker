@@ -560,6 +560,18 @@ export const api = {
         apiClient.patch(`/printing/jobs/${id}`, { productId }),
       learn: (id: string, units: number) =>
         apiClient.post(`/printing/jobs/${id}/learn`, { units }),
+      setParts: (
+        id: string,
+        outputs: {
+          partId: string;
+          qty: number;
+          color?: string;
+          perColorLine?: boolean;
+          combo?: boolean;
+        }[],
+        remember = false,
+      ) =>
+        apiClient.post(`/printing/jobs/${id}/parts`, { outputs, remember }),
       reassign: (
         id: string,
         filamentsUsed: { color?: string; filamentId?: string; grams?: number }[],

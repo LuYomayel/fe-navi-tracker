@@ -354,6 +354,21 @@ export interface PrintJob {
   printer?: string | null; // "P1S" | "A1 Mini" (sale de la serie que guarda el sync)
   deducted?: PrintJobDeduction[];
   partsAdded?: PrintJobPartAdded[];
+  partsOutputs?: JobPartOutput[] | null; // lo que se cargo que salio (se recalcula si cambia el color)
+  plateKey?: string | null; // designId:plateIndex, para recordar la placa
+}
+
+/**
+ * Una pieza que salio de una impresion. Sin color = el de la impresion (si
+ * tiene uno solo); perColorLine = qty por CADA color; combo = una pieza con
+ * todos los colores ("rojo+blanco").
+ */
+export interface JobPartOutput {
+  partId: string;
+  qty: number;
+  color?: string;
+  perColorLine?: boolean;
+  combo?: boolean;
 }
 
 export interface PrintJobPartAdded {
