@@ -570,6 +570,19 @@ export const api = {
           learnHex,
         }),
     },
+    parts: {
+      list: () => apiClient.get("/printing/parts"),
+      move: (
+        moves: {
+          partId: string;
+          color: string;
+          qty: number;
+          reason?: "ajuste" | "impresion";
+          jobId?: string;
+          notes?: string;
+        }[],
+      ) => apiClient.post("/printing/parts/moves", { moves }),
+    },
     bambu: {
       status: () => apiClient.get("/printing/bambu/status"),
       connect: (token: string, region?: "global" | "china") =>

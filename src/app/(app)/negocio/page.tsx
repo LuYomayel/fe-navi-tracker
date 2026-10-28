@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { PillToggle } from "@/components/ui/pill-toggle";
@@ -11,18 +11,27 @@ import FilamentsTab from "@/components/printing/FilamentsTab";
 import SalesTab from "@/components/printing/SalesTab";
 import BalanceTab from "@/components/printing/BalanceTab";
 import OrdersTab from "@/components/printing/OrdersTab";
+import PartsTab from "@/components/printing/PartsTab";
 import SettingsDialog from "@/components/printing/SettingsDialog";
 import { fmtARS } from "@/lib/utils";
 import { LY_BRAND_CLASS } from "@/lib/ly-brand";
+import { cssHex } from "@/lib/filament-colors";
 import { Settings } from "lucide-react";
 
-type NegocioTab = "balance" | "pedidos" | "ventas" | "catalogo" | "filamentos";
+type NegocioTab =
+  | "balance"
+  | "pedidos"
+  | "ventas"
+  | "catalogo"
+  | "piezas"
+  | "filamentos";
 
 const isTab = (v: string | null): v is NegocioTab =>
   v === "balance" ||
   v === "pedidos" ||
   v === "ventas" ||
   v === "catalogo" ||
+  v === "piezas" ||
   v === "filamentos";
 
 /**
@@ -46,6 +55,10 @@ export default function NegocioPage() {
     stock,
     jobs,
     bambuStatus,
+    parts,
+    partsLoading,
+    loadParts,
+    movePart,
     isLoading,
     isSubmitting,
     loadAll,
@@ -97,12 +110,28 @@ export default function NegocioPage() {
     },
     { value: "ventas", label: "Ventas" },
     { value: "catalogo", label: "Catálogo" },
+    { value: "piezas", label: "Piezas" },
     { value: "filamentos", label: "Filamentos" },
   ];
 
   useEffect(() => {
     loadAll();
   }, [loadAll]);
+
+  // Las piezas se piden al entrar a la pestaña (y se refrescan cada vez).
+  useEffect(() => {
+    if (tab === "piezas") loadParts();
+  }, [tab, loadParts]);
+
+  // Hex real de cada color, el de los rollos (para los circulos de piezas)
+  const colorHex = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const c of stock?.colors ?? []) {
+      const hex = cssHex(c.colorHex);
+      if (hex) map[c.color] = hex;
+    }
+    return map;
+  }, [stock]);
 
   useEffect(() => {
     const t = searchParams.get("tab");
@@ -197,6 +226,16 @@ export default function NegocioPage() {
           onAddPhoto={addPhoto}
           onDeletePhoto={deletePhoto}
           onSetCover={setCoverPhoto}
+        />
+      )}
+
+      {tab === "piezas" && (
+        <PartsTab
+          parts={parts}
+          isLoading={partsLoading}
+          isSubmitting={isSubmitting}
+          colorHex={colorHex}
+          onMove={movePart}
         />
       )}
 

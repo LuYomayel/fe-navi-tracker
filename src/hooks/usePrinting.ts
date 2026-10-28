@@ -12,6 +12,8 @@ import type {
   CreatePrintProductDto,
   CreatePrintSaleDto,
   Filament,
+  PartMoveDto,
+  PartsOverview,
   PrintJob,
   PrintOrder,
   PrintOrderStatus,
@@ -45,6 +47,8 @@ export function usePrinting() {
   const [stock, setStock] = useState<StockSummary | null>(null);
   const [jobs, setJobs] = useState<PrintJob[]>([]);
   const [bambuStatus, setBambuStatus] = useState<BambuStatus | null>(null);
+  const [parts, setParts] = useState<PartsOverview | null>(null);
+  const [partsLoading, setPartsLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -97,6 +101,46 @@ export function usePrinting() {
       setIsLoading(false);
     }
   }, []);
+
+  // ── Piezas ────────────────────────────────────────────────
+  // Aparte de loadAll: se pide al abrir la pestaña, asi un error de piezas
+  // no ensucia el resto de LY Juegos.
+  const loadParts = useCallback(async () => {
+    try {
+      setPartsLoading(true);
+      const res = await api.printing.parts.list();
+      if (res.success) setParts(res.data as PartsOverview);
+    } catch (error) {
+      console.error("Error cargando piezas:", error);
+      toast.error("No se pudo cargar el stock de piezas");
+    } finally {
+      setPartsLoading(false);
+    }
+  }, []);
+
+  const movePart = useCallback(
+    async (moves: PartMoveDto[]) => {
+      try {
+        setIsSubmitting(true);
+        const res = await api.printing.parts.move(
+          moves.map((m) => ({ reason: "ajuste" as const, ...m })),
+        );
+        if (res.success) {
+          // El POST devuelve solo el stock; "podés armar" cambia tambien.
+          await loadParts();
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error ajustando piezas:", error);
+        toast.error(error instanceof Error ? error.message : "No se pudo ajustar");
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [loadParts],
+  );
 
   const reloadSummary = useCallback(async () => {
     const r = await api.printing.summary();
@@ -1009,6 +1053,10 @@ export function usePrinting() {
     stock,
     jobs,
     bambuStatus,
+    parts,
+    partsLoading,
+    loadParts,
+    movePart,
     isLoading,
     isSubmitting,
     loadAll,

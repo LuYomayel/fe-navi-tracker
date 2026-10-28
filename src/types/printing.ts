@@ -353,6 +353,14 @@ export interface PrintJob {
   createdAt: string;
   printer?: string | null; // "P1S" | "A1 Mini" (sale de la serie que guarda el sync)
   deducted?: PrintJobDeduction[];
+  partsAdded?: PrintJobPartAdded[];
+}
+
+export interface PrintJobPartAdded {
+  partId: string;
+  partName: string;
+  color: string;
+  qty: number;
 }
 
 export interface BambuStatus {
@@ -375,5 +383,58 @@ export interface CreatePrintJobDto {
   grams?: number;
   hours?: number;
   filamentsUsed?: { color?: string; colorHex?: string; grams: number }[];
+  notes?: string;
+}
+
+// ── Stock de piezas (receta por producto + stock por pieza × color) ──
+
+export type PartColorMode = "fijo" | "libre" | "juego" | "distintos";
+
+export interface PrintPart {
+  id: string;
+  key: string;
+  name: string;
+}
+
+export interface PrintRecipeLine {
+  id?: string;
+  partId: string;
+  qty: number;
+  colorMode: PartColorMode;
+  fixedColor?: string | null;
+  group?: string | null;
+  slot?: string | null;
+  order?: number;
+}
+
+export interface PartsProduct {
+  productId: string;
+  productName: string;
+  parts: PrintPart[];
+  lines: PrintRecipeLine[];
+  buildable: number;
+  missing: string[];
+}
+
+export interface PartStock {
+  partId: string;
+  partKey: string;
+  partName: string;
+  productId: string;
+  color: string;
+  qty: number;
+}
+
+export interface PartsOverview {
+  products: PartsProduct[];
+  stock: PartStock[];
+}
+
+export interface PartMoveDto {
+  partId: string;
+  color: string;
+  qty: number;
+  reason?: "ajuste" | "impresion";
+  jobId?: string;
   notes?: string;
 }
