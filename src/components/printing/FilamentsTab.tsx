@@ -17,14 +17,19 @@ import {
   Printer,
   RefreshCw,
   GraduationCap,
+  Puzzle,
 } from "lucide-react";
 import FilamentDialog from "./FilamentDialog";
 import PrintJobDialog from "./PrintJobDialog";
 import EditJobColorsDialog from "./EditJobColorsDialog";
+import JobPartsDialog from "./JobPartsDialog";
+import { PALETTE_HEX, cssHex } from "@/lib/filament-colors";
 import type {
   CreateFilamentDto,
   CreatePrintJobDto,
   Filament,
+  JobPartOutput,
+  PartsOverview,
   PrintJob,
   PrintProduct,
   StockSummary,
@@ -54,6 +59,12 @@ interface FilamentsTabProps {
     markOk: boolean,
   ) => Promise<boolean>;
   onSyncBambu: () => Promise<boolean>;
+  parts: PartsOverview | null;
+  onSetJobParts: (
+    id: string,
+    outputs: JobPartOutput[],
+    remember: boolean,
+  ) => Promise<boolean>;
 }
 
 export default function FilamentsTab({
@@ -73,12 +84,15 @@ export default function FilamentsTab({
   onLearnJob,
   onReassignJob,
   onSyncBambu,
+  parts,
+  onSetJobParts,
 }: FilamentsTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [jobDialogOpen, setJobDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Filament | null>(null);
   const [learning, setLearning] = useState<PrintJob | null>(null);
   const [fixingColors, setFixingColors] = useState<PrintJob | null>(null);
+  const [assigningParts, setAssigningParts] = useState<PrintJob | null>(null);
   const [learnUnits, setLearnUnits] = useState(1);
   const deleteConfirm = useConfirm<Filament>();
   const finishConfirm = useConfirm<Filament>();
@@ -212,6 +226,14 @@ export default function FilamentsTab({
                           .join(" + ")}
                       </div>
                     )}
+                    {(j.partsAdded?.length ?? 0) > 0 && (
+                      <div className="truncate text-[11px] text-success">
+                        piezas:{" "}
+                        {j.partsAdded!
+                          .map((p) => `${p.qty} ${p.partName} ${p.color}`)
+                          .join(" + ")}
+                      </div>
+                    )}
                   </div>
                   <div className="flex shrink-0 items-center gap-0.5">
                     {!j.productId && (
@@ -241,6 +263,13 @@ export default function FilamentsTab({
                           setLearning(j);
                           setLearnUnits(1);
                         }}
+                      />
+                    )}
+                    {j.status !== "fallida" && (
+                      <ActionIconButton
+                        icon={Puzzle}
+                        aria-label="Piezas que salieron"
+                        onClick={() => setAssigningParts(j)}
                       />
                     )}
                     {(j.filamentsUsed?.length ?? 0) > 0 && (
@@ -399,6 +428,18 @@ export default function FilamentsTab({
           finishConfirm.onConfirm();
           if (finishConfirm.payload) onFinish(finishConfirm.payload.id);
         }}
+      />
+
+      <JobPartsDialog
+        job={assigningParts}
+        parts={parts}
+        hexOf={(c) => {
+          const real = stock?.colors.find((s) => s.color === c)?.colorHex;
+          return cssHex(real) ?? PALETTE_HEX[c];
+        }}
+        isSubmitting={isSubmitting}
+        onClose={() => setAssigningParts(null)}
+        onSave={onSetJobParts}
       />
 
       <EditJobColorsDialog

@@ -59,6 +59,7 @@ export default function NegocioPage() {
     partsLoading,
     loadParts,
     movePart,
+    setJobParts,
     isLoading,
     isSubmitting,
     loadAll,
@@ -118,9 +119,10 @@ export default function NegocioPage() {
     loadAll();
   }, [loadAll]);
 
-  // Las piezas se piden al entrar a la pestaña (y se refrescan cada vez).
+  // Las piezas se piden al entrar a la pestaña (y se refrescan cada vez);
+  // Filamentos las usa para cargar lo que salio de cada impresion.
   useEffect(() => {
-    if (tab === "piezas") loadParts();
+    if (tab === "piezas" || tab === "filamentos") loadParts();
   }, [tab, loadParts]);
 
   // Hex real de cada color, el de los rollos (para los circulos de piezas)
@@ -257,6 +259,8 @@ export default function NegocioPage() {
           onLearnJob={learnJob}
           onReassignJob={reassignJob}
           onSyncBambu={syncBambu}
+          parts={parts}
+          onSetJobParts={setJobParts}
         />
       )}
 
