@@ -937,15 +937,29 @@ export function usePrinting() {
       id: string,
       entries: { color?: string; filamentId?: string; grams?: number }[],
       learnHex = false,
+      markOk = false,
     ) => {
       try {
         setIsSubmitting(true);
-        const res = await api.printing.jobs.reassign(id, entries, learnHex);
+        const res = await api.printing.jobs.reassign(
+          id,
+          entries,
+          learnHex,
+          markOk,
+        );
         if (res.success) {
           await reloadJobsAndStock();
-          const learned =
-            ((res.data as { learned?: { color: string; hex: string }[] })
-              ?.learned ?? []);
+          const data = res.data as {
+            learned?: { color: string; hex: string }[];
+            notApplied?: "fallida";
+          };
+          if (data?.notApplied === "fallida") {
+            toast.info(
+              "Color guardado, pero NO se descontó: Bambu la marcó fallida. Si salió igual, tildá “Se imprimió igual”.",
+            );
+            return true;
+          }
+          const learned = data?.learned ?? [];
           toast.success(
             learned.length
               ? `Impresión corregida. Recordado: ${learned

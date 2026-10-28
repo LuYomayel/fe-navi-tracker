@@ -51,6 +51,7 @@ interface FilamentsTabProps {
     id: string,
     entries: ReassignJobEntry[],
     learnHex: boolean,
+    markOk: boolean,
   ) => Promise<boolean>;
   onSyncBambu: () => Promise<boolean>;
 }
@@ -197,7 +198,11 @@ export default function FilamentsTab({
                       {j.hours ? ` · ${j.hours}h` : ""}
                       {j.printer ? ` · ${j.printer}` : ""}
                       {j.product ? ` · ${j.product.name}` : ""}
-                      {!j.stockApplied ? " · sin descontar" : ""}
+                      {j.status === "fallida"
+                        ? " · fallida en Bambu (no descuenta)"
+                        : !j.stockApplied
+                          ? " · sin descontar"
+                          : ""}
                     </div>
                     {(j.deducted?.length ?? 0) > 0 && (
                       <div className="truncate text-[11px] text-muted-foreground">

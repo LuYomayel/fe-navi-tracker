@@ -576,10 +576,12 @@ export const api = {
         id: string,
         filamentsUsed: { color?: string; filamentId?: string; grams?: number }[],
         learnHex = false,
+        markOk = false,
       ) =>
         apiClient.put(`/printing/jobs/${id}/consumos`, {
           filamentsUsed,
           learnHex,
+          markOk,
         }),
     },
     parts: {

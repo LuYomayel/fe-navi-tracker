@@ -20,6 +20,7 @@ interface EditJobColorsDialogProps {
     id: string,
     entries: ReassignJobEntry[],
     learnHex: boolean,
+    markOk: boolean,
   ) => Promise<boolean>;
   isSubmitting?: boolean;
 }
@@ -43,10 +44,13 @@ export default function EditJobColorsDialog({
 }: EditJobColorsDialogProps) {
   const [rows, setRows] = useState<Row[]>([]);
   const [learnHex, setLearnHex] = useState(false);
+  const [markOk, setMarkOk] = useState(false);
+  const failed = job?.status === "fallida";
 
   useEffect(() => {
     if (!job) return;
     setLearnHex(false);
+    setMarkOk(false);
     const used = job.filamentsUsed ?? [];
     setRows(
       used.map((e, i) => ({
@@ -77,6 +81,7 @@ export default function EditJobColorsDialog({
       job.id,
       rows.map((r) => ({ color: r.color, grams: Number(r.grams) })),
       learnHex,
+      markOk,
     );
     if (ok) onClose();
   };
@@ -148,6 +153,26 @@ export default function EditJobColorsDialog({
               </div>
             );
           })}
+          {failed && (
+            <label className="flex cursor-pointer items-start gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 p-2.5 text-xs">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 shrink-0"
+                checked={markOk}
+                onChange={(e) => setMarkOk(e.target.checked)}
+              />
+              <span>
+                <span className="font-semibold">
+                  Se imprimió igual: descontar del stock
+                </span>
+                <span className="block text-muted-foreground">
+                  Bambu marcó esta impresión como fallida o cancelada, por eso
+                  no descontó. Si salió, tildalo. Si se cortó a la mitad, bajá
+                  los gramos antes de guardar.
+                </span>
+              </span>
+            </label>
+          )}
           {rows.some((r) => r.reportedHex) && (
             <label className="flex cursor-pointer items-start gap-2 rounded-md border p-2.5 text-xs">
               <input
