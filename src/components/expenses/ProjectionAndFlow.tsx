@@ -52,6 +52,7 @@ export function ProjectionCard({
   const hasFuture =
     pr.gastosFuturos.length > 0 ||
     pr.recurrentesPorVenir.length > 0 ||
+    (pr.resumenesEstimados?.length ?? 0) > 0 ||
     pr.ingresosEsperados.length > 0;
 
   return (
@@ -100,6 +101,19 @@ export function ProjectionCard({
             </span>
             <span className="shrink-0 font-mono tabular-nums text-destructive">
               −{fmtARS(r.amount)}
+            </span>
+          </div>
+        ))}
+        {(pr.resumenesEstimados ?? []).map((r) => (
+          <div key={`resumen-${r.label}`} className="flex justify-between">
+            <span className="truncate pr-2 text-muted-foreground">
+              💳 Resumen {r.label}{" "}
+              <span className="text-[11px]">
+                (vence {r.due.slice(8)}/{r.due.slice(5, 7)})
+              </span>
+            </span>
+            <span className="shrink-0 font-mono tabular-nums text-destructive">
+              −{fmtARS(r.total)}
             </span>
           </div>
         ))}
@@ -171,9 +185,9 @@ export function ProjectionCard({
               ))}
             </div>
             <p className="mt-1.5 text-[11px] text-muted-foreground">
-              No cuentan en el disponible del mes: la Visa se salda al importar
-              el resumen; una tarjeta ajena, cuando le transferís lo gastado.
-              🔁 = recurrente que todavía no se cobró.
+              Lo anotado sin pagar. Cuenta en el disponible del mes en que vence
+              su ciclo (arriba, 💳 Resumen) y se salda al cargar el pago del
+              resumen. 🔁 = recurrente que todavía no se cobró.
             </p>
           </div>
         )}

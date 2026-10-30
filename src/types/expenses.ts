@@ -133,6 +133,16 @@ export interface MonthProjection {
     total: number;
     items: TarjetaPendienteItem[];
   }[];
+  /** Resumen de cada tarjeta que vence en el mes (ya descontado del disponible) */
+  resumenesEstimados?: {
+    card: string | null;
+    label: string;
+    due: string; // YYYY-MM-DD
+    closing: string;
+    total: number;
+    items: TarjetaPendienteItem[];
+  }[];
+  resumenesEstimadosTotal?: number;
 }
 
 export interface TarjetaPendienteItem {
