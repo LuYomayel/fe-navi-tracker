@@ -149,6 +149,30 @@ export interface PrintingSummary {
   salesCount: number;
   result: number; // ganancia de ventas - invertido en muestras
   missingToCoverFilament: number;
+  receivables: Receivables;
+}
+
+/** Lo ya entregado que falta que paguen, agrupado por persona. */
+export interface Receivables {
+  total: number;
+  salesCount: number;
+  customers: ReceivableCustomer[];
+}
+
+export interface ReceivableCustomer {
+  name: string;
+  total: number;
+  sales: ReceivableLine[];
+}
+
+export interface ReceivableLine {
+  id: string;
+  date: string;
+  qty: number;
+  productName: string;
+  total: number;
+  settledAmount: number;
+  remaining: number;
 }
 
 /** Lo unico que ve Marcelito en /catalogo/[token]: nunca costo/ganancia de Luciano. */

@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fmtARS } from "@/lib/utils";
 import { Package, Gift, TrendingUp, Clock, Target } from "lucide-react";
+import PorCobrarCard from "./PorCobrarCard";
 import type { PrintingSummary } from "@/types/printing";
 
 interface BalanceTabProps {
@@ -46,6 +47,8 @@ export default function BalanceTab({ summary, isLoading }: BalanceTabProps) {
 
   return (
     <div className="animate-fade-in space-y-4">
+      <PorCobrarCard receivables={summary.receivables} />
+
       {/* Resultado: el número que importa */}
       <Card className="p-4">
         <h3 className="text-sm font-semibold">Resultado a hoy</h3>

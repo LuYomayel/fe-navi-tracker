@@ -11,16 +11,19 @@ import { fmtARS } from "@/lib/utils";
 import { ShoppingBag, Plus, Trash2, HandCoins } from "lucide-react";
 import SaleDialog from "./SaleDialog";
 import SettleDialog from "./SettleDialog";
+import PorCobrarCard from "./PorCobrarCard";
 import type {
   AddSettlementDto,
   CreatePrintSaleDto,
   PrintProduct,
   PrintSale,
+  Receivables,
 } from "@/types/printing";
 
 interface SalesTabProps {
   sales: PrintSale[];
   products: PrintProduct[];
+  receivables?: Receivables;
   isSubmitting: boolean;
   onCreate: (data: CreatePrintSaleDto) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
@@ -31,6 +34,7 @@ interface SalesTabProps {
 export default function SalesTab({
   sales,
   products,
+  receivables,
   isSubmitting,
   onCreate,
   onDelete,
@@ -41,17 +45,13 @@ export default function SalesTab({
   const [settling, setSettling] = useState<PrintSale | null>(null);
   const deleteConfirm = useConfirm<PrintSale>();
 
-  // Lo que falta cobrar de verdad (contempla pagos parciales)
-  const pendingTotal = sales
-    .filter((s) => s.kind === "venta")
-    .reduce((a, s) => a + (s.remaining ?? 0), 0);
-
   return (
     <div className="space-y-3">
+      {receivables && <PorCobrarCard receivables={receivables} />}
+
       <div className="flex items-center justify-between gap-2">
         <h2 className="min-w-0 truncate text-sm font-semibold text-muted-foreground">
           {sales.length} movimiento{sales.length === 1 ? "" : "s"}
-          {pendingTotal > 0 && ` · te deben ${fmtARS(pendingTotal)}`}
         </h2>
         <Button size="sm" onClick={() => setDialogOpen(true)}>
           <Plus className="mr-1 h-4 w-4" />

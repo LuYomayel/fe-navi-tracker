@@ -209,6 +209,7 @@ export default function NegocioPage() {
         <SalesTab
           sales={sales}
           products={products}
+          receivables={summary?.receivables}
           isSubmitting={isSubmitting}
           onCreate={createSale}
           onDelete={deleteSale}

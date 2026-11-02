@@ -648,9 +648,10 @@ export function usePrinting() {
         if (res.success) {
           const [ordersRes] = await Promise.all([
             api.printing.orders.list(),
-            // entregar un pedido crea ventas → refrescarlas junto al resumen
-            status === "entregado" ? reloadSales() : Promise.resolve(),
-            status === "entregado" ? reloadSummary() : Promise.resolve(),
+            // entregar crea ventas y retroceder/cancelar las borra: el "por
+            // cobrar" sale de ellas, asi que se refresca en cualquier cambio
+            reloadSales(),
+            reloadSummary(),
           ]);
           if (ordersRes.success) setOrders((ordersRes.data as PrintOrder[]) ?? []);
           toast.success(
@@ -678,6 +679,8 @@ export function usePrinting() {
       const res = await api.printing.orders.delete(id);
       if (res.success) {
         setOrders((prev) => prev.filter((o) => o.id !== id));
+        // borrar un pedido entregado borra sus ventas
+        await Promise.all([reloadSales(), reloadSummary()]);
         toast.success("Pedido borrado");
         return true;
       }
@@ -689,7 +692,7 @@ export function usePrinting() {
     } finally {
       setIsSubmitting(false);
     }
-  }, []);
+  }, [reloadSales, reloadSummary]);
 
   const resolveNotice = useCallback(
     async (id: string, status: "confirmado" | "descartado") => {
@@ -749,6 +752,7 @@ export function usePrinting() {
             reloadOrders(),
             // un pedido creado ya entregado genera ventas
             data.status === "entregado" ? reloadSales() : Promise.resolve(),
+            data.status === "entregado" ? reloadSummary() : Promise.resolve(),
           ]);
           toast.success("Pedido creado");
           return true;
@@ -762,7 +766,7 @@ export function usePrinting() {
         setIsSubmitting(false);
       }
     },
-    [reloadOrders, reloadSales],
+    [reloadOrders, reloadSales, reloadSummary],
   );
 
   const updateOrder = useCallback(
