@@ -23,7 +23,7 @@ import type {
 interface ItemRow {
   productId: string;
   qty: number;
-  unitPrice: number | ""; // vacio = precio de reventa vigente
+  unitPrice: number | ""; // vacio = precio vigente (reventa, o al publico si es venta directa)
 }
 
 interface OrderDialogProps {
@@ -106,14 +106,28 @@ export default function OrderDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, editingOrder]);
 
+  // Venta directa: nadie se queda con margen, el precio es el total al publico.
+  const isDirect = !resellerId;
+  const defaultPrice = (productId: string) => {
+    const p = products.find((x) => x.id === productId);
+    if (!p) return 0;
+    return isDirect ? (p.publicPrice ?? p.priceToMarcelito) : p.priceToMarcelito;
+  };
+
   const validItems = items.filter((i) => i.productId && i.qty > 0);
   const total = validItems.reduce((a, i) => {
     const price =
-      i.unitPrice !== ""
-        ? Number(i.unitPrice)
-        : (products.find((p) => p.id === i.productId)?.priceToMarcelito ?? 0);
+      i.unitPrice !== "" ? Number(i.unitPrice) : defaultPrice(i.productId);
     return a + price * i.qty;
   }, 0);
+
+  // Al cambiar de comprador cambia la lista de precios: lo cargado antes ya no vale.
+  const changeReseller = (value: string) => {
+    setResellerId(value);
+    if (!hasSales) {
+      setItems(items.map((i) => ({ ...i, unitPrice: "" as const })));
+    }
+  };
 
   const handleSave = async () => {
     if (!validItems.length && !editingOrder) return;
@@ -155,7 +169,7 @@ export default function OrderDialog({
               id="o-reseller"
               className="h-10 w-full rounded-md border border-input bg-background px-2 text-sm"
               value={resellerId}
-              onChange={(e) => setResellerId(e.target.value)}
+              onChange={(e) => changeReseller(e.target.value)}
             >
               {selectableResellers.map((r) => (
                 <option key={r.id} value={r.id}>
@@ -203,7 +217,8 @@ export default function OrderDialog({
               </p>
             )}
             {items.map((item, i) => (
-              <div key={i} className="flex items-center gap-1.5">
+              <div key={i} className="space-y-1.5">
+              <div className="flex items-center gap-1.5">
                 <select
                   aria-label="Producto"
                   disabled={hasSales}
@@ -211,13 +226,17 @@ export default function OrderDialog({
                   value={item.productId}
                   onChange={(e) => {
                     const next = [...items];
-                    next[i] = { ...next[i], productId: e.target.value };
+                    next[i] = {
+                      ...next[i],
+                      productId: e.target.value,
+                      unitPrice: "",
+                    };
                     setItems(next);
                   }}
                 >
                   {activeProducts.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name} ({fmtARS(p.priceToMarcelito)})
+                      {p.name} ({fmtARS(defaultPrice(p.id))})
                     </option>
                   ))}
                 </select>
@@ -246,10 +265,42 @@ export default function OrderDialog({
                   </button>
                 )}
               </div>
+              {isDirect && (
+                <div className="flex items-center gap-2">
+                  <Label
+                    htmlFor={`o-price-${i}`}
+                    className="shrink-0 text-xs text-muted-foreground"
+                  >
+                    Precio por unidad
+                  </Label>
+                  <Input
+                    id={`o-price-${i}`}
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    disabled={hasSales}
+                    value={item.unitPrice}
+                    placeholder={String(defaultPrice(item.productId))}
+                    onChange={(e) => {
+                      const next = [...items];
+                      next[i] = {
+                        ...next[i],
+                        unitPrice:
+                          e.target.value === "" ? "" : Number(e.target.value),
+                      };
+                      setItems(next);
+                    }}
+                    className="h-9"
+                  />
+                </div>
+              )}
+              </div>
             ))}
             {!hasSales && (
               <p className="text-[11px] text-muted-foreground">
-                Precio: el de reventa vigente (se congela al crear el pedido).
+                {isDirect
+                  ? "Venta directa: se cobra el precio al público, y lo podés cambiar."
+                  : "Precio: el de reventa vigente (se congela al crear el pedido)."}
               </p>
             )}
           </div>
