@@ -1,5 +1,6 @@
-// Entrenamiento que /hoy ofrece registrar con 1 tap, según la rutina.
-// Calistenia lunes y jueves. Handball quedó afuera: suspendido hasta 2027.
+// Entrenamiento que /hoy ofrece registrar con 1 tap, según la rutina:
+// calistenia lunes, miércoles y viernes; piernas martes y jueves.
+// Handball quedó afuera: suspendido hasta 2027.
 
 export interface SuggestedWorkout {
   name: string;
@@ -7,18 +8,25 @@ export interface SuggestedWorkout {
   kcalPerHour: number;
 }
 
-const CALISTENIA_DAYS = [1, 4]; // getDay(): 1 = lunes, 4 = jueves
+// getDay(): 0 = domingo … 6 = sábado
+const CALISTENIA_DAYS = [1, 3, 5];
+const PIERNAS_DAYS = [2, 4];
 
 export function suggestedWorkout(weekday: number): SuggestedWorkout {
-  return CALISTENIA_DAYS.includes(weekday)
-    ? { name: "Calistenia", minutes: 60, kcalPerHour: 400 }
-    : { name: "Entrenamiento", minutes: 60, kcalPerHour: 400 };
+  const name = CALISTENIA_DAYS.includes(weekday)
+    ? "Calistenia"
+    : PIERNAS_DAYS.includes(weekday)
+      ? "Piernas"
+      : "Entrenamiento";
+  return { name, minutes: 60, kcalPerHour: 400 };
 }
 
-/** Recordatorio "Entrenaste hoy?" del celu: días de calistenia, después de entrenar. */
+/** Recordatorio "Entrenaste hoy?" del celu: días de entrenamiento, después de entrenar. */
 export function workoutReminders(): { weekday: number; hour: number; minute: number }[] {
   // Capacitor usa 1 = domingo … 7 = sábado
-  return CALISTENIA_DAYS.map((d) => ({ weekday: d + 1, hour: 9, minute: 15 }));
+  return [...CALISTENIA_DAYS, ...PIERNAS_DAYS]
+    .sort((a, b) => a - b)
+    .map((d) => ({ weekday: d + 1, hour: 9, minute: 15 }));
 }
 
 /** Payload del registro rápido para una fecha YYYY-MM-DD. */
