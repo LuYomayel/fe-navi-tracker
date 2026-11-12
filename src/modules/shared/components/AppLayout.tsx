@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { XpGlobalIndicator } from "@/components/xp/XpGlobalIndicator";
 import { QuickAddFab } from "@/components/shared/QuickAddFab";
+import { BackToFoco } from "@/components/shared/BackToFoco";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -205,6 +206,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
       {/* FAB de registro rápido (se abre en menú). Oculto en Ajustes. */}
       {!onAjustes && <QuickAddFab />}
+      <BackToFoco />
 
       {/* Bottom tab bar: 5 tabs (mobile). Oculto en Ajustes. */}
       {!onAjustes && (
