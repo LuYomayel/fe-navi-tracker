@@ -24,6 +24,14 @@ import {
   type ChecklistItem,
   type ChecklistItemId,
 } from "@/lib/day-checklist";
+import {
+  meetingPrep,
+  parseSessions,
+  quickTasks,
+  staleTickets,
+  type SessionsState,
+  type TrelloBoard,
+} from "@/lib/foco-work";
 
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -49,6 +57,9 @@ import {
   Target,
   Timer,
   Send,
+  Zap,
+  Bot,
+  KanbanSquare,
 } from "lucide-react";
 import { toast } from "@/lib/toast-helper";
 
@@ -83,6 +94,7 @@ export default function FocoPage() {
     adjustHydration,
     getAllFoodAnalysis,
     toggleCompletion,
+    toggleTask,
     calendarEvents,
     fetchCalendarEvents,
   } = useNaviTrackerStore();
@@ -102,6 +114,17 @@ export default function FocoPage() {
   useEffect(() => {
     setWaitStats(parseWaitStats(window.location.search));
   }, []);
+
+  // Sesiones de Claude Code: las manda el hook en el hash y lo va actualizando
+  const [sessions, setSessions] = useState<SessionsState | null>(null);
+  useEffect(() => {
+    const read = () => setSessions(parseSessions(window.location.hash, Date.now()));
+    read();
+    window.addEventListener("hashchange", read);
+    return () => window.removeEventListener("hashchange", read);
+  }, []);
+
+  const [boards, setBoards] = useState<TrelloBoard[]>([]);
 
   // Nota rápida
   const [note, setNote] = useState("");
@@ -123,11 +146,16 @@ export default function FocoPage() {
   };
 
   const loadExtras = useCallback(async () => {
-    const [counters, orders, summary] = await Promise.allSettled([
+    const [counters, orders, summary, trello] = await Promise.allSettled([
       api.counters.getDay(today),
       api.printing.orders.list(),
       api.printing.summary(),
+      api.trello.tickets(),
     ]);
+    if (trello.status === "fulfilled") {
+      const data = trello.value?.data as { boards?: TrelloBoard[] } | undefined;
+      if (Array.isArray(data?.boards)) setBoards(data.boards);
+    }
     if (counters.status === "fulfilled" && counters.value?.data) {
       setVentasMensajes(counters.value.data[VENTAS_MENSAJES_KEY] ?? 0);
     }
@@ -236,6 +264,9 @@ export default function FocoPage() {
   });
   const upcoming = nextEvent(calendarEvents, now);
   const topTask = pickTopTask(tasks, today);
+  const prep = meetingPrep(upcoming, boards, now);
+  const tickets = staleTickets(boards, now).slice(0, 5);
+  const quick = quickTasks(tasks).slice(0, 5);
 
   const addMensaje = async (delta: number) => {
     setVentasMensajes((v) => Math.max(0, v + delta)); // optimista
@@ -285,6 +316,62 @@ export default function FocoPage() {
         </Card>
       )}
 
+      {prep && (
+        <Card className="space-y-2 border-primary/40 p-3">
+          <div className="text-[11px] font-bold uppercase tracking-[0.04em] text-primary">
+            Para la reunión · {prep.board}
+          </div>
+          {[
+            { label: "Se movió desde la anterior", cards: prep.moved },
+            { label: "Sigue en curso", cards: prep.pending },
+          ].map((group) => (
+            <div key={group.label}>
+              <div className="text-xs font-medium text-muted-foreground">
+                {group.label} ({group.cards.length})
+              </div>
+              {group.cards.length === 0 ? (
+                <div className="text-sm text-muted-foreground">Nada</div>
+              ) : (
+                <ul className="text-sm">
+                  {group.cards.slice(0, 6).map((c) => (
+                    <li key={c.url} className="truncate">
+                      <a href={c.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                        {c.name}
+                      </a>{" "}
+                      <span className="text-xs text-muted-foreground">· {c.list}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
+        </Card>
+      )}
+
+      {sessions && (
+        <Card className="space-y-1 p-3">
+          <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.04em] text-muted-foreground">
+            <Bot size={14} />
+            Sesiones de Claude
+          </div>
+          {sessions.waiting.map((s) => (
+            <div key={`w-${s.name}`} className="flex items-center gap-2 text-sm">
+              <span className="h-2 w-2 rounded-full bg-amber-500" />
+              <span className="font-medium">{s.name}</span>
+              <span className="text-xs text-muted-foreground">
+                te espera hace {s.minutesAgo} min
+              </span>
+            </div>
+          ))}
+          {sessions.running.map((name) => (
+            <div key={`r-${name}`} className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+              {name} · laburando
+            </div>
+          ))}
+        </Card>
+      )}
+
       {topTask && (
         <Link href="/tasks" className="block">
           <Card className="border-primary/40 bg-primary/[0.06] p-3">
@@ -309,6 +396,26 @@ export default function FocoPage() {
           <Button asChild size="sm" variant="outline">
             <Link href="/objetivo">Objetivo</Link>
           </Button>
+        </Card>
+      )}
+
+      {quick.length > 0 && (
+        <Card className="space-y-1 p-3">
+          <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.04em] text-muted-foreground">
+            <Zap size={14} />
+            De 2 minutos
+          </div>
+          {quick.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => toggleTask(t.id)}
+              className="flex w-full items-center gap-2 rounded-md px-1 py-1 text-left text-sm hover:bg-muted/50"
+            >
+              <Circle size={16} className="shrink-0 text-muted-foreground" />
+              <span className="truncate">{t.title}</span>
+            </button>
+          ))}
         </Card>
       )}
 
@@ -405,6 +512,33 @@ export default function FocoPage() {
           </Card>
         );
       })}
+
+      {tickets.length > 0 && (
+        <Card className="space-y-1 p-3">
+          <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.04em] text-muted-foreground">
+            <KanbanSquare size={14} />
+            Mis tickets en curso
+          </div>
+          {tickets.map((t) => (
+            <a
+              key={t.url}
+              href={t.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-md px-1 py-1 text-sm hover:bg-muted/50"
+            >
+              <span className="min-w-0 flex-1 truncate">{t.name}</span>
+              <span
+                className={`shrink-0 text-xs ${
+                  t.daysIdle >= 3 ? "font-medium text-amber-600" : "text-muted-foreground"
+                }`}
+              >
+                {t.board} · {t.daysIdle === 0 ? "hoy" : `${t.daysIdle}d quieta`}
+              </span>
+            </a>
+          ))}
+        </Card>
+      )}
 
       {/* Nota rápida: la idea que se cruza mientras esperás */}
       <Card className="flex items-center gap-2 p-2">

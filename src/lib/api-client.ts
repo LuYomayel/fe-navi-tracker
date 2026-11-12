@@ -693,6 +693,11 @@ export const api = {
       apiClient.post("/nutrition/weight-entries/analyze-manual", data),
   },
 
+  // Tickets de Trello (por board y bucket) — /foco
+  trello: {
+    tickets: () => apiClient.get("/trello/tickets"),
+  },
+
   // Contadores diarios genéricos (ej. mensajes de venta) — /foco
   counters: {
     getDay: (date: string) =>
