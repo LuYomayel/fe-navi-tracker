@@ -16,7 +16,9 @@ import { fmtARS, getDateKey } from "@/lib/utils";
 import {
   buildDayChecklist,
   nextEvent,
+  parseWaitStats,
   pendingPrintOrders,
+  pickTopTask,
   ventasPracticeActive,
   VENTAS_MENSAJES_KEY,
   type ChecklistItem,
@@ -44,7 +46,11 @@ import {
   NotebookPen,
   CalendarClock,
   Printer,
+  Target,
+  Timer,
+  Send,
 } from "lucide-react";
+import { toast } from "@/lib/toast-helper";
 
 const ICONS: Record<ChecklistItemId, typeof Utensils> = {
   comida: Utensils,
@@ -88,6 +94,33 @@ export default function FocoPage() {
   const [printing, setPrinting] = useState<{ orders: number; toCollect: number } | null>(
     null
   );
+
+  // Tiempo recuperado: lo manda el hook de Claude Code en la URL (?min=&veces=)
+  const [waitStats, setWaitStats] = useState<{ minutes: number; count: number } | null>(
+    null
+  );
+  useEffect(() => {
+    setWaitStats(parseWaitStats(window.location.search));
+  }, []);
+
+  // Nota rápida
+  const [note, setNote] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
+  const saveNote = async () => {
+    const content = note.trim();
+    if (!content || savingNote) return;
+    setSavingNote(true);
+    try {
+      const res = await api.notes.create({ date: today, content, mood: 3 });
+      if (!res?.success) throw new Error();
+      setNote("");
+      toast.success("Nota guardada", content.slice(0, 60));
+    } catch {
+      toast.error("Error", "No se pudo guardar la nota");
+    } finally {
+      setSavingNote(false);
+    }
+  };
 
   const loadExtras = useCallback(async () => {
     const [counters, orders, summary] = await Promise.allSettled([
@@ -202,6 +235,7 @@ export default function FocoPage() {
     ventasMensajes: ventasPracticeActive(now) ? ventasMensajes : null,
   });
   const upcoming = nextEvent(calendarEvents, now);
+  const topTask = pickTopTask(tasks, today);
 
   const addMensaje = async (delta: number) => {
     setVentasMensajes((v) => Math.max(0, v + delta)); // optimista
@@ -249,6 +283,21 @@ export default function FocoPage() {
           </div>
           <span className="font-mono text-xs text-muted-foreground">{upcoming.time}</span>
         </Card>
+      )}
+
+      {topTask && (
+        <Link href="/tasks" className="block">
+          <Card className="border-primary/40 bg-primary/[0.06] p-3">
+            <div className="mb-1 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.04em] text-primary">
+              <Target size={14} />
+              Lo más importante ahora
+            </div>
+            <div className="font-medium">{topTask.title}</div>
+            <div className="text-xs text-muted-foreground">
+              {[topTask.project, topTask.reason].filter(Boolean).join(" · ")}
+            </div>
+          </Card>
+        </Link>
       )}
 
       {pending === 0 && (
@@ -356,6 +405,36 @@ export default function FocoPage() {
           </Card>
         );
       })}
+
+      {/* Nota rápida: la idea que se cruza mientras esperás */}
+      <Card className="flex items-center gap-2 p-2">
+        <input
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") saveNote();
+          }}
+          placeholder="Nota rápida… (Enter para guardar)"
+          className="min-w-0 flex-1 bg-transparent px-2 py-1.5 text-sm outline-none placeholder:text-muted-foreground"
+        />
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={!note.trim() || savingNote}
+          onClick={saveNote}
+          aria-label="Guardar nota"
+        >
+          <Send size={16} />
+        </Button>
+      </Card>
+
+      {waitStats && (
+        <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+          <Timer size={14} />
+          Hoy: {waitStats.minutes} min de espera aprovechados · {waitStats.count}{" "}
+          {waitStats.count === 1 ? "vez" : "veces"} sin celu
+        </div>
+      )}
 
       {printing && (printing.orders > 0 || printing.toCollect > 0) && (
         <Link href="/negocio" className="block">

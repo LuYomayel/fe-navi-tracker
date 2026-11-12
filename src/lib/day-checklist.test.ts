@@ -4,6 +4,8 @@ import {
   expectedGlasses,
   expectedMeals,
   nextEvent,
+  parseWaitStats,
+  pickTopTask,
   pendingPrintOrders,
   ventasPracticeActive,
   type DayChecklistInput,
@@ -215,5 +217,79 @@ describe("pendingPrintOrders", () => {
       (status) => ({ status })
     );
     expect(pendingPrintOrders(orders)).toBe(4);
+  });
+});
+
+// ── Lo más importante ahora + tiempo recuperado ──
+
+describe("pickTopTask", () => {
+  const today = "2026-11-11";
+  const t = (over: Record<string, unknown>) => ({
+    id: String(over.title),
+    title: "x",
+    priority: "medium",
+    status: "pending",
+    completed: false,
+    ...over,
+  });
+
+  it("gana la que vence antes dentro de los próximos 7 días, aunque otra sea más prioritaria", () => {
+    const r = pickTopTask(
+      [
+        t({ title: "Urgente sin fecha", priority: "urgent" }),
+        t({ title: "EMA entrega", dueDate: "2026-11-13", priority: "medium" }),
+        t({ title: "Otra", dueDate: "2026-11-15", priority: "high" }),
+      ],
+      today
+    )!;
+    expect(r.title).toBe("EMA entrega");
+    expect(r.reason).toBe("Vence en 2 días");
+  });
+  it("una vencida va primero y lo dice", () => {
+    const r = pickTopTask(
+      [t({ title: "Hoy", dueDate: today }), t({ title: "Vieja", dueDate: "2026-11-09" })],
+      today
+    )!;
+    expect(r.title).toBe("Vieja");
+    expect(r.reason).toBe("Vencida hace 2 días");
+  });
+  it("dice 'Vence hoy' y 'Vence mañana'", () => {
+    expect(pickTopTask([t({ title: "a", dueDate: today })], today)!.reason).toBe("Vence hoy");
+    expect(pickTopTask([t({ title: "a", dueDate: "2026-11-12" })], today)!.reason).toBe("Vence mañana");
+  });
+  it("sin nada que venza pronto, gana la prioridad; a igual prioridad, la que está en curso", () => {
+    const r = pickTopTask(
+      [
+        t({ title: "Lejana", dueDate: "2027-01-31", priority: "low" }),
+        t({ title: "Alta", priority: "high" }),
+        t({ title: "Alta en curso", priority: "high", status: "in_progress" }),
+      ],
+      today
+    )!;
+    expect(r.title).toBe("Alta en curso");
+    expect(r.reason).toBe("Prioridad alta · en curso");
+  });
+  it("ignora completadas y las de proyectos pausados o archivados", () => {
+    expect(
+      pickTopTask(
+        [
+          t({ title: "Hecha", dueDate: today, completed: true }),
+          t({ title: "Pausada", dueDate: today, projectStatus: "paused" }),
+          t({ title: "Archivada", dueDate: today, projectStatus: "archived" }),
+        ],
+        today
+      )
+    ).toBeNull();
+  });
+});
+
+describe("parseWaitStats", () => {
+  it("lee minutos y veces que manda el hook por la URL", () => {
+    expect(parseWaitStats("?min=47&veces=12")).toEqual({ minutes: 47, count: 12 });
+  });
+  it("null si no viene nada, si es la primera del día o si viene basura", () => {
+    expect(parseWaitStats("")).toBeNull();
+    expect(parseWaitStats("?min=0&veces=0")).toBeNull();
+    expect(parseWaitStats("?min=abc&veces=-3")).toBeNull();
   });
 });

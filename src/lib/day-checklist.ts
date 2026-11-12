@@ -212,3 +212,97 @@ const CLOSED_ORDER_STATUSES = ["entregado", "cancelado"];
 export function pendingPrintOrders(orders: { status: string }[]): number {
   return orders.filter((o) => !CLOSED_ORDER_STATUSES.includes(o.status)).length;
 }
+
+// ── Lo más importante ahora ──
+
+export interface TopTaskInput {
+  id: string;
+  title: string;
+  dueDate?: string;
+  priority: string;
+  status: string;
+  completed: boolean;
+  project?: string | null;
+  projectStatus?: string | null;
+}
+
+export interface TopTask {
+  id: string;
+  title: string;
+  project?: string | null;
+  reason: string;
+}
+
+const PRIORITY_WEIGHT: Record<string, number> = { urgent: 3, high: 2, medium: 1, low: 0 };
+const PRIORITY_LABEL: Record<string, string> = {
+  urgent: "urgente",
+  high: "alta",
+  medium: "media",
+  low: "baja",
+};
+const SOON_DAYS = 7;
+
+function daysBetween(from: string, to: string): number {
+  const [fy, fm, fd] = from.split("-").map(Number);
+  const [ty, tm, td] = to.split("-").map(Number);
+  return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86400000);
+}
+
+/**
+ * La tarea que más pesa ahora: primero lo vencido o que vence en los próximos
+ * 7 días (la fecha más cercana gana); si no hay, la de mayor prioridad, y a
+ * igual prioridad la que ya está en curso.
+ */
+export function pickTopTask(tasks: TopTaskInput[], today: string): TopTask | null {
+  const open = tasks.filter(
+    (t) => !t.completed && t.projectStatus !== "paused" && t.projectStatus !== "archived"
+  );
+  const weight = (t: TopTaskInput) => PRIORITY_WEIGHT[t.priority] ?? 0;
+
+  const soon = open
+    .filter((t) => t.dueDate && daysBetween(today, t.dueDate.slice(0, 10)) <= SOON_DAYS)
+    .sort(
+      (a, b) =>
+        a.dueDate!.slice(0, 10).localeCompare(b.dueDate!.slice(0, 10)) || weight(b) - weight(a)
+    );
+  if (soon[0]) {
+    const t = soon[0];
+    const d = daysBetween(today, t.dueDate!.slice(0, 10));
+    const reason =
+      d < 0
+        ? `Vencida hace ${-d} ${d === -1 ? "día" : "días"}`
+        : d === 0
+          ? "Vence hoy"
+          : d === 1
+            ? "Vence mañana"
+            : `Vence en ${d} días`;
+    return { id: t.id, title: t.title, project: t.project, reason };
+  }
+
+  const inProgress = (t: TopTaskInput) => (t.status === "in_progress" ? 1 : 0);
+  const byPriority = [...open].sort(
+    (a, b) => weight(b) - weight(a) || inProgress(b) - inProgress(a)
+  );
+  const t = byPriority[0];
+  if (!t) return null;
+  return {
+    id: t.id,
+    title: t.title,
+    project: t.project,
+    reason: `Prioridad ${PRIORITY_LABEL[t.priority] ?? t.priority}${
+      t.status === "in_progress" ? " · en curso" : ""
+    }`,
+  };
+}
+
+// ── Tiempo recuperado: lo manda el hook de Claude Code en la URL (?min=&veces=) ──
+
+export function parseWaitStats(search: string): { minutes: number; count: number } | null {
+  const p = new URLSearchParams(search);
+  const minutes = Number(p.get("min"));
+  const count = Number(p.get("veces"));
+  if (!Number.isFinite(minutes) || !Number.isFinite(count) || count <= 0 || minutes < 0) {
+    return null;
+  }
+  return { minutes: Math.round(minutes), count: Math.round(count) };
+}
