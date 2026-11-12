@@ -10,6 +10,7 @@ import { useInitializeStore } from "@/hooks/useInitializeStore";
 import { useXp } from "@/hooks/useXp";
 import { api } from "@/lib/api-client";
 import { getDateKey } from "@/lib/utils";
+import { suggestedWorkout as getSuggestedWorkout } from "@/lib/suggested-workout";
 
 import { PageHeader } from "@/components/ui/page-header";
 import NotificationsOffBanner from "@/components/notifications/NotificationsOffBanner";
@@ -89,15 +90,11 @@ export default function HoyPage() {
 
   const today = getDateKey(new Date());
 
-  // Entrenamiento sugerido según la rutina: handball lun/mar/jue y dom.
+  // Entrenamiento sugerido según la rutina (lib/suggested-workout).
   // El registro manual pide 5 campos numéricos que nadie recuerda después de
-  // jugar, así que acá se registra de una con la duración típica.
+  // entrenar, así que acá se registra de una con la duración típica.
   const [loggingWorkout, setLoggingWorkout] = useState(false);
-  const weekday = new Date().getDay();
-  const suggestedWorkout =
-    [1, 2, 4, 0].includes(weekday)
-      ? { name: "Handball", minutes: 120, kcalPerHour: 500 }
-      : { name: "Entrenamiento", minutes: 60, kcalPerHour: 400 };
+  const suggestedWorkout = getSuggestedWorkout(new Date().getDay());
 
   const logSuggestedWorkout = async () => {
     setLoggingWorkout(true);

@@ -3,6 +3,7 @@
  * Programa repeticiones diarias a horas fijas. No-op en web.
  */
 import { isNative } from "./platform";
+import { workoutReminders } from "@/lib/suggested-workout";
 
 export interface DailyReminder {
   id: number;
@@ -23,8 +24,6 @@ export const ACTION_TYPE_WORKOUT = "WORKOUT_ACTIONS";
 export const ACTION_TYPE_MEAL = "MEAL_ACTIONS";
 export const ACTION_TYPE_HABITS = "HABITS_ACTIONS";
 
-/** Días de handball (0=dom … 6=sáb): lun, mar, jue y dom. */
-export const TRAINING_WEEKDAYS = [1, 2, 4, 0];
 /** Recordatorio post-entrenamiento, con acción "Sí, entrené" en la notificación. */
 const WORKOUT_REMINDER_ID_BASE = 1200;
 
@@ -166,7 +165,7 @@ export async function scheduleDailyReminders(
 }
 
 /**
- * Aviso al terminar el handball (lun/mar/jue 22:45 y dom 18:15) con la acción
+ * Aviso después de entrenar (días y hora en lib/suggested-workout) con la acción
  * "Sí, entrené" en la propia notificación: registra sin abrir la app.
  */
 export async function scheduleWorkoutReminders(): Promise<void> {
@@ -192,16 +191,14 @@ export async function scheduleWorkoutReminders(): Promise<void> {
 
     let nextId = WORKOUT_REMINDER_ID_BASE;
     await LocalNotifications.schedule({
-      notifications: TRAINING_WEEKDAYS.map((weekday) => ({
+      notifications: workoutReminders().map((r) => ({
         id: nextId++,
-        title: "🤾 ¿Jugaste hoy?",
+        title: "💪 Entrenaste hoy?",
         body: "Tocá acá y queda registrado (+60 XP), sin abrir la app.",
         actionTypeId: ACTION_TYPE_WORKOUT,
         schedule: {
           // `on` con weekday repite todas las semanas ese día.
-          on: weekday === 0
-            ? { weekday: 1, hour: 18, minute: 15 }
-            : { weekday: weekday + 1, hour: 22, minute: 45 },
+          on: { weekday: r.weekday, hour: r.hour, minute: r.minute },
           allowWhileIdle: true,
         },
       })),

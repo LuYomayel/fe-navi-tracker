@@ -51,13 +51,12 @@ async function runAction(action: PendingAction): Promise<boolean> {
         await api.hydration.adjust({ date: action.date, delta: 2 });
         return true;
       case "workout_yes": {
-        // Duración típica de handball; se puede ajustar después desde la app.
+        // Duración típica según el día; se puede ajustar después desde la app.
+        const { quickWorkoutFor } = await import("@/lib/suggested-workout");
         const res = await api.physicalActivity.create({
           date: action.date,
-          exerciseMinutes: 120,
-          activeEnergyKcal: 1000,
+          ...quickWorkoutFor(action.date),
           source: "quick",
-          context: "Handball (calorías estimadas)",
         });
         return !!res?.success;
       }
