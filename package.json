@@ -18,14 +18,15 @@
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit --skipLibCheck",
-    "test": "npm run lint && npm run type-check && npm run build:fast",
+    "test": "npm run test:unit && npm run lint && npm run type-check && npm run build:fast",
     "deploy": "./scripts/deploy.sh",
     "deploy:prod": "./scripts/deploy.sh --production",
     "clean": "rm -rf .next out node_modules",
     "reinstall": "npm run clean && npm install",
     "audit:fix": "npm audit fix",
     "check:deps": "npm outdated",
-    "update:deps": "npm update"
+    "update:deps": "npm update",
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "@capacitor/android": "^7.6.6",
@@ -89,7 +90,8 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "^3.2.7"
   },
   "engines": {
     "node": ">=18.0.0",
