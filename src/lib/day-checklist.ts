@@ -10,8 +10,47 @@ export type ChecklistItemId =
   | "tareas"
   | "ejercicio"
   | "curso"
+  | "ingles"
   | "ventas-mensajes"
   | "reflexion";
+
+// Academia de inglés: ahí está cargado el vocabulario del día.
+export const ENGLISH_ACADEMY_URL = "https://miacademia.online/#/academy/login";
+const ENGLISH_RE = /(^|[^a-záéíóúñ])(ingl[eé]s|english)([^a-záéíóúñ]|$)/i;
+
+export interface EnglishWork {
+  /** Títulos de lo que falta (tareas + hábitos de inglés) */
+  pending: string[];
+  total: number;
+}
+
+/**
+ * Lo de inglés que toca hoy: tareas con "inglés"/"english" en el título (de hoy,
+ * vencidas sin hacer o sin fecha) + hábitos de inglés que tocan hoy.
+ * null = hoy no hay nada de inglés.
+ */
+export function englishWork(input: {
+  today: string;
+  tasks: { title: string; dueDate?: string | null; completed: boolean }[];
+  habits: ChecklistHabit[];
+}): EnglishWork | null {
+  const tasks = input.tasks.filter((t) => {
+    if (!ENGLISH_RE.test(t.title)) return false;
+    const due = t.dueDate ? t.dueDate.slice(0, 10) : null;
+    if (due === input.today) return true;
+    return !t.completed && (!due || due < input.today);
+  });
+  const habits = input.habits.filter((h) => ENGLISH_RE.test(h.name));
+  const total = tasks.length + habits.length;
+  if (total === 0) return null;
+  return {
+    pending: [
+      ...tasks.filter((t) => !t.completed).map((t) => t.title),
+      ...habits.filter((h) => !h.done).map((h) => h.name),
+    ],
+    total,
+  };
+}
 
 export const VENTAS_MENSAJES_KEY = "ventas-mensajes";
 export const VENTAS_MENSAJES_URL = "https://web.whatsapp.com/";
@@ -42,6 +81,8 @@ export interface DayChecklistInput {
   reflectionLogged?: boolean;
   /** Mensajes de venta del día; null/undefined = práctica no activa hoy */
   ventasMensajes?: number | null;
+  /** Lo de inglés de hoy (englishWork); null/undefined = no se muestra */
+  ingles?: EnglishWork | null;
 }
 
 export interface ChecklistItem {
@@ -136,6 +177,24 @@ export function buildDayChecklist(input: DayChecklistInput): ChecklistItem[] {
       detail: input.course.done ? "Clase de hoy hecha" : "1 clase de la ruta Ventas",
       done: input.course.done,
       href: VENTAS_COURSE_URL,
+      external: true,
+      alwaysOpen: true,
+    });
+  }
+
+  if (input.ingles) {
+    const { pending, total } = input.ingles;
+    items.push({
+      id: "ingles",
+      label: "Inglés",
+      detail:
+        pending.length === 0
+          ? "Lo de inglés de hoy está hecho"
+          : pending.length === 1
+            ? pending[0]
+            : `${pending.length} pendientes de ${total}`,
+      done: pending.length === 0,
+      href: ENGLISH_ACADEMY_URL,
       external: true,
       alwaysOpen: true,
     });

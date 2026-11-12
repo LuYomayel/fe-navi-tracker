@@ -19,6 +19,7 @@ import {
   parseWaitStats,
   pendingPrintOrders,
   pickTopTask,
+  englishWork,
   ventasPracticeActive,
   VENTAS_MENSAJES_KEY,
   type ChecklistItem,
@@ -60,6 +61,7 @@ import {
   Zap,
   Bot,
   KanbanSquare,
+  Languages,
 } from "lucide-react";
 import { toast } from "@/lib/toast-helper";
 
@@ -69,6 +71,7 @@ const ICONS: Record<ChecklistItemId, typeof Utensils> = {
   habitos: Repeat,
   tareas: ListChecks,
   curso: GraduationCap,
+  ingles: Languages,
   ejercicio: Dumbbell,
   "ventas-mensajes": MessageCircle,
   reflexion: NotebookPen,
@@ -261,6 +264,7 @@ export default function FocoPage() {
     exerciseLogged: score ? score.exerciseLogged : undefined,
     reflectionLogged: score ? score.reflectionLogged : undefined,
     ventasMensajes: ventasPracticeActive(now) ? ventasMensajes : null,
+    ingles: englishWork({ today, tasks, habits }),
   });
   const upcoming = nextEvent(calendarEvents, now);
   const topTask = pickTopTask(tasks, today);
@@ -484,6 +488,15 @@ export default function FocoPage() {
                   onClick={() => toggleHabit(course.id)}
                 >
                   {item.done ? "Desmarcar" : "Ya hice la clase"}
+                </Button>
+              </div>
+            )}
+
+            {item.id === "ingles" && (
+              <div className="mt-2 flex justify-end">
+                <Button size="sm" variant="outline" onClick={() => go(item)}>
+                  <ExternalLink size={14} className="mr-1" />
+                  Ir a la academia
                 </Button>
               </div>
             )}

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   buildDayChecklist,
+  englishWork,
+  ENGLISH_ACADEMY_URL,
   expectedGlasses,
   expectedMeals,
   nextEvent,
@@ -291,5 +293,79 @@ describe("parseWaitStats", () => {
     expect(parseWaitStats("")).toBeNull();
     expect(parseWaitStats("?min=0&veces=0")).toBeNull();
     expect(parseWaitStats("?min=abc&veces=-3")).toBeNull();
+  });
+});
+
+describe("englishWork", () => {
+  const today = "2026-11-12";
+  it("devuelve null si no hay nada de inglés hoy", () => {
+    expect(
+      englishWork({
+        today,
+        tasks: [{ title: "Preparar demo Shopee", dueDate: today, completed: false }],
+        habits: [{ id: "h1", name: "Creatina", done: false }],
+      })
+    ).toBeNull();
+  });
+  it("toma tareas de inglés de hoy, vencidas sin hacer y sin fecha", () => {
+    const r = englishWork({
+      today,
+      tasks: [
+        { title: "Tarea de Inglés: vocabulario", dueDate: today, completed: false },
+        { title: "English homework", dueDate: "2026-11-10", completed: false },
+        { title: "Repasar ingles", dueDate: null, completed: false },
+        { title: "Inglés viejo ya hecho", dueDate: "2026-11-10", completed: true },
+        { title: "Inglés de mañana", dueDate: "2026-11-13", completed: false },
+      ],
+      habits: [],
+    });
+    expect(r).toEqual({
+      pending: ["Tarea de Inglés: vocabulario", "English homework", "Repasar ingles"],
+      total: 3,
+    });
+  });
+  it("cuenta los hábitos de inglés que tocan hoy y lo hecho de hoy", () => {
+    const r = englishWork({
+      today,
+      tasks: [{ title: "Inglés unidad 3", dueDate: today, completed: true }],
+      habits: [
+        { id: "h1", name: "Vocabulario de inglés", done: false },
+        { id: "h2", name: "Agua", done: false },
+      ],
+    });
+    expect(r).toEqual({ pending: ["Vocabulario de inglés"], total: 2 });
+  });
+  it("no matchea palabras que contienen 'ingles' adentro", () => {
+    expect(
+      englishWork({
+        today,
+        tasks: [{ title: "Revisar singleston", dueDate: today, completed: false }],
+        habits: [],
+      })
+    ).toBeNull();
+  });
+});
+
+describe("buildDayChecklist · inglés", () => {
+  it("no muestra el ítem si no hay nada de inglés", () => {
+    expect(item(base(), "ingles")).toBeUndefined();
+  });
+  it("pendiente: lleva a la academia en pestaña nueva", () => {
+    const i = item(base({ ingles: { pending: ["Vocabulario del día"], total: 1 } }), "ingles");
+    expect(i).toMatchObject({
+      done: false,
+      href: ENGLISH_ACADEMY_URL,
+      external: true,
+      alwaysOpen: true,
+      detail: "Vocabulario del día",
+    });
+  });
+  it("con varias pendientes muestra la cantidad", () => {
+    const i = item(base({ ingles: { pending: ["a", "b"], total: 3 } }), "ingles");
+    expect(i?.detail).toBe("2 pendientes de 3");
+  });
+  it("todo hecho: queda tildado pero sigue abriendo la academia", () => {
+    const i = item(base({ ingles: { pending: [], total: 2 } }), "ingles");
+    expect(i).toMatchObject({ done: true, href: ENGLISH_ACADEMY_URL, alwaysOpen: true });
   });
 });
