@@ -54,7 +54,8 @@ export function staleTickets(boards: TrelloBoard[], now: Date): StaleTicket[] {
 // ── Preparación de reuniones ──
 
 const MEETINGS: { match: RegExp; board: string; daily: boolean }[] = [
-  { match: /daily/i, board: "PLA", daily: true },
+  // "Dev Team Stand-Up" (L/Mi/V). El Stand-Up de Toma de Datos queda afuera: Luciano no va.
+  { match: /daily|^(?!.*toma de datos).*stand-?up/i, board: "PLA", daily: true },
   { match: /stampia/i, board: "STA", daily: false },
   { match: /ease\s?train|enzo/i, board: "EAS", daily: false },
 ];

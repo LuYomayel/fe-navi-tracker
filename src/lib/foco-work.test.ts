@@ -71,6 +71,23 @@ describe("meetingPrep", () => {
     expect(r.moved.map((c) => c.name)).toEqual(["Fresca", "Cerrada ayer"]);
     expect(r.pending.map((c) => c.name)).toEqual(["Fresca", "Vieja"]);
   });
+  it("el nombre real de la daily es 'Dev Team Stand-Up'; el Stand-Up de Toma de Datos no cuenta", () => {
+    expect(
+      meetingPrep({ title: "Dev Team Stand-Up", time: "10:30", minutesUntil: 20 }, boards, now)?.board
+    ).toBe("Platform Dev");
+    expect(
+      meetingPrep({ title: "Toma de Datos Stand-Up", time: "10:00", minutesUntil: 20 }, boards, now)
+    ).toBeNull();
+    expect(
+      meetingPrep({ title: "Stampia - Touchpoint", time: "17:30", minutesUntil: 20 }, boards, now)?.board
+    ).toBe("Stampia");
+    expect(
+      meetingPrep({ title: "Weekly EaseTrain", time: "08:00", minutesUntil: 20 }, [
+        ...boards,
+        { code: "EAS", name: "EaseTrain", buckets: emptyBuckets() },
+      ], now)?.board
+    ).toBe("EaseTrain");
+  });
   it("Daily de lunes mira 72h para cubrir el finde", () => {
     const monday = new Date(2026, 10, 16, 9, 40);
     const b: TrelloBoard[] = [
