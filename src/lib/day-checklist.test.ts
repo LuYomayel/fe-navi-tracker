@@ -3,6 +3,9 @@ import {
   buildDayChecklist,
   expectedGlasses,
   expectedMeals,
+  nextEvent,
+  pendingPrintOrders,
+  ventasPracticeActive,
   type DayChecklistInput,
 } from "./day-checklist";
 
@@ -134,5 +137,83 @@ describe("buildDayChecklist · orden", () => {
       })
     ).map((i) => i.id);
     expect(ids).toEqual(["agua", "habitos", "curso", "comida", "tareas"]);
+  });
+});
+
+// ── Ítems agregados: ejercicio, reflexión, práctica de ventas ──
+
+describe("buildDayChecklist · ejercicio", () => {
+  it("pendiente si no registré actividad, y lleva a Ejercicio", () => {
+    const e = item(base({ exerciseLogged: false }), "ejercicio")!;
+    expect(e.done).toBe(false);
+    expect(e.href).toBe("/salud?tab=ejercicio");
+  });
+  it("hecho si ya registré", () => {
+    expect(item(base({ exerciseLogged: true }), "ejercicio")!.done).toBe(true);
+  });
+  it("no aparece si no se pasó el dato", () => {
+    expect(item(base(), "ejercicio")).toBeUndefined();
+  });
+});
+
+describe("buildDayChecklist · reflexión", () => {
+  it("no aparece antes de las 20 si no la hice (es de fin de día)", () => {
+    expect(item(base({ now: at(19, 59), reflectionLogged: false }), "reflexion")).toBeUndefined();
+  });
+  it("pendiente desde las 20 si no la hice", () => {
+    const r = item(base({ now: at(20), reflectionLogged: false }), "reflexion")!;
+    expect(r.done).toBe(false);
+    expect(r.href).toBe("/habitos");
+  });
+  it("aparece hecha si ya la hice, a cualquier hora", () => {
+    expect(item(base({ now: at(9), reflectionLogged: true }), "reflexion")!.done).toBe(true);
+  });
+});
+
+describe("ventasPracticeActive", () => {
+  it("arranca el lunes 16-nov-2026 y sólo de lunes a viernes", () => {
+    expect(ventasPracticeActive(new Date(2026, 10, 13, 12))).toBe(false); // vie 13
+    expect(ventasPracticeActive(new Date(2026, 10, 16, 12))).toBe(true); // lun 16
+    expect(ventasPracticeActive(new Date(2026, 10, 20, 12))).toBe(true); // vie 20
+    expect(ventasPracticeActive(new Date(2026, 10, 21, 12))).toBe(false); // sáb 21
+  });
+});
+
+describe("buildDayChecklist · mensajes de venta", () => {
+  it("pendiente mientras no llegue a 5", () => {
+    const v = item(base({ ventasMensajes: 3 }), "ventas-mensajes")!;
+    expect(v.done).toBe(false);
+    expect(v.detail).toBe("3/5 mensajes");
+  });
+  it("hecho al llegar a 5", () => {
+    expect(item(base({ ventasMensajes: 5 }), "ventas-mensajes")!.done).toBe(true);
+  });
+  it("no aparece si no está activa la práctica (null)", () => {
+    expect(item(base({ ventasMensajes: null }), "ventas-mensajes")).toBeUndefined();
+  });
+});
+
+describe("nextEvent", () => {
+  const ev = (title: string, h: number, m = 0, allDay = false) => ({
+    title,
+    startTime: new Date(2026, 10, 11, h, m).toISOString(),
+    allDay,
+  });
+  it("devuelve el próximo evento de hoy que todavía no empezó, con minutos que faltan", () => {
+    const r = nextEvent([ev("Daily", 10), ev("Stampia", 16), ev("Psicóloga", 18)], at(15, 25));
+    expect(r).toEqual({ title: "Stampia", time: "16:00", minutesUntil: 35 });
+  });
+  it("ignora los de todo el día y los de mañana", () => {
+    const manana = { title: "Mañana", startTime: new Date(2026, 10, 12, 9).toISOString(), allDay: false };
+    expect(nextEvent([ev("Feriado", 0, 0, true), manana], at(15))).toBeNull();
+  });
+});
+
+describe("pendingPrintOrders", () => {
+  it("cuenta los pedidos que no están entregados ni cancelados", () => {
+    const orders = ["pedido", "confirmado", "imprimiendo", "listo", "entregado", "cancelado"].map(
+      (status) => ({ status })
+    );
+    expect(pendingPrintOrders(orders)).toBe(4);
   });
 });

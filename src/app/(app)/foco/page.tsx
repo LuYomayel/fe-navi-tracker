@@ -11,9 +11,14 @@ import Link from "next/link";
 import { useAuthStore } from "@/modules/auth/store";
 import { useNaviTrackerStore } from "@/store";
 import { useInitializeStore } from "@/hooks/useInitializeStore";
-import { getDateKey } from "@/lib/utils";
+import { api } from "@/lib/api-client";
+import { fmtARS, getDateKey } from "@/lib/utils";
 import {
   buildDayChecklist,
+  nextEvent,
+  pendingPrintOrders,
+  ventasPracticeActive,
+  VENTAS_MENSAJES_KEY,
   type ChecklistItem,
   type ChecklistItemId,
 } from "@/lib/day-checklist";
@@ -34,6 +39,11 @@ import {
   ExternalLink,
   Circle,
   PartyPopper,
+  Dumbbell,
+  MessageCircle,
+  NotebookPen,
+  CalendarClock,
+  Printer,
 } from "lucide-react";
 
 const ICONS: Record<ChecklistItemId, typeof Utensils> = {
@@ -42,6 +52,9 @@ const ICONS: Record<ChecklistItemId, typeof Utensils> = {
   habitos: Repeat,
   tareas: ListChecks,
   curso: GraduationCap,
+  ejercicio: Dumbbell,
+  "ventas-mensajes": MessageCircle,
+  reflexion: NotebookPen,
 };
 
 const COURSE_HABIT = /clase de ventas/i;
@@ -64,10 +77,37 @@ export default function FocoPage() {
     adjustHydration,
     getAllFoodAnalysis,
     toggleCompletion,
+    calendarEvents,
+    fetchCalendarEvents,
   } = useNaviTrackerStore();
 
   const today = getDateKey(new Date());
+  const tomorrow = getDateKey(new Date(Date.now() + 86400000));
   const [now, setNow] = useState(() => new Date());
+  const [ventasMensajes, setVentasMensajes] = useState(0);
+  const [printing, setPrinting] = useState<{ orders: number; toCollect: number } | null>(
+    null
+  );
+
+  const loadExtras = useCallback(async () => {
+    const [counters, orders, summary] = await Promise.allSettled([
+      api.counters.getDay(today),
+      api.printing.orders.list(),
+      api.printing.summary(),
+    ]);
+    if (counters.status === "fulfilled" && counters.value?.data) {
+      setVentasMensajes(counters.value.data[VENTAS_MENSAJES_KEY] ?? 0);
+    }
+    const orderList =
+      orders.status === "fulfilled" && Array.isArray(orders.value?.data)
+        ? (orders.value.data as { status: string }[])
+        : [];
+    const toCollect =
+      summary.status === "fulfilled"
+        ? (summary.value?.data as { receivables?: { total?: number } })?.receivables?.total ?? 0
+        : 0;
+    setPrinting({ orders: pendingPrintOrders(orderList), toCollect });
+  }, [today]);
 
   useEffect(() => {
     if (isAuthenticated && !user) router.push("/auth/login");
@@ -78,7 +118,17 @@ export default function FocoPage() {
     fetchDayScore(today);
     fetchTodayHydration(today);
     getAllFoodAnalysis();
-  }, [today, fetchDayScore, fetchTodayHydration, getAllFoodAnalysis]);
+    fetchCalendarEvents(today, tomorrow);
+    loadExtras();
+  }, [
+    today,
+    tomorrow,
+    fetchDayScore,
+    fetchTodayHydration,
+    getAllFoodAnalysis,
+    fetchCalendarEvents,
+    loadExtras,
+  ]);
 
   // Al abrir y cada vez que volvés a la pestaña (cargaste algo en otra) se
   // recalcula, así lo que ya hiciste aparece tildado.
@@ -147,7 +197,21 @@ export default function FocoPage() {
     tasksPending: Math.max(0, tasksTotal - tasksDone),
     tasksTotal,
     course,
+    exerciseLogged: score ? score.exerciseLogged : undefined,
+    reflectionLogged: score ? score.reflectionLogged : undefined,
+    ventasMensajes: ventasPracticeActive(now) ? ventasMensajes : null,
   });
+  const upcoming = nextEvent(calendarEvents, now);
+
+  const addMensaje = async (delta: number) => {
+    setVentasMensajes((v) => Math.max(0, v + delta)); // optimista
+    try {
+      const res = await api.counters.adjust(VENTAS_MENSAJES_KEY, delta, today);
+      if (res?.data) setVentasMensajes(res.data.value);
+    } catch {
+      setVentasMensajes((v) => Math.max(0, v - delta));
+    }
+  };
   const pending = items.filter((i) => !i.done).length;
 
   const go = (item: ChecklistItem) => {
@@ -170,6 +234,22 @@ export default function FocoPage() {
             : `Te ${pending === 1 ? "falta 1 cosa" : `faltan ${pending} cosas`}. Elegí una.`
         }
       />
+
+      {upcoming && (
+        <Card className="flex items-center gap-3 p-3">
+          <CalendarClock size={20} className="text-primary" />
+          <div className="flex-1 text-sm">
+            <span className="font-medium">
+              {upcoming.minutesUntil < 60
+                ? `En ${upcoming.minutesUntil} min`
+                : `A las ${upcoming.time}`}
+              :
+            </span>{" "}
+            {upcoming.title}
+          </div>
+          <span className="font-mono text-xs text-muted-foreground">{upcoming.time}</span>
+        </Card>
+      )}
 
       {pending === 0 && (
         <Card className="flex items-center gap-3 border-primary/20 bg-primary/[0.06] p-4">
@@ -221,6 +301,19 @@ export default function FocoPage() {
               </div>
             )}
 
+            {item.id === "ventas-mensajes" && (
+              <div className="mt-2 flex justify-end gap-2">
+                {ventasMensajes > 0 && (
+                  <Button size="sm" variant="ghost" onClick={() => addMensaje(-1)}>
+                    −1
+                  </Button>
+                )}
+                <Button size="sm" variant="outline" onClick={() => addMensaje(1)}>
+                  +1 mensaje
+                </Button>
+              </div>
+            )}
+
             {item.id === "curso" && course && (
               <div className="mt-2 flex justify-end gap-2">
                 {item.alwaysOpen && (
@@ -263,6 +356,27 @@ export default function FocoPage() {
           </Card>
         );
       })}
+
+      {printing && (printing.orders > 0 || printing.toCollect > 0) && (
+        <Link href="/negocio" className="block">
+          <Card className="flex items-center gap-3 p-3">
+            <Printer size={20} className="text-primary" />
+            <div className="min-w-0 flex-1">
+              <div className="font-medium">Negocio 3D</div>
+              <div className="text-xs text-muted-foreground">
+                {[
+                  printing.orders > 0 &&
+                    `${printing.orders} ${printing.orders === 1 ? "pedido pendiente" : "pedidos pendientes"}`,
+                  printing.toCollect > 0 && `${fmtARS(printing.toCollect)} por cobrar`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </div>
+            </div>
+            <ChevronRight size={18} className="text-muted-foreground" />
+          </Card>
+        </Link>
+      )}
     </div>
   );
 }

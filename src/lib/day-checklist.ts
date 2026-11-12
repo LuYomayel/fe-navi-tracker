@@ -3,7 +3,22 @@
 
 export const VENTAS_COURSE_URL = "https://platzi.com/mis-rutas/17222033/";
 
-export type ChecklistItemId = "comida" | "agua" | "habitos" | "tareas" | "curso";
+export type ChecklistItemId =
+  | "comida"
+  | "agua"
+  | "habitos"
+  | "tareas"
+  | "ejercicio"
+  | "curso"
+  | "ventas-mensajes"
+  | "reflexion";
+
+export const VENTAS_MENSAJES_KEY = "ventas-mensajes";
+export const VENTAS_MENSAJES_URL = "https://web.whatsapp.com/";
+export const VENTAS_MENSAJES_GOAL = 5;
+// La práctica de ventas (5 mensajes/día) arranca el lunes 16-nov-2026.
+const VENTAS_PRACTICE_START = new Date(2026, 10, 16);
+const REFLECTION_FROM_HOUR = 20;
 
 export interface ChecklistHabit {
   id: string;
@@ -22,6 +37,11 @@ export interface DayChecklistInput {
   tasksTotal: number;
   /** Hábito "Clase de ventas" (null si no existe) */
   course: { id: string; scheduledToday: boolean; done: boolean } | null;
+  /** undefined = no se muestra */
+  exerciseLogged?: boolean;
+  reflectionLogged?: boolean;
+  /** Mensajes de venta del día; null/undefined = práctica no activa hoy */
+  ventasMensajes?: number | null;
 }
 
 export interface ChecklistItem {
@@ -99,6 +119,16 @@ export function buildDayChecklist(input: DayChecklistInput): ChecklistItem[] {
     });
   }
 
+  if (input.exerciseLogged !== undefined) {
+    items.push({
+      id: "ejercicio",
+      label: "Entrenar",
+      detail: input.exerciseLogged ? "Actividad registrada" : "Registrá lo que entrenaste hoy",
+      done: input.exerciseLogged,
+      href: "/salud?tab=ejercicio",
+    });
+  }
+
   if (input.course?.scheduledToday) {
     items.push({
       id: "curso",
@@ -111,6 +141,74 @@ export function buildDayChecklist(input: DayChecklistInput): ChecklistItem[] {
     });
   }
 
+  if (input.ventasMensajes != null) {
+    items.push({
+      id: "ventas-mensajes",
+      label: "Mensajes de venta",
+      detail: `${input.ventasMensajes}/${VENTAS_MENSAJES_GOAL} mensajes`,
+      done: input.ventasMensajes >= VENTAS_MENSAJES_GOAL,
+      href: VENTAS_MENSAJES_URL,
+      external: true,
+    });
+  }
+
+  if (
+    input.reflectionLogged === true ||
+    (input.reflectionLogged === false && input.now.getHours() >= REFLECTION_FROM_HOUR)
+  ) {
+    items.push({
+      id: "reflexion",
+      label: "Reflexión del día",
+      detail: input.reflectionLogged ? "Hecha" : "Cerrá el día: cómo te fue",
+      done: input.reflectionLogged,
+      href: "/habitos",
+    });
+  }
+
   // Pendientes arriba; dentro de cada grupo se mantiene el orden de arriba.
   return [...items.filter((i) => !i.done), ...items.filter((i) => i.done)];
+}
+
+export function ventasPracticeActive(now: Date): boolean {
+  const dow = now.getDay();
+  return now >= VENTAS_PRACTICE_START && dow >= 1 && dow <= 5;
+}
+
+export interface NextEvent {
+  title: string;
+  time: string; // HH:mm
+  minutesUntil: number;
+}
+
+/** Próximo evento de HOY que todavía no empezó (ignora los de todo el día). */
+export function nextEvent(
+  events: { title: string; startTime: string; allDay: boolean }[],
+  now: Date
+): NextEvent | null {
+  const upcoming = events
+    .filter((e) => !e.allDay)
+    .map((e) => ({ title: e.title, start: new Date(e.startTime) }))
+    .filter(
+      (e) =>
+        e.start > now &&
+        e.start.getFullYear() === now.getFullYear() &&
+        e.start.getMonth() === now.getMonth() &&
+        e.start.getDate() === now.getDate()
+    )
+    .sort((a, b) => a.start.getTime() - b.start.getTime());
+  const first = upcoming[0];
+  if (!first) return null;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return {
+    title: first.title,
+    time: `${pad(first.start.getHours())}:${pad(first.start.getMinutes())}`,
+    minutesUntil: Math.round((first.start.getTime() - now.getTime()) / 60000),
+  };
+}
+
+const CLOSED_ORDER_STATUSES = ["entregado", "cancelado"];
+
+/** Pedidos 3D que todavía requieren algo (no entregados ni cancelados). */
+export function pendingPrintOrders(orders: { status: string }[]): number {
+  return orders.filter((o) => !CLOSED_ORDER_STATUSES.includes(o.status)).length;
 }

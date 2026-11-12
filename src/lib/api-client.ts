@@ -693,6 +693,18 @@ export const api = {
       apiClient.post("/nutrition/weight-entries/analyze-manual", data),
   },
 
+  // Contadores diarios genéricos (ej. mensajes de venta) — /foco
+  counters: {
+    getDay: (date: string) =>
+      apiClient.get<Record<string, number>>(`/counters?date=${date}`),
+    adjust: (key: string, delta: number, date: string) =>
+      apiClient.post<{ key: string; value: number }>("/counters/adjust", {
+        key,
+        delta,
+        date,
+      }),
+  },
+
   // Completions
   completions: {
     getAll: () => apiClient.get("/completions"),
