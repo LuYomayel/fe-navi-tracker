@@ -31,6 +31,8 @@ export interface ChecklistItem {
   done: boolean;
   href: string;
   external?: boolean;
+  /** Se puede seguir abriendo aunque esté hecho (ej. Platzi tras marcar la clase) */
+  alwaysOpen?: boolean;
 }
 
 // Desayuno 10hs, almuerzo 14hs, merienda 18hs, cena 22hs: a partir de esa hora
@@ -105,6 +107,7 @@ export function buildDayChecklist(input: DayChecklistInput): ChecklistItem[] {
       done: input.course.done,
       href: VENTAS_COURSE_URL,
       external: true,
+      alwaysOpen: true,
     });
   }
 

@@ -109,6 +109,12 @@ describe("buildDayChecklist · curso de ventas", () => {
     expect(c.href).toBe("https://platzi.com/mis-rutas/17222033/");
     expect(c.external).toBe(true);
   });
+  it("aunque ya haya marcado la clase, sigue ofreciendo ir a Platzi", () => {
+    const c = item(base({ course: { id: "c1", scheduledToday: true, done: true } }), "curso")!;
+    expect(c.done).toBe(true);
+    expect(c.href).toBe("https://platzi.com/mis-rutas/17222033/");
+    expect(c.alwaysOpen).toBe(true);
+  });
   it("no aparece si hoy no toca (finde) o si no existe el hábito", () => {
     expect(item(base({ course: { id: "c1", scheduledToday: false, done: false } }), "curso")).toBeUndefined();
     expect(item(base({ course: null }), "curso")).toBeUndefined();

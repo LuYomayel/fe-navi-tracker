@@ -222,7 +222,13 @@ export default function FocoPage() {
             )}
 
             {item.id === "curso" && course && (
-              <div className="mt-2 flex justify-end">
+              <div className="mt-2 flex justify-end gap-2">
+                {item.alwaysOpen && (
+                  <Button size="sm" variant="outline" onClick={() => go(item)}>
+                    <ExternalLink size={14} className="mr-1" />
+                    Ir a Platzi
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant={item.done ? "ghost" : "outline"}
