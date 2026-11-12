@@ -22,6 +22,8 @@ export interface EnglishWork {
   /** Títulos de lo que falta (tareas + hábitos de inglés) */
   pending: string[];
   total: number;
+  /** Material adjunto: primer link en la descripción de una tarea de inglés pendiente */
+  url?: string;
 }
 
 /**
@@ -31,7 +33,12 @@ export interface EnglishWork {
  */
 export function englishWork(input: {
   today: string;
-  tasks: { title: string; dueDate?: string | null; completed: boolean }[];
+  tasks: {
+    title: string;
+    dueDate?: string | null;
+    completed: boolean;
+    description?: string | null;
+  }[];
   habits: ChecklistHabit[];
 }): EnglishWork | null {
   const tasks = input.tasks.filter((t) => {
@@ -43,7 +50,12 @@ export function englishWork(input: {
   const habits = input.habits.filter((h) => ENGLISH_RE.test(h.name));
   const total = tasks.length + habits.length;
   if (total === 0) return null;
+  const url = tasks
+    .filter((t) => !t.completed)
+    .map((t) => t.description?.match(/https?:\/\/[^\s<>"')]+/)?.[0])
+    .find(Boolean);
   return {
+    ...(url ? { url } : {}),
     pending: [
       ...tasks.filter((t) => !t.completed).map((t) => t.title),
       ...habits.filter((h) => !h.done).map((h) => h.name),
@@ -94,6 +106,8 @@ export interface ChecklistItem {
   external?: boolean;
   /** Se puede seguir abriendo aunque esté hecho (ej. Platzi tras marcar la clase) */
   alwaysOpen?: boolean;
+  /** Inglés: link al material adjunto (PDF del vocabulario), si la tarea lo trae */
+  materialUrl?: string;
 }
 
 // Desayuno 10hs, almuerzo 14hs, merienda 18hs, cena 22hs: a partir de esa hora
@@ -183,7 +197,7 @@ export function buildDayChecklist(input: DayChecklistInput): ChecklistItem[] {
   }
 
   if (input.ingles) {
-    const { pending, total } = input.ingles;
+    const { pending, total, url } = input.ingles;
     items.push({
       id: "ingles",
       label: "Inglés",
@@ -194,9 +208,10 @@ export function buildDayChecklist(input: DayChecklistInput): ChecklistItem[] {
             ? pending[0]
             : `${pending.length} pendientes de ${total}`,
       done: pending.length === 0,
-      href: ENGLISH_ACADEMY_URL,
+      href: url ?? ENGLISH_ACADEMY_URL,
       external: true,
       alwaysOpen: true,
+      ...(url ? { materialUrl: url } : {}),
     });
   }
 

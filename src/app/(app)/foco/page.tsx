@@ -20,6 +20,7 @@ import {
   pendingPrintOrders,
   pickTopTask,
   englishWork,
+  ENGLISH_ACADEMY_URL,
   ventasPracticeActive,
   VENTAS_MENSAJES_KEY,
   type ChecklistItem,
@@ -493,8 +494,18 @@ export default function FocoPage() {
             )}
 
             {item.id === "ingles" && (
-              <div className="mt-2 flex justify-end">
-                <Button size="sm" variant="outline" onClick={() => go(item)}>
+              <div className="mt-2 flex justify-end gap-2">
+                {item.materialUrl && (
+                  <Button size="sm" variant="outline" onClick={() => go(item)}>
+                    <ExternalLink size={14} className="mr-1" />
+                    Ver vocabulario
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => window.open(ENGLISH_ACADEMY_URL, "_blank", "noopener")}
+                >
                   <ExternalLink size={14} className="mr-1" />
                   Ir a la academia
                 </Button>

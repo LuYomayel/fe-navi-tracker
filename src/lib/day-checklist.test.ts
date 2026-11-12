@@ -369,3 +369,47 @@ describe("buildDayChecklist · inglés", () => {
     expect(i).toMatchObject({ done: true, href: ENGLISH_ACADEMY_URL, alwaysOpen: true });
   });
 });
+
+describe("inglés · material adjunto (link en la descripción)", () => {
+  const today = "2026-11-12";
+  const pdf = "https://api.example.com/uploads/ingles/vocab-abc.pdf";
+  it("englishWork toma el primer link de una tarea de inglés pendiente", () => {
+    const r = englishWork({
+      today,
+      tasks: [
+        { title: "Inglés: leer vocabulario", dueDate: today, completed: false, description: `PDF: ${pdf} (clase 19:15)` },
+      ],
+      habits: [],
+    });
+    expect(r?.url).toBe(pdf);
+  });
+  it("sin link en la descripción no hay url", () => {
+    const r = englishWork({
+      today,
+      tasks: [{ title: "Inglés: tarea", dueDate: today, completed: false, description: "unidad 3" }],
+      habits: [],
+    });
+    expect(r).not.toBeNull();
+    expect(r?.url).toBeUndefined();
+  });
+  it("ignora el link de una tarea de inglés ya completada", () => {
+    const r = englishWork({
+      today,
+      tasks: [
+        { title: "Inglés viejo", dueDate: today, completed: true, description: pdf },
+        { title: "Inglés nuevo", dueDate: today, completed: false },
+      ],
+      habits: [],
+    });
+    expect(r?.url).toBeUndefined();
+  });
+  it("el ítem abre el material si hay link y guarda la academia aparte", () => {
+    const i = item(base({ ingles: { pending: ["Inglés: leer vocabulario"], total: 1, url: pdf } }), "ingles");
+    expect(i).toMatchObject({ href: pdf, external: true, materialUrl: pdf });
+  });
+  it("sin link el ítem sigue yendo a la academia", () => {
+    const i = item(base({ ingles: { pending: ["x"], total: 1 } }), "ingles");
+    expect(i?.href).toBe(ENGLISH_ACADEMY_URL);
+    expect(i?.materialUrl).toBeUndefined();
+  });
+});
